@@ -129,7 +129,7 @@ export function CandidateSearch() {
                           <MapPin className="h-4 w-4" />
                           {candidate.location}
                         </span>
-                        <span>{candidate.experience}</span>
+                        <span>{candidate.experience.toString()}</span>
                       </div>
                       
                       <div className="flex flex-wrap gap-1 mb-3">
@@ -178,7 +178,7 @@ export function CandidateSearch() {
                           
                           <div>
                             <h4 className="font-medium mb-2">Experience</h4>
-                            <p className="text-sm text-muted-foreground">{candidate.experience}</p>
+                            <p className="text-sm text-muted-foreground">{candidate.experience.toString()}</p>
                           </div>
                           
                           <div>
