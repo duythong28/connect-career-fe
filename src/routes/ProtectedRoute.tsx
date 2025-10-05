@@ -4,7 +4,7 @@ import { Navigate, useLocation } from "react-router-dom";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles: ("candidate" | "employer" | "admin")[];
+  allowedRoles: ("candidate" | "employer" | "admin" | "companies")[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({

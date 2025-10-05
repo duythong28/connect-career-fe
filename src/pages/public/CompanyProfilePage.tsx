@@ -25,46 +25,32 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { Candidate, Company, Job, User } from "@/lib/types";
-import { mockCandidates, mockCompanies, mockJobs, mockUsers } from "@/lib/mock-data";
+import {
+  mockCandidates,
+  mockCompanies,
+  mockJobs,
+  mockUsers,
+} from "@/lib/mock-data";
 import { useAuth } from "@/hooks/useAuth";
+import { getCompany } from "@/api/endpoints/companies.api";
+import { useQuery } from "@tanstack/react-query";
 
 const CompanyProfilePage = () => {
   const { user } = useAuth();
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
-  const [candidates, setCandidates] = useState<Candidate[]>(mockCandidates);
-  const [users, setUsers] = useState<User[]>(mockUsers);
   const { slug } = useParams();
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
-  const company = companies.find((c) => c.slug === slug);
-  const companyJobs = jobs.filter(
-    (j) => j.companyId === company?.id && j.status === "active"
-  );
-  const candidate = candidates.find((c) => c.userId === user?.id);
-  const isFollowing = candidate?.followedCompanies.includes(company?.id || "");
-  const isCompanyMember = user?.companyId === company?.id;
+
+  const { data: companydata } = useQuery({
+    queryKey: ["company", slug],
+    queryFn: () => getCompany(slug!),
+  });
+
+  const isFollowing = false;
+  const isCompanyMember = false;
   const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState<Company>(
-    company ?? {
-      id: "",
-      name: "",
-      slug: "",
-      industry: "",
-      size: "",
-      headquarters: "",
-      website: "",
-      description: "",
-      logo: "",
-      founded: "",
-      employees: 0,
-      followers: 0,
-      jobs: 0,
-      members: [],
-      socialLinks: {},
-    }
-  );
+
   const navigate = useNavigate();
 
-  if (!company) {
+  if (!companydata) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -81,27 +67,7 @@ const CompanyProfilePage = () => {
   }
 
   const toggleFollow = () => {
-    if (!candidate) return;
-
-    const updatedCandidates = candidates.map((c) =>
-      c.id === candidate.id
-        ? {
-            ...c,
-            followedCompanies: isFollowing
-              ? c.followedCompanies.filter((id) => id !== company.id)
-              : [...c.followedCompanies, company.id],
-          }
-        : c
-    );
-    setCandidates(updatedCandidates);
-
-    setCompanies(
-      companies.map((c) =>
-        c.id === company.id
-          ? { ...c, followers: isFollowing ? c.followers - 1 : c.followers + 1 }
-          : c
-      )
-    );
+    if (!user) return;
 
     toast({
       title: isFollowing ? "Unfollowed company" : "Following company",
@@ -112,10 +78,6 @@ const CompanyProfilePage = () => {
   };
 
   const saveCompanyEdit = () => {
-    setCompanies(
-      companies.map((c) => (c.id === company.id ? { ...c, ...editForm } : c))
-    );
-    setEditMode(false);
     toast({
       title: "Company updated",
       description: "Company information has been updated successfully.",
@@ -130,41 +92,43 @@ const CompanyProfilePage = () => {
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-6">
               <Avatar className="h-32 w-32 border-4 border-white">
-                <AvatarImage src={company.logo} />
+                <AvatarImage src={companydata.logoFileId} />
                 <AvatarFallback className="text-4xl">
-                  {company.name.charAt(0)}
+                  {companydata.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
 
               <div>
-                <h1 className="text-4xl font-bold mb-2">{company.name}</h1>
-                <p className="text-xl text-blue-100 mb-4">{company.industry}</p>
+                <h1 className="text-4xl font-bold mb-2">{companydata.name}</h1>
+                <p className="text-xl text-blue-100 mb-4">
+                  {companydata.industryId}
+                </p>
 
                 <div className="flex items-center space-x-6 text-blue-100">
                   <span className="flex items-center">
                     <MapPin className="h-5 w-5 mr-2" />
-                    {company.headquarters}
+                    {companydata.headquartersAddress}
                   </span>
                   <span className="flex items-center">
                     <Users className="h-5 w-5 mr-2" />
-                    {company.size}
+                    {companydata.organizationSize}
                   </span>
                   <span className="flex items-center">
                     <Building2 className="h-5 w-5 mr-2" />
-                    Founded {company.founded}
+                    Founded {companydata.foundedDate}
                   </span>
                 </div>
 
                 <div className="flex items-center space-x-6 mt-4 text-sm">
-                  <span>{company.employees} employees</span>
-                  <span>{company.followers} followers</span>
-                  <span>{companyJobs.length} open positions</span>
+                  <span>{companydata.employeeCount} employees</span>
+                  {/* <span>{companydata.followers} followers</span> */}
+                  {/* <span>{companyJobs.length} open positions</span> */}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              {candidate && (
+              {user && (
                 <Button
                   onClick={toggleFollow}
                   variant={isFollowing ? "secondary" : "outline"}
@@ -175,11 +139,11 @@ const CompanyProfilePage = () => {
                 </Button>
               )}
 
-              {company.website && (
+              {companydata.website && (
                 <Button
                   variant="outline"
                   className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                  onClick={() => window.open(company.website, "_blank")}
+                  onClick={() => window.open(companydata.website, "_blank")}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Website
@@ -208,7 +172,7 @@ const CompanyProfilePage = () => {
             {/* About Section */}
             <Card>
               <CardHeader>
-                <CardTitle>About {company.name}</CardTitle>
+                <CardTitle>About {companydata.name}</CardTitle>
                 {isCompanyMember && editMode && (
                   <Button onClick={saveCompanyEdit} size="sm">
                     Save Changes
@@ -216,8 +180,7 @@ const CompanyProfilePage = () => {
                 )}
               </CardHeader>
               <CardContent>
-                {editMode && isCompanyMember ? (
-                  <div className="space-y-4">
+                {/* <div className="space-y-4">
                     <div>
                       <Label>Company Name</Label>
                       <Input
@@ -249,15 +212,13 @@ const CompanyProfilePage = () => {
                         rows={10}
                       />
                     </div>
-                  </div>
-                ) : (
-                  <Markdown content={company.description} />
-                )}
+                  </div> */}
+                <Markdown content={companydata.longDescription} />
               </CardContent>
             </Card>
 
             {/* Open Positions */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Open Positions ({companyJobs.length})</CardTitle>
               </CardHeader>
@@ -332,7 +293,7 @@ const CompanyProfilePage = () => {
                   </div>
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Company Reviews */}
             <Card>
@@ -435,70 +396,64 @@ const CompanyProfilePage = () => {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Industry</span>
-                    <span className="font-medium">{company.industry}</span>
+                    <span className="font-medium">
+                      {companydata.industryId}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Company Size</span>
-                    <span className="font-medium">{company.size}</span>
+                    <span className="font-medium">
+                      {companydata.organizationSize}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Founded</span>
-                    <span className="font-medium">{company.founded}</span>
+                    <span className="font-medium">
+                      {companydata.foundedDate}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Headquarters</span>
-                    <span className="font-medium">{company.headquarters}</span>
+                    <span className="font-medium">
+                      {companydata.headquartersAddress}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Employees</span>
-                    <span className="font-medium">{company.employees}</span>
+                    <span className="font-medium">
+                      {companydata.employeeCount}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  {/* <div className="flex items-center justify-between">
                     <span className="text-gray-600">Followers</span>
                     <span className="font-medium">{company.followers}</span>
-                  </div>
+                  </div> */}
                 </div>
 
-                {company.socialLinks &&
-                  Object.keys(company.socialLinks).length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="text-sm text-gray-600 mb-2">
-                        Social Links
-                      </div>
-                      <div className="flex space-x-2">
-                        {company.socialLinks.linkedin && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              window.open(
-                                company.socialLinks.linkedin,
-                                "_blank"
-                              )
-                            }
-                          >
-                            LinkedIn
-                          </Button>
-                        )}
-                        {company.socialLinks.twitter && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              window.open(company.socialLinks.twitter, "_blank")
-                            }
-                          >
-                            Twitter
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-600 mb-2">Social Links</div>
+                  <div className="flex space-x-2">
+                    {companydata.socialMedia.linkedin && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          window.open(
+                            companydata.socialMedia.linkedin,
+                            "_blank"
+                          )
+                        }
+                      >
+                        LinkedIn
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             {/* Team Members (for company members only) */}
-            {isCompanyMember && (
+            {/* {isCompanyMember && (
               <Card>
                 <CardHeader>
                   <CardTitle>Team Members</CardTitle>
@@ -545,10 +500,10 @@ const CompanyProfilePage = () => {
                   </Button>
                 </CardContent>
               </Card>
-            )}
+            )} */}
 
             {/* Similar Companies */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Similar Companies</CardTitle>
               </CardHeader>
@@ -589,7 +544,7 @@ const CompanyProfilePage = () => {
                     ))}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>

@@ -226,7 +226,7 @@ export function EmployerDashboard() {
                     <div className="flex-1">
                       <h4 className="font-medium">{candidate.name}</h4>
                       <p className="text-sm text-muted-foreground">{candidate.title}</p>
-                      <p className="text-sm text-brand-primary">{candidate.experience} experience</p>
+                      {/* <p className="text-sm text-brand-primary">{candidate.experience} experience</p> */}
                     </div>
                     <Badge variant="secondary" className="bg-brand-accent/10 text-brand-accent">
                       <Award className="w-3 h-3 mr-1" />

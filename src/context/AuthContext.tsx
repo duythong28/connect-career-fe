@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleSetUser = (user: ProfileResponse | null) => {
     if (user) {
-      user.role = "admin";
+      user.role = "candidate";
     }
     setUser(user);
   };

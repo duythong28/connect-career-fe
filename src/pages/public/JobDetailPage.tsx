@@ -320,8 +320,8 @@ const JobDetailPage = () => {
                       ...
                     </p> */}
                     <p className="text-gray-700 text-sm mb-4">
-                      {stripHtml(jobData.description).substring(0, 150)}
-                      {stripHtml(jobData.description).length > 150 && "..."}
+                      {stripHtml(jobData.organization.shortDescription).substring(0, 150)}
+                      {stripHtml(jobData.organization.shortDescription).length > 150 && "..."}
                     </p>
                   </div>
 
