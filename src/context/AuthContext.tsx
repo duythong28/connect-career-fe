@@ -5,17 +5,17 @@ import {
   useContext,
   ReactNode,
 } from "react";
-import { User, UserRole } from "@/lib/types";
+import { getCookie } from "@/api/client/axios";
+import { useQuery } from "@tanstack/react-query";
+import { getProfile } from "@/api/endpoints/auth.api";
+
+import { ProfileResponse } from "@/api/types/auth.types";
 
 interface AuthContextType {
-  user: User | null;
-  login: (
-    email: string,
-    password: string
-  ) => Promise<{ needsCompanySetup: boolean; user: User }>;
-  logout: () => void;
-  switchRole: (role: UserRole) => void;
+  user: ProfileResponse | null;
+  setUser: (user: ProfileResponse | null) => void;
   isLoading: boolean;
+  isAuthenticated: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -23,73 +23,43 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 );
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<ProfileResponse | null>(null);
+
+  const hasAccessToken = !!getCookie("accessToken");
+
+  const {
+    data: profileData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+    enabled: hasAccessToken,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const handleSetUser = (user: ProfileResponse | null) => {
+    if (user) {
+      user.role = "admin";
+    }
+    setUser(user);
+  };
 
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const response = await fetch("/api/auth/me");
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-      }
-    } catch (error) {
-      console.error("Auth check failed:", error);
-    } finally {
-      setIsLoading(false);
+    if (profileData) {
+      handleSetUser(profileData);
+    } else if (error) {
+      handleSetUser(null);
     }
+  }, [profileData, error]);
+
+  const value = {
+    user,
+    setUser: handleSetUser,
+    isLoading: hasAccessToken ? isLoading : false,
+    isAuthenticated: !!user,
   };
-
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        localStorage.setItem("token", data.token);
-
-        // Check if employer needs company setup
-        if (data.user.role === "employer" && !data.user.companyId) {
-          return { needsCompanySetup: true, user: data.user };
-        }
-
-        return { needsCompanySetup: false, user: data.user };
-      } else {
-        throw new Error("Login failed");
-      }
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      setUser(null);
-      localStorage.removeItem("token");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
-  const switchRole = (role: UserRole) => {
-    if (user) {
-      setUser({ ...user, role });
-    }
-  };
-
-  const value = { user, login, logout, switchRole, isLoading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

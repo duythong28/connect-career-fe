@@ -1,9 +1,10 @@
 import { Routes, Route } from "react-router-dom";
 import { PublicRoutes } from "./PublicRoutes";
 import { CandidateRoutes } from "./CandidateRoutes";
-import { EmployerRoutes } from "./EmployerRoutes";
 import { AdminRoutes } from "./AdminRoutes";
 import ProtectedRoute from "./ProtectedRoute";
+import { ROUTES } from "@/constants/routes";
+import { CompanyRoutes } from "./EmployerRoutes";
 
 export const AppRoutes = () => {
   return (
@@ -20,10 +21,10 @@ export const AppRoutes = () => {
       />
 
       <Route
-        path="/employer/*"
+        path="/company/*"
         element={
-          <ProtectedRoute allowedRoles={["employer"]}>
-            <EmployerRoutes />
+          <ProtectedRoute allowedRoles={["candidate"]}>
+            <CompanyRoutes />
           </ProtectedRoute>
         }
       />

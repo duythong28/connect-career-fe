@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { UserRole } from "@/lib/types";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "./AppSidebar";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { Bell, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";

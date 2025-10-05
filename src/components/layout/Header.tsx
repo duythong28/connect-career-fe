@@ -1,24 +1,19 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Briefcase, Menu } from "lucide-react";
 
-// UI Components
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { logout } from "@/api/endpoints/auth.api";
+import { deleteCookie } from "@/api/client/axios";
+import { queryClient } from "@/lib/queryClient";
+import { ROUTES } from "@/constants/routes";
 
-// Updated Header Component
 const Header = () => {
-  const navigate = useNavigate();
-  const { user, switchRole } = useAuth();
+  const { user, setUser } = useAuth();
 
   const getSidebarOpen = () => {
     const stored = localStorage.getItem("sidebarOpen");
@@ -28,31 +23,41 @@ const Header = () => {
     const currentState = getSidebarOpen();
     const newState = !currentState;
     localStorage.setItem("sidebarOpen", JSON.stringify(newState));
-    // Force re-render by dispatching a custom event
     window.dispatchEvent(new Event("sidebarToggle"));
   };
+  const { mutate: logoutMutate, isPending: isLoggingOut } = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      setUser(null);
+      deleteCookie("accessToken");
+      deleteCookie("refreshToken");
+      queryClient.clear();
+      toast({
+        title: "Logged out successfully",
+        description: "You have been successfully logged out",
+      });
+      window.location.href = ROUTES.LOGIN;
+    },
+    onError: (error: any) => {
+      setUser(null);
+      deleteCookie("accessToken");
+      deleteCookie("refreshToken");
+      queryClient.clear();
 
-  const handleRoleChange = (newRole: "candidate" | "employer" | "admin") => {
-    if (!user) return;
+      toast({
+        title: "Logout failed",
+        description:
+          error?.response?.data?.message ||
+          "There was an error logging out. Please try again.",
+        variant: "destructive",
+      });
 
-    switchRole(newRole);
-
-    // Navigate to appropriate dashboard
-    const dashboardPath =
-      newRole === "candidate"
-        ? "/candidate/dashboard"
-        : newRole === "employer"
-        ? "/employer/dashboard"
-        : "/admin/dashboard";
-    navigate(dashboardPath);
-  };
+      window.location.href = ROUTES.LOGIN;
+    },
+  });
 
   const handleLogout = () => {
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-    navigate("/");
+    logoutMutate();
   };
 
   return (
@@ -73,23 +78,12 @@ const Header = () => {
         <div className="flex items-center space-x-4">
           {user ? (
             <>
-              <Select value={user.role} onValueChange={handleRoleChange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="candidate">Candidate</SelectItem>
-                  <SelectItem value="employer">Employer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-
               <div className="flex items-center space-x-2">
                 <Avatar>
                   <AvatarImage src={user.avatar} />
-                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{user.firstName.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium">{user.name}</span>
+                <span className="text-sm font-medium">{user.firstName}</span>
               </div>
 
               <Button variant="outline" size="sm" onClick={handleLogout}>

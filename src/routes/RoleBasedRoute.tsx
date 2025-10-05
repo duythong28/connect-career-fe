@@ -1,6 +1,7 @@
+import { useAuth } from "@/hooks/useAuth";
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { ROUTES } from "@/constants/routes";
 
 interface RoleBasedRouteProps {
   children: React.ReactNode;
@@ -13,19 +14,17 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   requiredRole,
   fallbackPath,
 }) => {
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
 
-  if (!currentUser) {
-    return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
-  if (currentUser.role !== requiredRole) {
+  if (user.role !== requiredRole) {
     const defaultFallback =
-      currentUser.role === "candidate"
-        ? "/candidate/dashboard"
-        : currentUser.role === "employer"
-        ? "/employer/dashboard"
-        : "/admin/dashboard";
+      user.role === "admin"
+        ? ROUTES.ADMIN.DASHBOARD
+        : ROUTES.CANDIDATE.DASHBOARD;
 
     return <Navigate to={fallbackPath || defaultFallback} replace />;
   }

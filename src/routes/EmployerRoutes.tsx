@@ -13,22 +13,21 @@ import { EmployerDashboard } from "@/components/employer/EmployerDashboard";
 import MessagesPage from "@/pages/candidate/MessagesPage";
 import NotFound from "@/pages/shared/NotFound";
 
-export const EmployerRoutes = () => {
+export const CompanyRoutes = () => {
   return (
     <Routes>
-      <Route index element={<EmployerDashboard />} />
-      <Route path="dashboard" element={<EmployerDashboard />} />
-      <Route path="company" element={<CompanyProfilePage />} />
+      <Route index element={<CompanyDashboard />} />
+      <Route path="dashboard" element={<CompanyDashboard />} />
+      <Route path="profile" element={<CompanyProfilePage />} />
       <Route path="post-job" element={<PostJobPage />} />
-      <Route path="jobs" element={<EmployerJobsPage />} />
+      <Route path="jobs" element={<CompanyJobsPage />} />
       <Route path="pipeline" element={<PipelinePage />} />
-      <Route path="candidates" element={<CandidateSearchPage />} />
-      <Route path="interviews" element={<EmployerInterviewsPage />} />
-      <Route path="messages" element={<MessagesPage />} />
+      <Route path="candidates" element={<CandidatesPage />} />
+      <Route path="interviews" element={<CompanyInterviewsPage />} />
+      <Route path="messages" element={<CompanyMessagesPage />} />
       <Route path="chatbot" element={<ChatbotPage />} />
-      <Route path="analytics" element={<EmployerAnalyticsPage />} />
-      <Route path="profile" element={<RecruiterProfilePage />} />
-      <Route path="settings" element={<SubscriptionPage />} />
+      <Route path="analytics" element={<CompanyAnalyticsPage />} />
+      <Route path="settings" element={<CompanySettingsPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -26,7 +26,7 @@ import { Company } from "@/lib/types";
 import { mockCompanies } from "@/lib/mock-data";
 
 const CompanyOnboarding = () => {
-  const { user, switchRole } = useAuth();
+  const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>(mockCompanies);
   const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
   const [companyForm, setCompanyForm] = useState({
