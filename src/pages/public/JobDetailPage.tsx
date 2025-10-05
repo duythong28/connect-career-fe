@@ -41,31 +41,29 @@ import {
 } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/useAuth";
 import { calculateMatchingScore } from "@/lib/helpers";
+import { useQuery } from "@tanstack/react-query";
+import { getJob } from "@/api/endpoints/jobs.api";
 
 const JobDetailPage = () => {
   const { user } = useAuth();
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
+
   const { id } = useParams();
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
-  const [applications, setApplications] =
-    useState<Application[]>(mockApplications);
-  const [candidates] = useState<Candidate[]>(
-    mockExtendedCandidates as Candidate[]
-  );
+
   const [users, setUsers] = useState<User[]>(mockUsers);
-  const job = jobs.find((j) => j.id === id);
-  const company = job ? companies.find((c) => c.id === job.companyId) : null;
-  const employer = job ? users.find((u) => u.id === job.employerId) : null;
-  const candidate = candidates.find((c) => c.userId === user?.id);
-  const isApplied = applications.some(
-    (app) => app.jobId === job?.id && app.candidateId === candidate?.id
-  );
+  const isApplied = false;
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedCvId, setSelectedCvId] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
 
-  if (!job || !company) {
+  const { data: jobData } = useQuery({
+    queryKey: ["job", id],
+    queryFn: async () => {
+      return await getJob(id);
+    },
+  });
+
+  if (!jobData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -82,36 +80,6 @@ const JobDetailPage = () => {
   }
 
   const applyToJob = (jobId: string, cvId: string, coverLetter?: string) => {
-    const candidate = candidates.find((c) => c.userId === user?.id);
-    if (!candidate) return;
-
-    const job = jobs.find((j) => j.id === jobId);
-    if (!job) return;
-
-    const matchingScore = calculateMatchingScore(
-      candidate.skills,
-      job.keywords,
-      candidate.experience.length
-    );
-
-    const newApplication: Application = {
-      id: `app${applications.length + 1}`,
-      jobId,
-      candidateId: candidate.id,
-      status: "New",
-      appliedDate: new Date().toISOString().split("T")[0],
-      cvId,
-      coverLetter,
-      matchingScore,
-    };
-
-    setApplications([...applications, newApplication]);
-    setJobs(
-      jobs.map((j) =>
-        j.id === jobId ? { ...j, applications: j.applications + 1 } : j
-      )
-    );
-
     toast({
       title: "Application submitted",
       description: "Your application has been sent to the employer.",
@@ -128,10 +96,49 @@ const JobDetailPage = () => {
       return;
     }
 
-    applyToJob(job.id, selectedCvId, coverLetter);
     setShowApplyModal(false);
     setSelectedCvId("");
     setCoverLetter("");
+  };
+
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
+
+  const formatJobDescription = (html: string) => {
+    // Create a temporary DOM element to parse HTML properly
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = html;
+
+    // Extract only the main content div
+    const mainContent = tempDiv.querySelector(".show-more-less-html__markup");
+
+    if (!mainContent) {
+      // Fallback if structure is different
+      return html
+        .replace(/<button[^>]*>.*?<\/button>/gs, "")
+        .replace(/<icon[^>]*>.*?<\/icon>/gs, "")
+        .replace(/class="[^"]*"/g, "")
+        .replace(/<section[^>]*>/g, "<div>")
+        .replace(/<\/section>/g, "</div>");
+    }
+
+    return (
+      mainContent.innerHTML
+        // Remove LinkedIn specific classes
+        .replace(/class="[^"]*"/g, "")
+        // Clean up HTML entities
+        .replace(/&apos;/g, "'")
+        .replace(/&#x2019;/g, "'")
+        // Ensure proper list formatting
+        .replace(/<li>\s*/g, "<li>")
+        .replace(/\s*<\/li>/g, "</li>")
+        // Fix spacing issues
+        .replace(/<br><br>/g, "</p><p>")
+        .trim()
+    );
   };
 
   return (
@@ -152,29 +159,29 @@ const JobDetailPage = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={company.logo} />
+                      <AvatarImage src={jobData.companyLogo} />
                       <AvatarFallback className="text-2xl">
-                        {company.name.charAt(0)}
+                        {jobData.companyName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <CardTitle className="text-2xl mb-2">
-                        {job.title}
+                        {jobData.title}
                       </CardTitle>
                       <p className="text-xl text-gray-700 mb-2">
-                        {company.name}
+                        {jobData.companyName}
                       </p>
                       <div className="flex items-center space-x-4 text-gray-600">
                         <span className="flex items-center">
                           <MapPin className="h-4 w-4 mr-1" />
-                          {job.location}
+                          {jobData.location}
                         </span>
                         <span className="flex items-center">
                           <DollarSign className="h-4 w-4 mr-1" />
-                          {job.salary}
+                          {jobData.salary}
                         </span>
                         <Badge variant="secondary" className="capitalize">
-                          {job.type}
+                          {jobData.type}
                         </Badge>
                       </div>
                     </div>
@@ -184,26 +191,26 @@ const JobDetailPage = () => {
                     <Button variant="outline" size="sm">
                       <Share className="h-4 w-4" />
                     </Button>
-                    {candidate && (
+                    {/* {candidate && (
                       <Button variant="outline" size="sm">
                         <Heart className="h-4 w-4" />
                       </Button>
-                    )}
+                    )} */}
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-6 text-sm text-gray-500 mt-4">
                   <span className="flex items-center">
                     <Clock className="h-4 w-4 mr-1" />
-                    Posted {job.postedDate}
+                    Posted {jobData.postedDate}
                   </span>
                   <span className="flex items-center">
                     <Eye className="h-4 w-4 mr-1" />
-                    {job.views} views
+                    {jobData.views} views
                   </span>
                   <span className="flex items-center">
                     <Users className="h-4 w-4 mr-1" />
-                    {job.applications} applicants
+                    {jobData.applications} applicants
                   </span>
                 </div>
               </CardHeader>
@@ -214,14 +221,33 @@ const JobDetailPage = () => {
                     <h3 className="text-xl font-semibold mb-4">
                       Job Description
                     </h3>
-                    <Markdown content={job.description} />
+                    {/* <Markdown content={jobData.description} /> */}
+                    <div
+                      className="prose prose-sm max-w-none text-gray-700 
+               [&>h1]:text-xl [&>h1]:font-bold [&>h1]:mb-4 [&>h1]:mt-6
+               [&>h2]:text-lg [&>h2]:font-semibold [&>h2]:mb-3 [&>h2]:mt-5
+               [&>h3]:text-base [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:mt-4
+               [&>p]:mb-4 [&>p]:leading-relaxed
+               [&>ul]:mb-4 [&>ul]:pl-6 [&>ul]:list-disc [&>ul]:space-y-2
+               [&>ol]:mb-4 [&>ol]:pl-6 [&>ol]:list-decimal [&>ol]:space-y-2
+               [&>li]:mb-1 [&>li]:leading-relaxed
+               [&>strong]:font-semibold [&>strong]:text-gray-900
+               [&>br]:mb-2
+               [&>a]:text-blue-600 [&>a]:underline [&>a]:hover:text-blue-800
+               [&_div]:mb-3
+               [&_.show-more-less-html__markup]:space-y-3
+               [&_section]:space-y-4"
+                      dangerouslySetInnerHTML={{
+                        __html: formatJobDescription(jobData.description),
+                      }}
+                    />
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     <h4 className="text-lg font-medium w-full mb-2">
                       Required Skills
                     </h4>
-                    {job.keywords.map((keyword) => (
+                    {jobData.keywords.map((keyword) => (
                       <Badge key={keyword} variant="outline">
                         {keyword}
                       </Badge>
@@ -237,7 +263,7 @@ const JobDetailPage = () => {
             {/* Application Actions */}
             <Card>
               <CardContent className="p-6">
-                {candidate && !isApplied ? (
+                {user && !isApplied ? (
                   <Button
                     onClick={() => setShowApplyModal(true)}
                     className="w-full mb-4"
@@ -263,15 +289,17 @@ const JobDetailPage = () => {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Applicants</span>
-                    <span className="font-medium">{job.applications}</span>
+                    <span className="font-medium">{jobData.applications}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Job Type</span>
-                    <span className="font-medium capitalize">{job.type}</span>
+                    <span className="font-medium capitalize">
+                      {jobData.type}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Posted</span>
-                    <span className="font-medium">{job.postedDate}</span>
+                    <span className="font-medium">{jobData.postedDate}</span>
                   </div>
                 </div>
               </CardContent>
@@ -280,32 +308,40 @@ const JobDetailPage = () => {
             {/* Company Info */}
             <Card>
               <CardHeader>
-                <CardTitle>About {company.name}</CardTitle>
+                <CardTitle>About {jobData.companyName}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-gray-700 text-sm mb-4">
-                      {company.description
+                    {/* <p className="text-gray-700 text-sm mb-4">
+                      {jobData.description
                         .replace(/[#*]/g, "")
                         .substring(0, 150)}
                       ...
+                    </p> */}
+                    <p className="text-gray-700 text-sm mb-4">
+                      {stripHtml(jobData.description).substring(0, 150)}
+                      {stripHtml(jobData.description).length > 150 && "..."}
                     </p>
                   </div>
 
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Industry</span>
-                      <span className="font-medium">{company.industry}</span>
+                      <span className="font-medium">
+                        {jobData.organization.industryId}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Company Size</span>
-                      <span className="font-medium">{company.size}</span>
+                      <span className="font-medium">
+                        {jobData.organization.organizationSize}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Location</span>
                       <span className="font-medium">
-                        {company.headquarters}
+                        {jobData.organization.headquartersAddress}
                       </span>
                     </div>
                   </div>
@@ -314,7 +350,9 @@ const JobDetailPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/companies/${company.slug}`)}
+                      onClick={() =>
+                        navigate(`/companies/${jobData.organizationId}`)
+                      }
                       className="flex-1"
                     >
                       View Company
@@ -328,7 +366,7 @@ const JobDetailPage = () => {
             </Card>
 
             {/* Recruiter Info */}
-            {employer && (
+            {/* {employer && (
               <Card>
                 <CardHeader>
                   <CardTitle>Recruiter</CardTitle>
@@ -356,14 +394,14 @@ const JobDetailPage = () => {
                   </Button>
                 </CardContent>
               </Card>
-            )}
+            )} */}
 
             {/* Similar Jobs */}
             <Card>
               <CardHeader>
                 <CardTitle>Similar Jobs</CardTitle>
               </CardHeader>
-              <CardContent>
+              {/* <CardContent>
                 <div className="space-y-3">
                   {jobs
                     .filter(
@@ -391,7 +429,7 @@ const JobDetailPage = () => {
                       </div>
                     ))}
                 </div>
-              </CardContent>
+              </CardContent> */}
             </Card>
           </div>
         </div>
@@ -401,9 +439,9 @@ const JobDetailPage = () => {
       <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Apply for {job.title}</DialogTitle>
+            <DialogTitle>Apply for {jobData.title}</DialogTitle>
             <DialogDescription>
-              Submit your application to {company.name}
+              Submit your application to {jobData.companyName}
             </DialogDescription>
           </DialogHeader>
 
@@ -412,7 +450,7 @@ const JobDetailPage = () => {
               <Label className="text-base font-medium mb-3 block">
                 Select CV
               </Label>
-              <RadioGroup value={selectedCvId} onValueChange={setSelectedCvId}>
+              {/* <RadioGroup value={selectedCvId} onValueChange={setSelectedCvId}>
                 {candidate?.cvs.map((cv) => (
                   <div
                     key={cv.id}
@@ -436,7 +474,7 @@ const JobDetailPage = () => {
                     </Label>
                   </div>
                 ))}
-              </RadioGroup>
+              </RadioGroup> */}
             </div>
 
             <div>
