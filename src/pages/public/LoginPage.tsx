@@ -51,9 +51,9 @@ const LoginPage = () => {
   const { mutate: getProfileMutate } = useMutation({
     mutationFn: getProfile,
     onSuccess: (profileData) => {
-          setUser(profileData);
+      setUser(profileData);
 
-               queryClient.setQueryData(["profile"], profileData);
+      queryClient.setQueryData(["profile"], profileData);
       toast({
         title: "Login successful",
         description: `Welcome back, ${profileData.firstName} ${profileData.lastName}!`,
@@ -70,8 +70,6 @@ const LoginPage = () => {
   const { mutate: loginMutate } = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
-      console.log("Login successful:", data);
-      // Store tokens in cookies
       setCookie("accessToken", data.accessToken);
       setCookie("refreshToken", data.refreshToken);
 
