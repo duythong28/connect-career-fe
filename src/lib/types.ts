@@ -1,26 +1,30 @@
-export type UserRole = 'candidate' | 'employer' | 'admin';
+export type UserRole = "candidate" | "employer" | "admin";
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: "candidate" | "employer" | "admin";
   avatar?: string;
-  avatarUrl?: string;
   phone?: string;
   companyId?: string;
+  // Optional fields used across the UI
   company?: string;
   title?: string;
   location?: string;
+  skills?: string[];
   bio?: string;
   linkedinUrl?: string;
-  skills?: string[];
-  status?: 'active' | 'banned' | 'inactive';
-  joinedDate?: string;
   savedJobs?: string[];
+  status?: "active" | "banned" | "inactive";
+  joinedDate?: string;
+  privacy?: {
+    phone: boolean;
+    email: boolean;
+  };
   subscription?: {
-    plan: string;
-    expiresAt: string;
+    plan: "Free" | "Standard" | "Premium";
+    expiresAt?: string;
   };
   visibility?: {
     phone: boolean;
@@ -62,11 +66,11 @@ export interface Education {
 export interface CV {
   id: string;
   name: string;
-  fileName: string;
   uploadedAt: string;
-  type: 'pdf' | 'docx' | 'image';
-  visibility: boolean;
+  contentMarkdown: string;
   isDefault: boolean;
+  fileName: string;
+  type: "pdf" | "docx" | "md";
 }
 
 export interface Offer {
@@ -74,7 +78,7 @@ export interface Offer {
   applicationId: string;
   amount: number;
   currency: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: "pending" | "accepted" | "rejected";
   createdAt: string;
   details: string;
 }
@@ -82,10 +86,10 @@ export interface Offer {
 export interface Report {
   id: string;
   reporterId: string;
-  targetType: 'job' | 'user';
+  targetType: "job" | "user";
   targetId: string;
   reason: string;
-  status: 'pending' | 'resolved' | 'dismissed';
+  status: "pending" | "resolved" | "dismissed";
   createdAt: string;
 }
 
@@ -101,35 +105,55 @@ export interface Message {
 export interface Job {
   id: string;
   title: string;
-  company: string;
+  companyId: string;
+  // Optional: some UI references use company name directly
+  company?: string;
   location: string;
   salary: string;
-  type: 'full-time' | 'part-time' | 'contract' | 'remote';
-  description: string;
-  requirements: string[];
+  type: "full-time" | "part-time" | "contract" | "remote" | "internship";
+  description: string; // Markdown formatted
   postedDate: string;
   applications: number;
-  status: 'active' | 'closed' | 'draft';
+  status: "active" | "closed" | "draft";
+  views: number;
+  employerId: string;
+  keywords: string[];
 }
 
 export interface Candidate {
   id: string;
+  userId: string;
+  headline: string;
   name: string;
   email: string;
   title: string;
   location: string;
-  experience: string;
   skills: string[];
+  experience: Experience[];
+  education: Education[];
+  cvs: CV[];
+  savedJobs: string[];
+  followedCompanies: string[];
+  settings: {
+    profileVisibility: boolean;
+    jobAlerts: boolean;
+  };
+  status: "active" | "inactive";
   avatar?: string;
-  resume?: string;
-  status: 'active' | 'inactive';
 }
 
 export interface Application {
   id: string;
   jobId: string;
   candidateId: string;
-  status: 'New' | 'Screening' | 'Interview' | 'Offer' | 'Hired' | 'Rejected' | 'Withdrawn';
+  status:
+    | "New"
+    | "Screening"
+    | "Interview"
+    | "Offer"
+    | "Hired"
+    | "Rejected"
+    | "Withdrawn";
   appliedDate: string;
   cvId?: string;
   coverLetter?: string;
@@ -144,21 +168,79 @@ export interface Application {
 export interface Company {
   id: string;
   name: string;
+  slug: string;
   industry: string;
   size: string;
-  location: string;
+  headquarters: string;
+  website: string;
   description: string;
-  logo?: string;
+  logo: string;
+  founded: string;
+  employees: number;
+  followers: number;
   jobs: number;
+  members: CompanyMember[];
+  socialLinks: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+  };
+  // Optional for places where location is referenced
+  location?: string;
 }
 
 export interface Interview {
   id: string;
   applicationId: string;
-  jobId: string;
-  candidateId: string;
+  // Optional fields referenced in UI components
+  jobId?: string;
+  candidateId?: string;
   date: string;
   time: string;
-  type: 'phone' | 'video' | 'in-person';
-  status: 'scheduled' | 'completed' | 'cancelled';
+  type: "phone" | "video" | "in-person";
+  status: "scheduled" | "completed" | "cancelled";
+  notes?: string;
+}
+
+export interface CompanyMember {
+  id: string;
+  userId: string;
+  role: "Company Admin" | "HR" | "Recruiter" | "Viewer";
+  joinedAt: string;
+}
+
+export interface ViolationReport {
+  id: string;
+  reporterId: string;
+  targetType: "job" | "user" | "company";
+  targetId: string;
+  reason: string;
+  status: "pending" | "resolved" | "dismissed";
+  createdAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  plan: "Free" | "Standard" | "Premium";
+  status: "active" | "cancelled" | "expired";
+  billingHistory: BillingRecord[];
+}
+
+export interface BillingRecord {
+  id: string;
+  date: string;
+  plan: string;
+  amount: number;
+  status: "paid" | "pending" | "failed";
+}
+
+export interface RefundRequest {
+  id: string;
+  userId: string;
+  plan: string;
+  reason: string;
+  amount: number;
+  status: "pending" | "approved" | "denied";
+  requestedAt: string;
 }
