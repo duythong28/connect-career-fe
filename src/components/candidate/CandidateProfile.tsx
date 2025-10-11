@@ -99,6 +99,7 @@ export function CandidateProfile() {
   const [selectedExperience, setSelectedExperience] = useState<
     ExperienceFormValuesFromEditor | undefined
   >(undefined);
+  const { user } = useAuth();
 
   const { data: profileData } = useQuery({
     queryKey: ["candidateProfile"],
@@ -234,7 +235,9 @@ export function CandidateProfile() {
                   <AvatarEditor
                     currentUrl={profileData.user.avatarUrl}
                     onUploaded={(url) => {
-                      mutate({ avatarUrl: url });
+                      queryClient.invalidateQueries({
+                        queryKey: ["candidateProfile"],
+                      });
                     }}
                   />
                 )}
@@ -450,11 +453,12 @@ export function CandidateProfile() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button size="sm" variant="outline">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(cv.file.url, "_blank")}
+                      >
                         <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>

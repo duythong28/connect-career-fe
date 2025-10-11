@@ -23,5 +23,5 @@ export interface User {
 }
 
 export interface ProfileResponse extends User {
-  role?: 'admin' | 'candidate' | 'companies' | 'employer';
+  role?: "admin" | "candidate" | "companies" | "employer";
 }

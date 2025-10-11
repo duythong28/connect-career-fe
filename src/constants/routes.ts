@@ -23,7 +23,7 @@ export const ROUTES = {
   // Company routes (accessed by candidates)
   COMPANY: {
     DASHBOARD: "/company/dashboard",
-    PROFILE: "/company/profile",
+    PROFILE: "/company/company",
     POST_JOB: "/company/post-job",
     JOBS: "/company/jobs",
     PIPELINE: "/company/pipeline",
