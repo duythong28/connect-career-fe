@@ -20,9 +20,9 @@ export const AppRoutes = () => {
       />
 
       <Route
-        path="/employer/*"
+        path="/company/*"
         element={
-          <ProtectedRoute allowedRoles={["employer"]}>
+          <ProtectedRoute allowedRoles={["candidate"]}>
             <EmployerRoutes />
           </ProtectedRoute>
         }

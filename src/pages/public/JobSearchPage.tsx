@@ -27,8 +27,11 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
-import { getCandidateJobs } from "@/api/endpoints/jobs.api";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  getCandidateJobs,
+  saveCandidateJobById,
+} from "@/api/endpoints/jobs.api";
 import { JobFilters } from "@/api/types/jobs.types";
 
 const JobSearchPage = () => {
@@ -45,14 +48,32 @@ const JobSearchPage = () => {
     limit: 20,
   });
 
-  const {
-    data: jobsData,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: jobsData, error } = useQuery({
     queryKey: ["jobs", searchFilters],
     queryFn: () => getCandidateJobs(searchFilters),
   });
+
+  const saveJobMutation = useMutation({
+    mutationFn: (id: string) => saveCandidateJobById(id),
+    onSuccess: () => {
+      toast({
+        title: "Saved",
+        description: "Job saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Save failed",
+        description: "Could not save job. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveJob = (id: string) => {
+    if (!id) return;
+    saveJobMutation.mutate(id);
+  };
 
   useEffect(() => {
     if (error) {
@@ -221,7 +242,6 @@ const JobSearchPage = () => {
               </CardContent>
             </Card>
 
-            {/* Recommended Jobs for Candidates */}
             {/* {candidate && (
               <Card>
                 <CardHeader>
@@ -318,7 +338,11 @@ const JobSearchPage = () => {
                                 </div>
 
                                 <div className="flex items-center space-x-2">
-                                  <Button variant="ghost" size="sm">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSaveJob(job.id)}
+                                  >
                                     <Heart
                                       className={`h-4 w-4 ${
                                         isSaved
@@ -410,18 +434,6 @@ const JobSearchPage = () => {
                   );
                 })}
             </div>
-            {/* 
-            {jobsData.total === 0 && (
-              <div className="text-center py-12">
-                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No jobs found
-                </h3>
-                <p className="text-gray-600">
-                  Try adjusting your search criteria or filters.
-                </p>
-              </div>
-            )} */}
           </div>
         </div>
       </div>

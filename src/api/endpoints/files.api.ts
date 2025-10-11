@@ -2,6 +2,7 @@ import axios from "../client/axios";
 import {
   CreateFileEntityDto,
   SignedUploadResponse,
+  UploadFileResponse,
 } from "../types/files.types";
 const API_URL = "/files";
 
@@ -43,8 +44,9 @@ const createFileEntity = async (data: CreateFileEntityDto) => {
   return await res.json();
 };
 
-const uploadFile = async ({ fileId, data }) => {
-  await axios.put(`${API_URL}/${fileId}`, data);
+const uploadFile = async ({ fileId, data }): Promise<UploadFileResponse> => {
+  const response = await axios.put(`${API_URL}/${fileId}`, data);
+  return response.data;
 };
 
 export { getSignUrl, createFileEntity, uploadFile };

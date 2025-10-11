@@ -27,7 +27,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       user.role === "candidate"
         ? "/candidate/dashboard"
         : user.role === "employer"
-        ? "/employer/dashboard"
+        ? "/company/dashboard"
         : "/admin/dashboard";
     return <Navigate to={dashboardPath} replace />;
   }

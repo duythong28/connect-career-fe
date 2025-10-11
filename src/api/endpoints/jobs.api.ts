@@ -1,6 +1,6 @@
 import axios from "../client/axios";
 
-import { JobFilters, JobsResponse } from "../types/jobs.types";
+import { JobFilters, JobsResponse, SavedJobsResponse } from "../types/jobs.types";
 
 const API_CANDIDATE_JOB_URL = "/candidates/jobs";
 
@@ -97,9 +97,12 @@ const saveCandidateJobById = async (id: string) => {
   return response.data;
 };
 
-const getCandidateSavedJobs = async () => {
+const getCandidateSavedJobs = async ({
+  limit,
+  page,
+}): Promise<SavedJobsResponse> => {
   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/saved`, {
-    params: { folder: "saved_jobs" },
+    params: { folder: "saved_jobs", limit, page },
   });
   return response.data;
 };

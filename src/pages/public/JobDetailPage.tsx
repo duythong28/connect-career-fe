@@ -9,54 +9,26 @@ import {
   Globe,
   CheckCircle,
   ArrowLeft,
-  Heart,
   Share,
-  MessageCircle,
 } from "lucide-react";
 
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Markdown } from "@/components/ui/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "@/hooks/use-toast";
-import { Application, Candidate, Company, Job, User } from "@/lib/types";
-import {
-  mockApplications,
-  mockCompanies,
-  mockExtendedCandidates,
-  mockJobs,
-  mockUsers,
-} from "@/lib/mock-data";
 import { useAuth } from "@/hooks/useAuth";
-import { calculateMatchingScore } from "@/lib/helpers";
 import { useQuery } from "@tanstack/react-query";
 import { getCandidateJobById } from "@/api/endpoints/jobs.api";
 import RenderMarkDown from "@/components/shared/RenderMarkDown";
+import ApplyJobDialog from "@/components/candidate/applications/ApplyJobDialog";
 
 const JobDetailPage = () => {
   const { user } = useAuth();
 
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const [users, setUsers] = useState<User[]>(mockUsers);
   const isApplied = false;
-  const [showApplyModal, setShowApplyModal] = useState(false);
-  const [selectedCvId, setSelectedCvId] = useState("");
-  const [coverLetter, setCoverLetter] = useState("");
-
   const { data: jobData } = useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
@@ -79,28 +51,6 @@ const JobDetailPage = () => {
       </div>
     );
   }
-
-  const applyToJob = (jobId: string, cvId: string, coverLetter?: string) => {
-    toast({
-      title: "Application submitted",
-      description: "Your application has been sent to the employer.",
-    });
-  };
-
-  const handleApply = () => {
-    if (!selectedCvId) {
-      toast({
-        title: "Please select a CV",
-        description: "You must select a CV to apply for this job.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setShowApplyModal(false);
-    setSelectedCvId("");
-    setCoverLetter("");
-  };
 
   const stripHtml = (html: string) => {
     const tmp = document.createElement("DIV");
@@ -126,9 +76,9 @@ const JobDetailPage = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={jobData.companyLogo} />
+                      <AvatarImage src={jobData?.companyLogo} />
                       <AvatarFallback className="text-2xl">
-                        {jobData.companyName.charAt(0)}
+                        {jobData?.companyName?.charAt(0) || "C"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -212,13 +162,9 @@ const JobDetailPage = () => {
             <Card>
               <CardContent className="p-6">
                 {user && !isApplied ? (
-                  <Button
-                    onClick={() => setShowApplyModal(true)}
-                    className="w-full mb-4"
-                    size="lg"
-                  >
-                    Apply for this Job
-                  </Button>
+                  <div className="mb-4">
+                    <ApplyJobDialog jobId={id ?? ""} />
+                  </div>
                 ) : isApplied ? (
                   <Button disabled className="w-full mb-4" size="lg">
                     <CheckCircle className="h-4 w-4 mr-2" />
@@ -385,77 +331,6 @@ const JobDetailPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Apply Modal */}
-      <Dialog open={showApplyModal} onOpenChange={setShowApplyModal}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Apply for {jobData.title}</DialogTitle>
-            <DialogDescription>
-              Submit your application to {jobData.companyName}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div>
-              <Label className="text-base font-medium mb-3 block">
-                Select CV
-              </Label>
-              {/* <RadioGroup value={selectedCvId} onValueChange={setSelectedCvId}>
-                {candidate?.cvs.map((cv) => (
-                  <div
-                    key={cv.id}
-                    className="flex items-center space-x-3 p-3 border rounded-lg"
-                  >
-                    <RadioGroupItem value={cv.id} id={cv.id} />
-                    <Label htmlFor={cv.id} className="flex-1 cursor-pointer">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{cv.name}</p>
-                          <p className="text-sm text-gray-600">
-                            Uploaded {cv.uploadedAt}
-                          </p>
-                        </div>
-                        {cv.isDefault && (
-                          <Badge variant="secondary" className="text-xs">
-                            Default
-                          </Badge>
-                        )}
-                      </div>
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup> */}
-            </div>
-
-            <div>
-              <Label
-                htmlFor="coverLetter"
-                className="text-base font-medium mb-3 block"
-              >
-                Cover Letter (Optional)
-              </Label>
-              <Textarea
-                id="coverLetter"
-                placeholder="Tell the employer why you're interested in this position..."
-                value={coverLetter}
-                onChange={(e) => setCoverLetter(e.target.value)}
-                rows={6}
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowApplyModal(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleApply}>Submit Application</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

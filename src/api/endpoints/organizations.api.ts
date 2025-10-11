@@ -1,5 +1,9 @@
 import axios from "../client/axios";
-import { Company, CompanyFilters } from "../types/organizations.types";
+import {
+  Company,
+  CompanyFilters,
+  OrganizationCreateDto,
+} from "../types/organizations.types";
 
 const API_URL = "/organizations";
 
@@ -20,4 +24,14 @@ const searchOrganizations = async (): Promise<Company[]> => {
   return response.data;
 };
 
-export { getOrganizations, getOrganizationById, searchOrganizations };
+const createOrganization = async (data: OrganizationCreateDto) => {
+  const response = await axios.post(`${API_URL}`, data);
+  return response.data;
+};
+
+export {
+  getOrganizations,
+  getOrganizationById,
+  searchOrganizations,
+  createOrganization,
+};

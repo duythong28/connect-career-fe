@@ -148,3 +148,22 @@ export interface JobApplication {
   coverLetter?: string;
   resumeUrl?: string;
 }
+
+export interface SavedJob {
+  id: string;
+  userId: string;
+  jobId: string;
+  job: Job;
+  notes: string | null;
+  folderName: string;
+  savedAt: string;
+  updatedAt: string;
+}
+
+export interface SavedJobsResponse {
+  data: SavedJob[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

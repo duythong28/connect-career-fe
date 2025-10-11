@@ -11,6 +11,9 @@ import type {
   CreateFileEntityDto,
   SignedUploadResponse,
 } from "@/api/types/files.types";
+import { useMutation } from "@tanstack/react-query";
+import { updateUserInfo } from "@/api/endpoints/users.api";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   currentUrl?: string | null;
@@ -21,6 +24,10 @@ interface Props {
 export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const { setUser, user } = useAuth();
+  const { mutate: updateUserInfoMutate } = useMutation({
+    mutationFn: updateUserInfo,
+  });
 
   const handleClick = () => {
     if (disabled) return;
@@ -52,16 +59,26 @@ export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
       // 3) Send to backend which will perform the signed upload and return file entity
       const result = await createFileEntity(dto);
 
-      await uploadFile({ fileId: signed.fileId, data: result });
-
-      // 4) Use backend response (expecting file URL or similar)
-    //   const publicUrl =
-    //     (result as any).fileUrl || (result as any).url || currentUrl || "";
-      toast({
-        title: "Avatar uploaded",
-        description: "Avatar uploaded successfully.",
+      const uploadFileResonse = await uploadFile({
+        fileId: signed.fileId,
+        data: result,
       });
-    //   if (publicUrl) onUploaded(publicUrl);
+      if (uploadFileResonse?.url) {
+        updateUserInfoMutate(
+          { avatarUrl: uploadFileResonse.url },
+          {
+            onSuccess(data) {
+              onUploaded(uploadFileResonse.url);
+              setUser({ ...user, avatar: data.avatarUrl });
+              toast({
+                title: "Avatar uploaded",
+                description: "Avatar uploaded successfully.",
+              });
+            },
+          }
+        );
+      }
+      //   if (publicUrl) onUploaded(publicUrl);
     } catch (err: any) {
       console.error(err);
       toast({
