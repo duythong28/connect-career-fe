@@ -32,7 +32,7 @@ import {
   mockUsers,
 } from "@/lib/mock-data";
 import { useAuth } from "@/hooks/useAuth";
-import { getCompany } from "@/api/endpoints/companies.api";
+import { getOrganizationById } from "@/api/endpoints/organizations.api";
 import { useQuery } from "@tanstack/react-query";
 
 const CompanyProfilePage = () => {
@@ -41,7 +41,7 @@ const CompanyProfilePage = () => {
 
   const { data: companydata } = useQuery({
     queryKey: ["company", slug],
-    queryFn: () => getCompany(slug!),
+    queryFn: () => getOrganizationById(slug!),
   });
 
   const isFollowing = false;

@@ -28,7 +28,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { getJobs } from "@/api/endpoints/jobs.api";
+import { getCandidateJobs } from "@/api/endpoints/jobs.api";
 import { JobFilters } from "@/api/types/jobs.types";
 
 const JobSearchPage = () => {
@@ -36,10 +36,11 @@ const JobSearchPage = () => {
   const [searchFilters, setSearchFilters] = useState<JobFilters>({
     search: "",
     location: "",
-    type: "",
+    type: undefined,
     salaryMin: 0,
     salaryMax: 200000,
-    industry: "",
+    industry: undefined,
+    seniorityLevel: "",
     page: 1,
     limit: 20,
   });
@@ -50,7 +51,7 @@ const JobSearchPage = () => {
     error,
   } = useQuery({
     queryKey: ["jobs", searchFilters],
-    queryFn: () => getJobs({ search: searchFilters.search }),
+    queryFn: () => getCandidateJobs(searchFilters),
   });
 
   useEffect(() => {
@@ -81,13 +82,14 @@ const JobSearchPage = () => {
                   <Label>Keyword</Label>
                   <Input
                     placeholder="Job title, skills..."
-                    value={searchFilters.search}
-                    onChange={(e) => {
-                      setSearchFilters({
-                        ...searchFilters,
+                    value={searchFilters.search ?? ""}
+                    onChange={(e) =>
+                      setSearchFilters((prev) => ({
+                        ...prev,
                         search: e.target.value,
-                      });
-                    }}
+                        page: 1,
+                      }))
+                    }
                   />
                 </div>
 
@@ -95,12 +97,13 @@ const JobSearchPage = () => {
                   <Label>Location</Label>
                   <Input
                     placeholder="City, state, or remote"
-                    value={searchFilters.location}
+                    value={searchFilters.location ?? ""}
                     onChange={(e) =>
-                      setSearchFilters({
-                        ...searchFilters,
+                      setSearchFilters((prev) => ({
+                        ...prev,
                         location: e.target.value,
-                      })
+                        page: 1,
+                      }))
                     }
                   />
                 </div>
@@ -108,21 +111,27 @@ const JobSearchPage = () => {
                 <div>
                   <Label>Job Type</Label>
                   <Select
-                    value={searchFilters.type}
+                    value={searchFilters.type ?? ""}
                     onValueChange={(value) =>
-                      setSearchFilters({ ...searchFilters, type: value })
+                      setSearchFilters((prev) => ({
+                        ...prev,
+                        type: value,
+                        page: 1,
+                      }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="All types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All types</SelectItem>
-                      <SelectItem value="full-time">Full-time</SelectItem>
-                      <SelectItem value="part-time">Part-time</SelectItem>
+                      <SelectItem value="full_time">Full-time</SelectItem>
+                      <SelectItem value="part_time">Part-time</SelectItem>
+                      <SelectItem value="freelance">Freelance</SelectItem>
                       <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="remote">Remote</SelectItem>
+                      <SelectItem value="seasonal">Seasonal</SelectItem>
                       <SelectItem value="internship">Internship</SelectItem>
+                      <SelectItem value="remote">Remote</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -130,16 +139,19 @@ const JobSearchPage = () => {
                 <div>
                   <Label>Industry</Label>
                   <Select
-                    value={searchFilters.industry}
+                    value={searchFilters.industry ?? ""}
                     onValueChange={(value) =>
-                      setSearchFilters({ ...searchFilters, industry: value })
+                      setSearchFilters((prev) => ({
+                        ...prev,
+                        industry: value,
+                        page: 1,
+                      }))
                     }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="All industries" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All industries</SelectItem>
                       <SelectItem value="Technology">Technology</SelectItem>
                       <SelectItem value="AI & Machine Learning">
                         AI & Machine Learning
@@ -158,13 +170,17 @@ const JobSearchPage = () => {
                   <Label>Salary Range</Label>
                   <div className="px-2 py-4">
                     <Slider
-                      value={[searchFilters.salaryMin, searchFilters.salaryMax]}
+                      value={[
+                        searchFilters.salaryMin ?? 0,
+                        searchFilters.salaryMax ?? 200000,
+                      ]}
                       onValueChange={(value) =>
-                        setSearchFilters({
-                          ...searchFilters,
+                        setSearchFilters((prev) => ({
+                          ...prev,
                           salaryMin: value[0],
                           salaryMax: value[1],
-                        })
+                          page: 1,
+                        }))
                       }
                       max={200000}
                       min={0}
@@ -172,22 +188,30 @@ const JobSearchPage = () => {
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-gray-500 mt-2">
-                      <span>${searchFilters.salaryMin.toLocaleString()}</span>
-                      <span>${searchFilters.salaryMax.toLocaleString()}</span>
+                      <span>
+                        ${(searchFilters.salaryMin ?? 0).toLocaleString()}
+                      </span>
+                      <span>
+                        ${(searchFilters.salaryMax ?? 200000).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <Button
                   onClick={() =>
-                    setSearchFilters({
+                    setSearchFilters((prev) => ({
+                      ...prev,
                       search: "",
                       location: "",
-                      type: "",
+                      type: undefined,
                       salaryMin: 0,
                       salaryMax: 200000,
-                      industry: "",
-                    })
+                      industry: undefined,
+                      seniorityLevel: "",
+                      page: 1,
+                      limit: prev?.limit ?? 20,
+                    }))
                   }
                   variant="outline"
                   className="w-full"

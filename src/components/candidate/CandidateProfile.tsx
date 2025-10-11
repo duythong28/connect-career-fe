@@ -42,9 +42,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useQuery } from "@tanstack/react-query";
-import { getMyProfile } from "@/api/endpoints/candidates.api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getMyProfile, updateMyProfile } from "@/api/endpoints/candidates.api";
 import { getMyCvs } from "@/api/endpoints/cvs.api";
+import { useAuth } from "@/hooks/useAuth";
+import { SkillsEditor } from "./profile/SkillsEditor";
+import RenderMarkDown from "../shared/RenderMarkDown";
+import {
+  EducationEditor,
+  EducationFormValues,
+} from "./profile/EducationEditor";
+import {
+  ExperienceEditor,
+  ExperienceFormValues as ExperienceFormValuesFromEditor,
+} from "./profile/ExperienceEditor";
+import ProfileEditor, { ProfileFormValues } from "./profile/ProfileEditor";
+import AvatarEditor from "./profile/AvatarEditor";
 
 interface Experience {
   id: string;
@@ -77,8 +90,15 @@ interface CV {
 }
 
 export function CandidateProfile() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isMyProfile, setIsMyProfile] = useState(true);
+  const [educationDialogOpen, setEducationDialogOpen] = useState(false);
+  const [selectedEducation, setSelectedEducation] = useState<
+    EducationFormValues | undefined
+  >(undefined);
+  const [experienceDialogOpen, setExperienceDialogOpen] = useState(false);
+  const [selectedExperience, setSelectedExperience] = useState<
+    ExperienceFormValuesFromEditor | undefined
+  >(undefined);
 
   const { data: profileData } = useQuery({
     queryKey: ["candidateProfile"],
@@ -87,6 +107,37 @@ export function CandidateProfile() {
     },
   });
 
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending: isSkillsUpdating } = useMutation({
+    mutationFn: updateMyProfile,
+    onSuccess: () => {
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["candidateProfile"] });
+    },
+  });
+
+  const { mutate: mutateEducation, isPending: isEducationUpdating } =
+    useMutation({
+      mutationFn: async (data: EducationFormValues) => {
+        const formData = new FormData();
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null)
+            formData.append(key, String(value));
+        });
+        return data.id ? updateMyProfile(formData) : updateMyProfile(formData);
+      },
+      onSuccess: () => {
+        toast({
+          title: "Education saved",
+          description: "Your education has been updated.",
+        });
+        queryClient.invalidateQueries({ queryKey: ["candidateProfile"] });
+      },
+    });
   const { data: cvsData } = useQuery({
     queryKey: ["candidateCvs"],
     queryFn: async () => {
@@ -94,34 +145,70 @@ export function CandidateProfile() {
     },
   });
 
-  if (!profileData) return <div>Loading...</div>;
+  const handleEducationSubmit = (data: EducationFormValues) => {
+    const current = profileData.educations ?? [];
+    let newEducations: (EducationFormValues & { id?: string })[] = [];
 
-  const handleSaveProfile = async () => {
-    setIsLoading(true);
-    try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
-      });
-      setIsEditing(false);
-    } catch (error) {
-      toast({
-        title: "Error updating profile",
-        description: "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    if (data.id) {
+      newEducations = current.map((e) =>
+        e.id === data.id ? { ...e, ...data } : e
+      );
+    } else {
+      newEducations = [...current, data];
     }
+
+    mutate({ educations: newEducations });
+    setSelectedEducation(undefined);
+    setEducationDialogOpen(false);
   };
 
-  const removeSkill = (skill: string) => {
-    // setProfile({
-    //   ...profile,
-    //   skills: profile.skills.filter((s) => s !== skill),
-    // });
+  const handleDeleteEducation = (id: string) => {
+    const current = profileData.educations ?? [];
+    const newEducations = current.filter((e) => e.id !== id);
+    mutate({ educations: newEducations });
+    toast({ title: "Education deleted" });
+    queryClient.invalidateQueries({ queryKey: ["candidateProfile"] });
+  };
+
+  if (!profileData) return <div>Loading...</div>;
+
+  const handleSkillsUpdate = (skills: string[]) => {
+    const payload = {
+      skills: skills,
+    };
+
+    mutate(payload);
+  };
+
+  const handleExperienceSubmit = (data: ExperienceFormValuesFromEditor) => {
+    const current = profileData.workExperiences ?? [];
+    let newExperiences: (ExperienceFormValuesFromEditor & { id?: string })[] =
+      [];
+
+    if (data.id) {
+      newExperiences = current.map((e) =>
+        e.id === data.id ? { ...e, ...data } : e
+      );
+    } else {
+      newExperiences = [...current, data];
+    }
+
+    mutate({ workExperiences: newExperiences });
+    setSelectedExperience(undefined);
+    setExperienceDialogOpen(false);
+  };
+
+  const handleDeleteExperience = (id: string) => {
+    const current = profileData.workExperiences ?? [];
+    const newExperiences = current.filter((e) => e.id !== id);
+
+    mutate({ workExperiences: newExperiences });
+    toast({ title: "Experience deleted" });
+    queryClient.invalidateQueries({ queryKey: ["candidateProfile"] });
+  };
+
+  const handleProfileSave = (payload: Partial<ProfileFormValues>) => {
+    mutate(payload);
   };
 
   return (
@@ -129,184 +216,50 @@ export function CandidateProfile() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">My Profile</h1>
-        <Button
-          onClick={isEditing ? handleSaveProfile : () => setIsEditing(true)}
-          disabled={isLoading}
-        >
-          {isEditing ? (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading ? "Saving..." : "Save Changes"}
-            </>
-          ) : (
-            <>
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Profile
-            </>
-          )}
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Basic Info */}
         <div className="space-y-6">
-          {/* Profile Card */}
           <Card>
             <CardHeader className="text-center">
               <div className="relative mx-auto">
                 <Avatar className="w-24 h-24 mx-auto">
-                  <AvatarImage src={profileData.user.avatarUrl} />
+                  <AvatarImage src={profileData.user.avatarUrl ?? undefined} />
                   <AvatarFallback>
                     <User />
                   </AvatarFallback>
                 </Avatar>
-                {isEditing && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
-                  >
-                    <Camera className="w-4 h-4" />
-                  </Button>
+
+                {isMyProfile && (
+                  <AvatarEditor
+                    currentUrl={profileData.user.avatarUrl}
+                    onUploaded={(url) => {
+                      mutate({ avatarUrl: url });
+                    }}
+                  />
                 )}
               </div>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={profileData.user.fullName}
-                    className="text-center text-xl font-bold"
-                  />
-                  {/* <Input
-                    value={profile.title}
-                    onChange={(e) =>
-                      setProfile({ ...profile, title: e.target.value })
-                    }
-                    className="text-center"
-                  /> */}
-                </div>
-              ) : (
-                <>
-                  <CardTitle className="text-xl">
-                    {profileData.user.fullName}
-                  </CardTitle>
-                  {/* <CardDescription className="text-lg">
-                    {profile.title}
-                  </CardDescription> */}
-                </>
-              )}
             </CardHeader>
             <CardContent className="space-y-4">
-              {isEditing ? (
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Mail className="w-4 h-4" />
-                    <Input
-                      value={profileData.email}
-                      // onChange={(e) =>
-                      //   setProfile({ ...profile, email: e.target.value })
-                      // }
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4" />
-                    <Input
-                      value={profileData.phone}
-                      // onChange={(e) =>
-                      //   setProfile({ ...profile, phone: e.target.value })
-                      // }
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-4 h-4" />
-                    <Input
-                      value={profileData.address}
-                      // onChange={(e) =>
-                      //   setProfile({ ...profile, location: e.target.value })
-                      // }
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Mail className="w-4 h-4" />
-                    <span>{profileData.email}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Phone className="w-4 h-4" />
-                    <span>{profileData.phone}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="w-4 h-4" />
-                    <span>{profileData.address}</span>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Social Links */}
-              <div className="space-y-2">
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Linkedin className="w-4 h-4" />
-                      <Input
-                        placeholder="LinkedIn URL"
-                        value={profileData.socialLinks.linkedin}
-                        // onChange={(e) =>
-                        //   setProfile({
-                        //     ...profile,
-                        //     linkedinUrl: e.target.value,
-                        //   })
-                        // }
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Github className="w-4 h-4" />
-                      <Input
-                        placeholder="GitHub URL"
-                        value={profileData.socialLinks.github || ""}
-                        // onChange={(e) =>
-                        //   setProfile({ ...profile, githubUrl: e.target.value })
-                        // }
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Globe className="w-4 h-4" />
-                      <Input
-                        placeholder="Website URL"
-                        value={profileData.socialLinks.portfolio || ""}
-                        // onChange={(e) =>
-                        //   setProfile({ ...profile, website: e.target.value })
-                        // }
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex space-x-2">
-                    {profileData.socialLinks.linkedin && (
-                      <Button size="sm" variant="outline" className="p-2">
-                        <Linkedin className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {profileData.socialLinks.github && (
-                      <Button size="sm" variant="outline" className="p-2">
-                        <Github className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {profileData.socialLinks.portfolio && (
-                      <Button size="sm" variant="outline" className="p-2">
-                        <Globe className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
+              <ProfileEditor
+                data={{
+                  user: {
+                    fullName: `${profileData.user.firstName} ${profileData.user.lastName}`,
+                  },
+                  email: profileData.email ?? null,
+                  phone: profileData.phone ?? null,
+                  address: profileData.address ?? null,
+                  socialLinks: {
+                    linkedin: profileData.socialLinks?.linkedin ?? null,
+                    github: profileData.socialLinks?.github ?? null,
+                    portfolio: profileData.socialLinks?.portfolio ?? null,
+                  },
+                }}
+                onSave={handleProfileSave}
+                isEditable={isMyProfile}
+              />
             </CardContent>
           </Card>
-
-          {/* Skills Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -315,66 +268,16 @@ export function CandidateProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {profileData.skills.map((skill) => (
-                  <Badge
-                    key={skill}
-                    variant="secondary"
-                    className="flex items-center gap-1"
-                  >
-                    {skill}
-                    {isEditing && (
-                      <button
-                        onClick={() => removeSkill(skill)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-              {/* {isEditing && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add skill"
-                    value={newSkill}
-                    onChange={(e) => setNewSkill(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && addSkill()}
-                  />
-                  <Button size="sm" onClick={addSkill}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              )} */}
+              <SkillsEditor
+                skills={profileData.skills}
+                isEditable={isMyProfile}
+                onUpdate={handleSkillsUpdate}
+              />
+              {isSkillsUpdating && <div>Updating skills...</div>}
             </CardContent>
           </Card>
         </div>
-
-        {/* Right Column - Detailed Info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* About */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>About</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isEditing ? (
-                <Textarea
-                  value={profileData.bio}
-                  onChange={(e) =>
-                    setProfile({ ...profile, bio: e.target.value })
-                  }
-                  rows={4}
-                  placeholder="Tell us about yourself..."
-                />
-              ) : (
-                <p className="text-muted-foreground">{profile.bio}</p>
-              )}
-            </CardContent>
-          </Card> */}
-
-          {/* Experience */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -382,8 +285,14 @@ export function CandidateProfile() {
                   <Briefcase className="w-5 h-5 mr-2" />
                   Experience
                 </div>
-                {isEditing && (
-                  <Button size="sm">
+                {isMyProfile && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedExperience(undefined);
+                      setExperienceDialogOpen(true);
+                    }}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Experience
                   </Button>
@@ -404,21 +313,43 @@ export function CandidateProfile() {
                         {exp.isCurrent ? "Present" : exp.endDate}
                       </p>
                     </div>
-                    {isEditing && (
-                      <Button size="sm" variant="outline">
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                    {isMyProfile && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedExperience(
+                              exp as ExperienceFormValuesFromEditor
+                            );
+                            setExperienceDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteExperience(exp.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {exp.description}
+                  <p className="mt-2">
+                    <RenderMarkDown content={exp.description} />
                   </p>
                 </div>
               ))}
+              <ExperienceEditor
+                open={experienceDialogOpen}
+                onOpenChange={setExperienceDialogOpen}
+                initialData={selectedExperience}
+                onSubmit={handleExperienceSubmit}
+              />
             </CardContent>
           </Card>
-
-          {/* Education */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -426,8 +357,14 @@ export function CandidateProfile() {
                   <GraduationCap className="w-5 h-5 mr-2" />
                   Education
                 </div>
-                {isEditing && (
-                  <Button size="sm">
+                {isMyProfile && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setSelectedEducation(undefined);
+                      setEducationDialogOpen(true);
+                    }}
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Education
                   </Button>
@@ -450,18 +387,39 @@ export function CandidateProfile() {
                         {edu.isCurrent ? "Present" : edu.graduationDate}
                       </p>
                     </div>
-                    {isEditing && (
-                      <Button size="sm" variant="outline">
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                    {isMyProfile && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEducation(edu);
+                            setEducationDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteEducation(edu.id)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
               ))}
+              <EducationEditor
+                open={educationDialogOpen}
+                onOpenChange={setEducationDialogOpen}
+                initialData={selectedEducation}
+                onSubmit={handleEducationSubmit}
+              />
+              {isEducationUpdating && <div>Saving...</div>}
             </CardContent>
           </Card>
-
-          {/* CVs */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -476,7 +434,7 @@ export function CandidateProfile() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {cvsData.data &&
+              {cvsData?.data &&
                 cvsData.data.map((cv) => (
                   <div
                     key={cv.id}
