@@ -42,7 +42,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { calculateMatchingScore } from "@/lib/helpers";
 import { useQuery } from "@tanstack/react-query";
-import { getJob } from "@/api/endpoints/jobs.api";
+import { getCandidateJobById } from "@/api/endpoints/jobs.api";
+import RenderMarkDown from "@/components/shared/RenderMarkDown";
 
 const JobDetailPage = () => {
   const { user } = useAuth();
@@ -59,7 +60,7 @@ const JobDetailPage = () => {
   const { data: jobData } = useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
-      return await getJob(id);
+      return await getCandidateJobById(id);
     },
   });
 
@@ -105,40 +106,6 @@ const JobDetailPage = () => {
     const tmp = document.createElement("DIV");
     tmp.innerHTML = html;
     return tmp.textContent || tmp.innerText || "";
-  };
-
-  const formatJobDescription = (html: string) => {
-    // Create a temporary DOM element to parse HTML properly
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = html;
-
-    // Extract only the main content div
-    const mainContent = tempDiv.querySelector(".show-more-less-html__markup");
-
-    if (!mainContent) {
-      // Fallback if structure is different
-      return html
-        .replace(/<button[^>]*>.*?<\/button>/gs, "")
-        .replace(/<icon[^>]*>.*?<\/icon>/gs, "")
-        .replace(/class="[^"]*"/g, "")
-        .replace(/<section[^>]*>/g, "<div>")
-        .replace(/<\/section>/g, "</div>");
-    }
-
-    return (
-      mainContent.innerHTML
-        // Remove LinkedIn specific classes
-        .replace(/class="[^"]*"/g, "")
-        // Clean up HTML entities
-        .replace(/&apos;/g, "'")
-        .replace(/&#x2019;/g, "'")
-        // Ensure proper list formatting
-        .replace(/<li>\s*/g, "<li>")
-        .replace(/\s*<\/li>/g, "</li>")
-        // Fix spacing issues
-        .replace(/<br><br>/g, "</p><p>")
-        .trim()
-    );
   };
 
   return (
@@ -221,26 +188,7 @@ const JobDetailPage = () => {
                     <h3 className="text-xl font-semibold mb-4">
                       Job Description
                     </h3>
-                    {/* <Markdown content={jobData.description} /> */}
-                    <div
-                      className="prose prose-sm max-w-none text-gray-700 
-               [&>h1]:text-xl [&>h1]:font-bold [&>h1]:mb-4 [&>h1]:mt-6
-               [&>h2]:text-lg [&>h2]:font-semibold [&>h2]:mb-3 [&>h2]:mt-5
-               [&>h3]:text-base [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:mt-4
-               [&>p]:mb-4 [&>p]:leading-relaxed
-               [&>ul]:mb-4 [&>ul]:pl-6 [&>ul]:list-disc [&>ul]:space-y-2
-               [&>ol]:mb-4 [&>ol]:pl-6 [&>ol]:list-decimal [&>ol]:space-y-2
-               [&>li]:mb-1 [&>li]:leading-relaxed
-               [&>strong]:font-semibold [&>strong]:text-gray-900
-               [&>br]:mb-2
-               [&>a]:text-blue-600 [&>a]:underline [&>a]:hover:text-blue-800
-               [&_div]:mb-3
-               [&_.show-more-less-html__markup]:space-y-3
-               [&_section]:space-y-4"
-                      dangerouslySetInnerHTML={{
-                        __html: formatJobDescription(jobData.description),
-                      }}
-                    />
+                    <RenderMarkDown content={jobData.description} />
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -320,8 +268,11 @@ const JobDetailPage = () => {
                       ...
                     </p> */}
                     <p className="text-gray-700 text-sm mb-4">
-                      {stripHtml(jobData.organization.shortDescription).substring(0, 150)}
-                      {stripHtml(jobData.organization.shortDescription).length > 150 && "..."}
+                      {stripHtml(
+                        jobData.organization.shortDescription
+                      ).substring(0, 150)}
+                      {stripHtml(jobData.organization.shortDescription).length >
+                        150 && "..."}
                     </p>
                   </div>
 
