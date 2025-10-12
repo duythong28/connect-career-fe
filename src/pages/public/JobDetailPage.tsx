@@ -76,7 +76,12 @@ const JobDetailPage = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={jobData?.companyLogo} />
+                      <AvatarImage
+                        src={
+                          jobData?.organization?.logoFile?.url ??
+                          jobData?.companyLogo
+                        }
+                      />
                       <AvatarFallback className="text-2xl">
                         {jobData?.companyName?.charAt(0) || "C"}
                       </AvatarFallback>

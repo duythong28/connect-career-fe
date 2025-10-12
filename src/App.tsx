@@ -5,16 +5,19 @@ import { queryClient } from "@/lib/queryClient";
 import { AppRoutes } from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
 import { AppLayout } from "./components/layout/AppLayout";
+import { OrganizationProvider } from "./context/OrganizationContext";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
-          <AppLayout>
-            <AppRoutes />
-          </AppLayout>
-          <Toaster />
+          <OrganizationProvider>
+            <AppLayout>
+              <AppRoutes />
+            </AppLayout>
+            <Toaster />
+          </OrganizationProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>

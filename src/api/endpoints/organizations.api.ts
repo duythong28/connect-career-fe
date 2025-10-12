@@ -24,8 +24,29 @@ const searchOrganizations = async (): Promise<Company[]> => {
   return response.data;
 };
 
-const createOrganization = async (data: OrganizationCreateDto) => {
-  const response = await axios.post(`${API_URL}`, data);
+const createOrganization = async (data: Partial<OrganizationCreateDto>) => {
+  const tempt = {
+    organizationType: "other",
+    industryId: "091347b2-f023-4bf0-aa63-d3e968b3d0e8",
+    overtimePolicy: "other",
+    workScheduleTypes: ["other"],
+    ...data,
+  };
+
+  const response = await axios.post(`${API_URL}`, tempt);
+  return response.data;
+};
+
+const updateOrganization = async (
+  id: string,
+  data: Partial<OrganizationCreateDto>
+) => {
+  const response = await axios.patch(`${API_URL}/${id}`, data);
+  return response.data;
+};
+
+const getMyOrganizations = async (): Promise<Company[]> => {
+  const response = await axios.get(`${API_URL}/me`);
   return response.data;
 };
 
@@ -34,4 +55,6 @@ export {
   getOrganizationById,
   searchOrganizations,
   createOrganization,
+  updateOrganization,
+  getMyOrganizations,
 };

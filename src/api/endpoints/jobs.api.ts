@@ -1,12 +1,17 @@
 import axios from "../client/axios";
 
-import { JobFilters, JobsResponse, SavedJobsResponse } from "../types/jobs.types";
+import {
+  Job,
+  JobFilters,
+  JobsResponse,
+  SavedJobsResponse,
+} from "../types/jobs.types";
 
 const API_CANDIDATE_JOB_URL = "/candidates/jobs";
 
 const API_URL = "/jobs";
 
-const API_RECRUITER_JOB_URL = "/recruiter/jobs";
+const API_RECRUITER_JOB_URL = "/recruiters/jobs";
 
 function cleanParams(filters?: JobFilters) {
   if (!filters) return {};
@@ -66,9 +71,20 @@ const getCandidateJobSearchByKeyword = async () => {
   return response.data;
 };
 
-const getCandidateJobsByOrganization = async (id: string) => {
+const getCandidateJobsByOrganization = async ({
+  id,
+  limit,
+  page,
+}: {
+  id: string;
+  limit: number;
+  page: number;
+}): Promise<Job[]> => {
   const response = await axios.get(
-    `${API_CANDIDATE_JOB_URL}/organization/${id}`
+    `${API_CANDIDATE_JOB_URL}/organizations/${id}`,
+    {
+      params: { limit, page },
+    }
   );
   return response.data;
 };

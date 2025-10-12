@@ -18,21 +18,22 @@ export const ROUTES = {
     MESSAGES: "/candidate/messages",
     CHATBOT: "/candidate/chatbot",
     SETTINGS: "/candidate/settings",
+    CREATE_ORGANIZATION: "/candidate/create-organization",
   },
 
   // Company routes (accessed by candidates)
   COMPANY: {
-    DASHBOARD: "/company/dashboard",
-    PROFILE: "/company/company",
-    POST_JOB: "/company/post-job",
-    JOBS: "/company/jobs",
-    PIPELINE: "/company/pipeline",
-    CANDIDATES: "/company/candidates",
-    INTERVIEWS: "/company/interviews",
-    MESSAGES: "/company/messages",
-    CHATBOT: "/company/chatbot",
-    ANALYTICS: "/company/analytics",
-    SETTINGS: "/company/settings",
+    DASHBOARD: "/dashboard",
+    PROFILE: "/company",
+    POST_JOB: "/post-job",
+    JOBS: "/jobs",
+    PIPELINE: "/pipeline",
+    CANDIDATES: "/candidates",
+    INTERVIEWS: "/interviews",
+    MESSAGES: "/messages",
+    CHATBOT: "/chatbot",
+    ANALYTICS: "/analytics",
+    SETTINGS: "/settings",
   },
 
   // Admin routes

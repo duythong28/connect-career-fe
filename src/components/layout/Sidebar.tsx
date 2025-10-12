@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   Home,
   User,
@@ -23,14 +23,17 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
+import { useOrganization } from "@/context/OrganizationContext";
 
 const Sidebar = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useAuth();
+  const { myOrganizations } = useOrganization();
+  const match = currentPath.match(/^\/company\/([^/]+)/);
+  const companyId = match ? match[1] : undefined;
 
-  // Listen for sidebar toggle events from Header
   useEffect(() => {
     const handleSidebarToggle = () => {
       const stored = localStorage.getItem("sidebarOpen");
@@ -38,7 +41,7 @@ const Sidebar = () => {
     };
 
     window.addEventListener("sidebarToggle", handleSidebarToggle);
-    handleSidebarToggle(); // Initial load
+    handleSidebarToggle();
 
     return () => {
       window.removeEventListener("sidebarToggle", handleSidebarToggle);
@@ -49,7 +52,11 @@ const Sidebar = () => {
     { title: "Dashboard", url: ROUTES.CANDIDATE.DASHBOARD, icon: Home },
     { title: "My Profile", url: ROUTES.CANDIDATE.PROFILE, icon: User },
     { title: "Job Search", url: ROUTES.JOBS, icon: Search },
-    { title: "Applications", url: ROUTES.CANDIDATE.APPLICATIONS, icon: FileText },
+    {
+      title: "Applications",
+      url: ROUTES.CANDIDATE.APPLICATIONS,
+      icon: FileText,
+    },
     { title: "Interviews", url: ROUTES.CANDIDATE.INTERVIEWS, icon: Calendar },
     { title: "Saved Jobs", url: ROUTES.CANDIDATE.SAVED_JOBS, icon: Heart },
     { title: "Messages", url: ROUTES.CANDIDATE.MESSAGES, icon: MessageCircle },
@@ -57,18 +64,62 @@ const Sidebar = () => {
     { title: "Settings", url: ROUTES.CANDIDATE.SETTINGS, icon: Settings },
   ];
 
-  const getCompanyMenuItems = () => [
-    { title: "Company Dashboard", url: ROUTES.COMPANY.DASHBOARD, icon: Home },
-    { title: "Company Profile", url: ROUTES.COMPANY.PROFILE, icon: Building2 },
-    { title: "Post New Job", url: ROUTES.COMPANY.POST_JOB, icon: Plus },
-    { title: "My Jobs", url: ROUTES.COMPANY.JOBS, icon: Briefcase },
-    { title: "Pipeline", url: ROUTES.COMPANY.PIPELINE, icon: Users },
-    { title: "Find Candidates", url: ROUTES.COMPANY.CANDIDATES, icon: Search },
-    { title: "Interviews", url: ROUTES.COMPANY.INTERVIEWS, icon: Calendar },
-    { title: "Messages", url: ROUTES.COMPANY.MESSAGES, icon: MessageCircle },
-    { title: "Recruiter Assistant", url: ROUTES.COMPANY.CHATBOT, icon: Brain },
-    { title: "Analytics", url: ROUTES.COMPANY.ANALYTICS, icon: BarChart3 },
-    { title: "Settings", url: ROUTES.COMPANY.SETTINGS, icon: Settings },
+  const getCompanyMenuItems = (id: string) => [
+    {
+      title: "Company Dashboard",
+      url: "/company/" + id + ROUTES.COMPANY.DASHBOARD,
+      icon: Home,
+    },
+    {
+      title: "Company Profile",
+      url: "/company/" + id + ROUTES.COMPANY.PROFILE,
+      icon: Building2,
+    },
+    {
+      title: "Post New Job",
+      url: "/company/" + id + ROUTES.COMPANY.POST_JOB,
+      icon: Plus,
+    },
+    {
+      title: "My Jobs",
+      url: "/company/" + id + ROUTES.COMPANY.JOBS,
+      icon: Briefcase,
+    },
+    {
+      title: "Pipeline",
+      url: "/company/" + id + ROUTES.COMPANY.PIPELINE,
+      icon: Users,
+    },
+    {
+      title: "Find Candidates",
+      url: "/company/" + id + ROUTES.COMPANY.CANDIDATES,
+      icon: Search,
+    },
+    {
+      title: "Interviews",
+      url: "/company/" + id + ROUTES.COMPANY.INTERVIEWS,
+      icon: Calendar,
+    },
+    {
+      title: "Messages",
+      url: "/company/" + id + ROUTES.COMPANY.MESSAGES,
+      icon: MessageCircle,
+    },
+    {
+      title: "Recruiter Assistant",
+      url: "/company/" + id + ROUTES.COMPANY.CHATBOT,
+      icon: Brain,
+    },
+    {
+      title: "Analytics",
+      url: "/company/" + id + ROUTES.COMPANY.ANALYTICS,
+      icon: BarChart3,
+    },
+    {
+      title: "Settings",
+      url: "/company/" + id + ROUTES.COMPANY.SETTINGS,
+      icon: Settings,
+    },
   ];
 
   const getAdminMenuItems = () => [
@@ -76,25 +127,41 @@ const Sidebar = () => {
     { title: "User Management", url: ROUTES.ADMIN.USERS, icon: Users },
     { title: "Content Management", url: ROUTES.ADMIN.CONTENT, icon: FileText },
     { title: "Job Approvals", url: ROUTES.ADMIN.JOBS, icon: CheckCircle },
-    { title: "Company Management", url: ROUTES.ADMIN.COMPANIES, icon: Building2 },
-    { title: "Reports & Violations", url: ROUTES.ADMIN.REPORTS, icon: AlertTriangle },
-    { title: "Revenue Management", url: ROUTES.ADMIN.REVENUE, icon: DollarSign },
+    {
+      title: "Company Management",
+      url: ROUTES.ADMIN.COMPANIES,
+      icon: Building2,
+    },
+    {
+      title: "Reports & Violations",
+      url: ROUTES.ADMIN.REPORTS,
+      icon: AlertTriangle,
+    },
+    {
+      title: "Revenue Management",
+      url: ROUTES.ADMIN.REVENUE,
+      icon: DollarSign,
+    },
     { title: "Refunds", url: ROUTES.ADMIN.REFUNDS, icon: CreditCard },
     { title: "Analytics", url: ROUTES.ADMIN.ANALYTICS, icon: TrendingUp },
   ];
 
   const getMenuItems = () => {
     if (!user) return [];
-    
+
     // Admin users only see admin menu
     if (user.role === "admin") {
       return getAdminMenuItems();
     }
-    
+
     // Candidates can switch between candidate and company views
     // Determine which menu to show based on current path
-    if (currentPath.startsWith("/company")) {
-      return getCompanyMenuItems();
+    if (
+      currentPath.startsWith("/company/") &&
+      companyId &&
+      myOrganizations?.some((org) => String(org.id) === String(companyId))
+    ) {
+      return getCompanyMenuItems(companyId);
     } else {
       return getCandidateMenuItems();
     }
@@ -102,11 +169,11 @@ const Sidebar = () => {
 
   const getMenuTitle = () => {
     if (!user) return "";
-    
+
     if (user.role === "admin") {
       return "Admin Panel";
     }
-    
+
     if (currentPath.startsWith("/company")) {
       return "Company Management";
     } else {
@@ -132,10 +199,9 @@ const Sidebar = () => {
             <h2 className="text-lg font-semibold text-gray-900">{menuTitle}</h2>
             {user.role !== "admin" && (
               <p className="text-sm text-gray-500">
-                {currentPath.startsWith("/company") 
-                  ? "Manage your company and jobs" 
-                  : "Manage your profile and applications"
-                }
+                {currentPath.startsWith("/company")
+                  ? "Manage your company and jobs"
+                  : "Manage your profile and applications"}
               </p>
             )}
           </div>
@@ -172,7 +238,8 @@ const Sidebar = () => {
               <Link
                 to={ROUTES.CANDIDATE.DASHBOARD}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  !currentPath.startsWith("/company")
+                  currentPath.startsWith("/candidate") &&
+                  currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION
                     ? "bg-blue-50 text-blue-700 border border-blue-200"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
@@ -181,16 +248,31 @@ const Sidebar = () => {
                 Candidate View
               </Link>
               <Link
-                to={ROUTES.COMPANY.DASHBOARD}
+                to={ROUTES.CANDIDATE.CREATE_ORGANIZATION}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  currentPath.startsWith("/company")
-                    ? "bg-green-50 text-green-700 border border-green-200"
+                  currentPath.startsWith(ROUTES.CANDIDATE.CREATE_ORGANIZATION)
+                    ? "bg-blue-50 text-blue-700 border border-blue-200"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                <Building2 className="mr-3 h-4 w-4" />
-                Company View
+                <User className="mr-3 h-4 w-4" />
+                Create Organization
               </Link>
+              {myOrganizations &&
+                myOrganizations.map((org) => (
+                  <Link
+                    key={org.id}
+                    to={`/company/${org.id}/dashboard`}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      currentPath.startsWith(`/company/${org.id}`)
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    <Building2 className="mr-3 h-4 w-4" />
+                    {org.name} View
+                  </Link>
+                ))}
             </div>
           </div>
         )}
