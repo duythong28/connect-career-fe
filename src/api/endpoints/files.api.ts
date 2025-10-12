@@ -1,6 +1,7 @@
 import axios from "../client/axios";
 import {
   CreateFileEntityDto,
+  CreateFileEntityResponse,
   SignedUploadResponse,
   UploadFileResponse,
 } from "../types/files.types";
@@ -13,7 +14,9 @@ const getSignUrl = async (): Promise<SignedUploadResponse> => {
   return response.data;
 };
 
-const createFileEntity = async (data: CreateFileEntityDto) => {
+const createFileEntity = async (
+  data: CreateFileEntityDto
+): Promise<CreateFileEntityResponse> => {
   const form = new FormData();
   form.append("signature", data.signature);
   form.append("timestamp", String(data.timestamp));
