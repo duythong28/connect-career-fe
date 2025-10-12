@@ -1,56 +1,247 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
-  Briefcase,
-  Building2,
   Users,
   MapPin,
-  DollarSign,
-  Clock,
   Edit,
   Star,
   ArrowLeft,
-  UserPlus,
   ExternalLink,
+  Globe,
+  Tag,
 } from "lucide-react";
 
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Markdown } from "@/components/ui/markdown";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Candidate, Company, Job, User } from "@/lib/types";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  mockCandidates,
-  mockCompanies,
-  mockJobs,
-  mockUsers,
-} from "@/lib/mock-data";
-import { useAuth } from "@/hooks/useAuth";
-import { getOrganizationById } from "@/api/endpoints/organizations.api";
-import { useQuery } from "@tanstack/react-query";
+  getOrganizationById,
+  updateOrganization,
+  createOrganization,
+} from "@/api/endpoints/organizations.api";
+import {
+  getSignUrl,
+  createFileEntity,
+  uploadFile,
+} from "@/api/endpoints/files.api";
+
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ROUTES } from "@/constants/routes";
+
+type CompanyFormValues = {
+  name: string;
+  shortDescription: string;
+  longDescription: string;
+  website: string;
+  headquartersAddress: string;
+  organizationSize: string;
+  employeeCount?: number | "";
+  country: string;
+  city: string;
+  workingDaysCsv: string;
+  keywordsCsv: string;
+};
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  shortDescription: z.string().optional().nullable().default(""),
+  longDescription: z.string().optional().nullable().default(""),
+  website: z.string().url().optional().nullable().or(z.literal("")).default(""),
+  headquartersAddress: z.string().optional().nullable().default(""),
+  organizationSize: z.string().optional().nullable().default(""),
+  employeeCount: z
+    .union([z.number().int().nonnegative(), z.undefined(), z.null()])
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v === "" ? undefined : v))
+    .nullable(),
+  country: z.string().optional().nullable().default(""),
+  city: z.string().optional().nullable().default(""),
+  workingDaysCsv: z.string().optional().default(""),
+  keywordsCsv: z.string().optional().default(""),
+  logoUrl: z.string().optional().nullable().default(""),
+});
 
 const CompanyProfilePage = () => {
-  const { user } = useAuth();
-  const { slug } = useParams();
+  const { companyId } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [avatar, setAvatar] = useState(null);
+  const { pathname } = useLocation();
 
   const { data: companydata } = useQuery({
-    queryKey: ["company", slug],
-    queryFn: () => getOrganizationById(slug!),
+    queryKey: ["company", companyId],
+    queryFn: () => getOrganizationById(companyId!),
+    enabled: !!companyId,
   });
 
-  const isFollowing = false;
-  const isCompanyMember = false;
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(
+    pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION
+  );
 
-  const navigate = useNavigate();
+  const updateMut = useMutation({
+    mutationFn: (payload: { id: string; data: Partial<any> }) =>
+      updateOrganization(payload.id, payload.data),
+    onSuccess: (data) => {
+      toast({ title: "Company updated", description: "Company saved." });
+      queryClient.invalidateQueries({ queryKey: ["company", companyId] });
+      setEditMode(false);
+      setAvatar(null);
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Update failed",
+        description: err?.message || "Unable to save.",
+      });
+    },
+  });
 
-  if (!companydata) {
+  const createMut = useMutation({
+    mutationFn: (data: Partial<any>) => createOrganization(data),
+    onSuccess: (data) => {
+      toast({ title: "Company created", description: "Company saved." });
+      navigate("/company/" + data.id + ROUTES.COMPANY.DASHBOARD);
+      setEditMode(false);
+      setAvatar(null);
+      queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Creation failed",
+        description: err?.message || "Unable to create company.",
+      });
+    },
+  });
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: "",
+      shortDescription: "",
+      longDescription: "",
+      website: "",
+      headquartersAddress: "",
+      organizationSize: "",
+      employeeCount: "",
+      country: "",
+      city: "",
+      workingDaysCsv: "",
+      keywordsCsv: "",
+    },
+  });
+
+  // reset form when companydata loads/changes
+  useEffect(() => {
+    reset({
+      name: companydata?.name ?? "",
+      shortDescription: companydata?.shortDescription ?? "",
+      longDescription:
+        companydata?.longDescription ?? companydata?.longDescription ?? "",
+      website: companydata?.website ?? "",
+      headquartersAddress: companydata?.headquartersAddress ?? "",
+      organizationSize: companydata?.organizationSize ?? "",
+      employeeCount:
+        typeof companydata?.employeeCount === "number"
+          ? companydata?.employeeCount
+          : "",
+      country: companydata?.country ?? "",
+      city: companydata?.city ?? "",
+      workingDaysCsv: Array.isArray(companydata?.workingDays)
+        ? companydata?.workingDays?.join(",")
+        : "",
+      keywordsCsv: Array.isArray((companydata as any)?.keywords)
+        ? (companydata as any)?.keywords?.join(",")
+        : "",
+    });
+  }, [companydata, reset]);
+
+  const onSubmit = async (values: CompanyFormValues) => {
+    const payload: Partial<any> = {
+      name: values.name,
+      shortDescription: values.shortDescription || null,
+      longDescription: values.longDescription || null,
+      website: values.website || null,
+      headquartersAddress: values.headquartersAddress || null,
+      organizationSize: values.organizationSize || null,
+      employeeCount:
+        typeof values.employeeCount === "number"
+          ? values.employeeCount
+          : undefined,
+      country: values.country || null,
+      city: values.city || null,
+      workingDays: values.workingDaysCsv
+        ? values.workingDaysCsv
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined,
+      keywords: values.keywordsCsv
+        ? values.keywordsCsv
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined,
+      logoFileId: avatar?.id,
+    };
+    if (companyId && editMode) {
+      updateMut.mutate({ id: companyId, data: payload });
+    }
+
+    if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION) {
+      createMut.mutate(payload);
+    }
+  };
+
+  // logo upload flow (similar to AvatarEditor)
+  const handleLogoFile = async (file?: File) => {
+    if (!file) return;
+    try {
+      const signed = await getSignUrl();
+      const dto = {
+        signature: signed.signature,
+        timestamp: signed.timestamp,
+        cloud_name: signed.cloudName,
+        api_key: signed.apiKey,
+        public_id: signed.publicId,
+        folder: signed.folder || "",
+        resourceType: signed.resourceType || "",
+        fileId: signed.fileId || "",
+        file,
+      };
+      const createRes = await createFileEntity(dto as any);
+      const uploadRes = await uploadFile({
+        fileId: signed.fileId,
+        data: createRes,
+      } as any);
+      setAvatar({
+        id: uploadRes.id,
+        url: uploadRes.url,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Upload failed",
+        description: err?.message || "Unable to upload logo.",
+      });
+    }
+  };
+
+  if (!companydata && pathname !== ROUTES.CANDIDATE.CREATE_ORGANIZATION) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -66,24 +257,6 @@ const CompanyProfilePage = () => {
     );
   }
 
-  const toggleFollow = () => {
-    if (!user) return;
-
-    toast({
-      title: isFollowing ? "Unfollowed company" : "Following company",
-      description: isFollowing
-        ? "Removed from your followed companies"
-        : "Added to your followed companies",
-    });
-  };
-
-  const saveCompanyEdit = () => {
-    toast({
-      title: "Company updated",
-      description: "Company information has been updated successfully.",
-    });
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -91,73 +264,185 @@ const CompanyProfilePage = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-6">
-              <Avatar className="h-32 w-32 border-4 border-white">
-                <AvatarImage src={companydata.logoFileId} />
-                <AvatarFallback className="text-4xl">
-                  {companydata.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-32 w-32 border-4 border-white">
+                  <AvatarImage
+                    src={avatar?.url || companydata?.logoFile?.url || undefined}
+                  />
+                  <AvatarFallback className="text-4xl">
+                    {companydata?.name?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+
+                {editMode && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0 bg-white/90"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      await handleLogoFile(f);
+                    }}
+                  />
+                )}
+              </div>
 
               <div>
-                <h1 className="text-4xl font-bold mb-2">{companydata.name}</h1>
-                <p className="text-xl text-blue-100 mb-4">
-                  {companydata.industryId}
-                </p>
+                <div className="flex items-center gap-3">
+                  {editMode ? (
+                    <Controller
+                      control={control}
+                      name="name"
+                      render={({ field }) => (
+                        <Input className="text-4xl font-bold p-2" {...field} />
+                      )}
+                    />
+                  ) : (
+                    <h1 className="text-4xl font-bold mb-2">
+                      {companydata.name}
+                    </h1>
+                  )}
+                </div>
+
+                {editMode ? (
+                  <Controller
+                    control={control}
+                    name="shortDescription"
+                    render={({ field }) => (
+                      <Textarea
+                        className="text-xl text-blue-100 mb-4"
+                        rows={2}
+                        {...field}
+                      />
+                    )}
+                  />
+                ) : (
+                  <p className="text-xl text-blue-100 mb-4">
+                    {companydata?.shortDescription}
+                  </p>
+                )}
 
                 <div className="flex items-center space-x-6 text-blue-100">
-                  <span className="flex items-center">
-                    <MapPin className="h-5 w-5 mr-2" />
-                    {companydata.headquartersAddress}
-                  </span>
-                  <span className="flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    {companydata.organizationSize}
-                  </span>
-                  <span className="flex items-center">
-                    <Building2 className="h-5 w-5 mr-2" />
-                    Founded {companydata.foundedDate}
-                  </span>
+                  {editMode ? (
+                    <Controller
+                      control={control}
+                      name="headquartersAddress"
+                      render={({ field }) => (
+                        <Input
+                          placeholder="Headquarters"
+                          {...field}
+                          className="w-80"
+                        />
+                      )}
+                    />
+                  ) : (
+                    companydata?.headquartersAddress && (
+                      <span className="flex items-center">
+                        <MapPin className="h-5 w-5 mr-2" />
+                        {companydata?.headquartersAddress}
+                      </span>
+                    )
+                  )}
+
+                  {editMode ? (
+                    <Controller
+                      control={control}
+                      name="organizationSize"
+                      render={({ field }) => (
+                        <Input placeholder="Company size" {...field} />
+                      )}
+                    />
+                  ) : (
+                    companydata?.organizationSize && (
+                      <span className="flex items-center">
+                        <Users className="h-5 w-5 mr-2" />
+                        {companydata?.organizationSize}
+                      </span>
+                    )
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-6 mt-4 text-sm">
-                  <span>{companydata.employeeCount} employees</span>
-                  {/* <span>{companydata.followers} followers</span> */}
-                  {/* <span>{companyJobs.length} open positions</span> */}
+                  {editMode ? (
+                    <>
+                      <Controller
+                        control={control}
+                        name="employeeCount"
+                        render={({ field }) => (
+                          <Input
+                            type="number"
+                            placeholder="Employees"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value)
+                              )
+                            }
+                            className="w-40"
+                          />
+                        )}
+                      />
+                      <Controller
+                        control={control}
+                        name="website"
+                        render={({ field }) => (
+                          <Input
+                            placeholder="Website"
+                            {...field}
+                            className="w-64"
+                          />
+                        )}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {typeof companydata?.employeeCount === "number" && (
+                        <span>{companydata?.employeeCount} employees</span>
+                      )}
+                      {companydata?.website && (
+                        <span className="flex items-center">
+                          <Globe className="h-4 w-4 mr-1" />
+                          {new URL(companydata?.website).hostname}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
-              {user && (
-                <Button
-                  onClick={toggleFollow}
-                  variant={isFollowing ? "secondary" : "outline"}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  {isFollowing ? "Following" : "Follow Company"}
-                </Button>
-              )}
-
-              {companydata.website && (
+              {!editMode && companydata?.website && (
                 <Button
                   variant="outline"
                   className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                  onClick={() => window.open(companydata.website, "_blank")}
+                  onClick={() => window.open(companydata?.website, "_blank")}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Website
                 </Button>
               )}
 
-              {isCompanyMember && (
+              <Button
+                onClick={() => {
+                  setEditMode((s) => !s);
+                }}
+                variant="outline"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                {editMode ? "Cancel" : "Edit Company"}
+              </Button>
+
+              {editMode && (
                 <Button
-                  onClick={() => setEditMode(!editMode)}
-                  variant="outline"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isSubmitting}
                 >
-                  <Edit className="h-4 w-4 mr-2" />
-                  {editMode ? "Cancel Edit" : "Edit Company"}
+                  Save
                 </Button>
               )}
             </div>
@@ -172,130 +457,28 @@ const CompanyProfilePage = () => {
             {/* About Section */}
             <Card>
               <CardHeader>
-                <CardTitle>About {companydata.name}</CardTitle>
-                {isCompanyMember && editMode && (
-                  <Button onClick={saveCompanyEdit} size="sm">
-                    Save Changes
-                  </Button>
-                )}
+                <CardTitle>About {companydata?.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                {/* <div className="space-y-4">
-                    <div>
-                      <Label>Company Name</Label>
-                      <Input
-                        value={editForm.name}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, name: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>Industry</Label>
-                      <Input
-                        value={editForm.industry}
-                        onChange={(e) =>
-                          setEditForm({ ...editForm, industry: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label>Description</Label>
-                      <Textarea
-                        value={editForm.description}
-                        onChange={(e) =>
-                          setEditForm({
-                            ...editForm,
-                            description: e.target.value,
-                          })
-                        }
-                        rows={10}
-                      />
-                    </div>
-                  </div> */}
-                <Markdown content={companydata.longDescription} />
+                {editMode ? (
+                  <Controller
+                    control={control}
+                    name="longDescription"
+                    render={({ field }) => <Textarea rows={8} {...field} />}
+                  />
+                ) : (
+                  <Markdown
+                    content={
+                      companydata?.longDescription ||
+                      companydata?.shortDescription ||
+                      ""
+                    }
+                  />
+                )}
               </CardContent>
             </Card>
 
-            {/* Open Positions */}
-            {/* <Card>
-              <CardHeader>
-                <CardTitle>Open Positions ({companyJobs.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {companyJobs.length > 0 ? (
-                  <div className="space-y-4">
-                    {companyJobs.map((job) => (
-                      <div
-                        key={job.id}
-                        className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/jobs/${job.id}`)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                              {job.title}
-                            </h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                              <div className="flex items-center text-gray-600">
-                                <MapPin className="h-4 w-4 mr-2" />
-                                {job.location}
-                              </div>
-                              <div className="flex items-center text-gray-600">
-                                <DollarSign className="h-4 w-4 mr-2" />
-                                {job.salary}
-                              </div>
-                              <div className="flex items-center text-gray-600">
-                                <Clock className="h-4 w-4 mr-2" />
-                                {job.postedDate}
-                              </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {job.keywords.slice(0, 4).map((keyword) => (
-                                <Badge
-                                  key={keyword}
-                                  variant="outline"
-                                  className="text-xs"
-                                >
-                                  {keyword}
-                                </Badge>
-                              ))}
-                            </div>
-
-                            <p className="text-gray-700 text-sm line-clamp-2">
-                              {job.description
-                                .replace(/[#*]/g, "")
-                                .substring(0, 120)}
-                              ...
-                            </p>
-                          </div>
-
-                          <div className="flex items-center space-x-2 ml-4">
-                            <Badge variant="secondary" className="capitalize">
-                              {job.type}
-                            </Badge>
-                            <Button variant="outline" size="sm">
-                              View Job
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">
-                      No open positions at the moment
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card> */}
-
-            {/* Company Reviews */}
+            {/* Company Reviews (unchanged display) */}
             <Card>
               <CardHeader>
                 <CardTitle>Employee Reviews</CardTitle>
@@ -392,159 +575,175 @@ const CompanyProfilePage = () => {
               <CardHeader>
                 <CardTitle>Company Info</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Industry</span>
-                    <span className="font-medium">
-                      {companydata.industryId}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Company Size</span>
-                    <span className="font-medium">
-                      {companydata.organizationSize}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Founded</span>
-                    <span className="font-medium">
-                      {companydata.foundedDate}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Headquarters</span>
-                    <span className="font-medium">
-                      {companydata.headquartersAddress}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Employees</span>
-                    <span className="font-medium">
-                      {companydata.employeeCount}
-                    </span>
-                  </div>
-                  {/* <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Followers</span>
-                    <span className="font-medium">{company.followers}</span>
-                  </div> */}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-600 mb-2">Social Links</div>
-                  <div className="flex space-x-2">
-                    {companydata.socialMedia.linkedin && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          window.open(
-                            companydata.socialMedia.linkedin,
-                            "_blank"
-                          )
-                        }
-                      >
-                        LinkedIn
-                      </Button>
+              <CardContent className="space-y-3 text-sm">
+                {editMode ? (
+                  <>
+                    <Controller
+                      control={control}
+                      name="organizationSize"
+                      render={({ field }) => (
+                        <Input {...field} placeholder="Organization size" />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name="employeeCount"
+                      render={({ field }) => (
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value)
+                            )
+                          }
+                          placeholder="Employee count"
+                        />
+                      )}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {companydata?.organizationType && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Type</span>
+                        <span className="font-medium">
+                          {companydata?.organizationType}
+                        </span>
+                      </div>
                     )}
-                  </div>
-                </div>
+                    {companydata?.organizationSize && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Company Size</span>
+                        <span className="font-medium">
+                          {companydata?.organizationSize}
+                        </span>
+                      </div>
+                    )}
+                    {companydata?.employeeCount !== undefined && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Employees</span>
+                        <span className="font-medium">
+                          {companydata?.employeeCount}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Team Members (for company members only) */}
-            {/* {isCompanyMember && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Team Members</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {company.members.map((member) => {
-                      const user = users.find((u) => u.id === member.userId);
-                      if (!user) return null;
-
-                      return (
-                        <div
-                          key={member.id}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback>
-                                {user.name.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">{user.name}</p>
-                              <p className="text-xs text-gray-600">
-                                {member.role}
-                              </p>
-                            </div>
-                          </div>
-
-                          {user?.id === user.id && (
-                            <Badge variant="secondary" className="text-xs">
-                              You
-                            </Badge>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <Button variant="outline" size="sm" className="w-full mt-4">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Add Member
-                  </Button>
-                </CardContent>
-              </Card>
-            )} */}
-
-            {/* Similar Companies */}
-            {/* <Card>
+            {/* Tags */}
+            <Card>
               <CardHeader>
-                <CardTitle>Similar Companies</CardTitle>
+                <CardTitle>Tags</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {companies
-                    .filter(
-                      (c) =>
-                        c.id !== company.id && c.industry === company.industry
-                    )
-                    .slice(0, 3)
-                    .map((similarCompany) => (
-                      <div
-                        key={similarCompany.id}
-                        className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                        onClick={() =>
-                          navigate(`/companies/${similarCompany.slug}`)
-                        }
-                      >
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={similarCompany.logo} />
-                          <AvatarFallback>
-                            {similarCompany.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">
-                            {similarCompany.name}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {similarCompany.industry}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {similarCompany.jobs} jobs
-                          </p>
-                        </div>
+              <CardContent className="space-y-3 text-sm">
+                {editMode ? (
+                  <Controller
+                    control={control}
+                    name="keywordsCsv"
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        placeholder="Comma separated keywords"
+                      />
+                    )}
+                  />
+                ) : (
+                  companydata?.keywords &&
+                  companydata?.keywords.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm">Keywords</h4>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {companydata?.keywords?.map((k: string) => (
+                          <Badge key={k} variant="outline" className="text-xs">
+                            <Tag className="h-3 w-3 mr-1 inline" /> {k}
+                          </Badge>
+                        ))}
                       </div>
-                    ))}
-                </div>
+                    </div>
+                  )
+                )}
               </CardContent>
-            </Card> */}
+            </Card>
+
+            {/* Location & Work Policy */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Location & Work</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {editMode ? (
+                  <>
+                    <Controller
+                      control={control}
+                      name="country"
+                      render={({ field }) => (
+                        <Input {...field} placeholder="Country" />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name="city"
+                      render={({ field }) => (
+                        <Input {...field} placeholder="City" />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name="workingDaysCsv"
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          placeholder="Working days (comma separated)"
+                        />
+                      )}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {companydata?.country && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 flex items-center">
+                          <MapPin className="h-4 w-4 mr-2" /> Country
+                        </span>
+                        <span className="font-medium">
+                          {companydata?.country}
+                        </span>
+                      </div>
+                    )}
+                    {companydata?.city && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 flex items-center">
+                          <MapPin className="h-4 w-4 mr-2" /> City
+                        </span>
+                        <span className="font-medium">{companydata?.city}</span>
+                      </div>
+                    )}
+                    {companydata?.workingDays &&
+                      companydata?.workingDays?.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-sm">Working days</h4>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {companydata?.workingDays?.map((d: string) => (
+                              <Badge
+                                key={d}
+                                variant="outline"
+                                className="text-xs capitalize"
+                              >
+                                {d}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

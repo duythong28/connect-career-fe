@@ -46,6 +46,7 @@ export interface OrganizationBase {
   } | null;
   metadata?: Record<string, any> | null;
   keywords?: string[] | null;
+  logoFile?: LogoFile | null;
 }
 
 export interface Company extends OrganizationBase {
@@ -111,4 +112,60 @@ export interface CompanyFilters {
 export interface OrganizationCreateDto extends Partial<OrganizationBase> {
   name: string;
   abbreviation?: string;
+}
+
+export interface FileMetadataCloudinary {
+  asset_id: string;
+  public_id: string;
+  version: number;
+  version_id: string;
+  signature: string;
+  width: number;
+  height: number;
+  format: string;
+  resource_type: string;
+  created_at: string;
+  tags: string[];
+  bytes: number;
+  type: string;
+  etag: string;
+  placeholder: boolean;
+  url: string;
+  secure_url: string;
+  asset_folder: string;
+  display_name: string;
+  original_filename: string;
+  api_key: string;
+}
+
+export interface FileMetadata {
+  cloudinary: FileMetadataCloudinary;
+}
+
+export interface LogoFile {
+  id: string;
+  publicId: string;
+  originalName: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  width: number;
+  height: number;
+  url: string;
+  secureUrl: string;
+  thumbnailUrl: string | null;
+  status: string;
+  type: string;
+  folder: string;
+  metadata: FileMetadata;
+  transformations: any; // or null, or a more specific type if known
+  tags: string[];
+  description: string;
+  expiresAt: string | null;
+  isPublic: boolean;
+  isDeleted: boolean;
+  uploadedById: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }

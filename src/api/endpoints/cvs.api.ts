@@ -1,9 +1,9 @@
 import axios from "../client/axios";
-import { CvsResponse } from "../types/cvs.types";
-const API_URL = "/cvs";
+import { CvsResponse, UploadCvDto } from "../types/cvs.types";
+const API_URL = "/cvs/candidate";
 
 const getMyCvs = async (): Promise<CvsResponse> => {
-  const response = await axios.get(`${API_URL}/candidate`);
+  const response = await axios.get(`${API_URL}`);
   return response.data;
 };
 
@@ -37,4 +37,16 @@ const publishCv = async (id: string): Promise<CvsResponse> => {
   return response.data;
 };
 
-export { getMyCvs, getCvById, updateCv, deleteCv, downloadCv, publishCv };
+const uploadCv = async (data: UploadCvDto): Promise<CvsResponse> => {
+  const response = await axios.post(`${API_URL}/upload`, data);
+  return response.data;
+};
+export {
+  uploadCv,
+  getMyCvs,
+  getCvById,
+  updateCv,
+  deleteCv,
+  downloadCv,
+  publishCv,
+};

@@ -21,10 +21,7 @@ const PipelinePage = () => {
     mockExtendedCandidates as Candidate[]
   );
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
-  const userApplications = applications.filter((app) => {
-    const job = jobs.find((j) => j.id === app.jobId);
-    return job?.employerId === user?.id;
-  });
+  const userApplications = applications;
 
   const columns = ["New", "Screening", "Interview", "Offer", "Hired"] as const;
 
@@ -122,12 +119,12 @@ const PipelinePage = () => {
                                       <Avatar className="h-10 w-10">
                                         <AvatarImage src={user.avatar} />
                                         <AvatarFallback>
-                                          {user.name.charAt(0)}
+                                          {user.firstName.charAt(0)}
                                         </AvatarFallback>
                                       </Avatar>
                                       <div>
                                         <h4 className="font-medium text-sm">
-                                          {user.name}
+                                          {user.firstName}
                                         </h4>
                                         <p className="text-xs text-gray-600">
                                           {job.title}

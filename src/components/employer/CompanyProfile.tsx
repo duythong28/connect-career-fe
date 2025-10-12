@@ -1,384 +1,728 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Users,
+  MapPin,
+  Edit,
+  Star,
+  ArrowLeft,
+  ExternalLink,
+  Globe,
+  Tag,
+} from "lucide-react";
+
+// UI Components
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Markdown } from "@/components/ui/markdown";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Building, Edit, Users, MapPin } from "lucide-react";
-import { Company } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 
-export function CompanyProfile() {
-  const [companies, setCompanies] = useState<Company[]>([
-    {
-      id: "1",
-      name: "TechCorp",
-      industry: "Technology", 
-      size: "100-500",
-      location: "Ho Chi Minh City",
-      description: "Leading technology company specializing in software development.",
-      jobs: 12
-    }
-  ]);
-  
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
-  const [joinCode, setJoinCode] = useState("");
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getOrganizationById,
+  updateOrganization,
+} from "@/api/endpoints/organizations.api";
+import {
+  getSignUrl,
+  createFileEntity,
+  uploadFile,
+} from "@/api/endpoints/files.api";
 
-  const [formData, setFormData] = useState<Partial<Company>>({
-    name: "",
-    industry: "",
-    size: "",
-    location: "",
-    description: ""
+import { useForm, Controller } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+type CompanyFormValues = {
+  name: string;
+  shortDescription: string;
+  longDescription: string;
+  website: string;
+  headquartersAddress: string;
+  organizationSize: string;
+  employeeCount?: number | "";
+  country: string;
+  city: string;
+  workingDaysCsv: string;
+  keywordsCsv: string;
+};
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  shortDescription: z.string().optional().nullable().default(""),
+  longDescription: z.string().optional().nullable().default(""),
+  website: z.string().url().optional().nullable().or(z.literal("")).default(""),
+  headquartersAddress: z.string().optional().nullable().default(""),
+  organizationSize: z.string().optional().nullable().default(""),
+  employeeCount: z
+    .union([z.number().int().nonnegative(), z.undefined(), z.null()])
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v === "" ? undefined : v))
+    .nullable(),
+  country: z.string().optional().nullable().default(""),
+  city: z.string().optional().nullable().default(""),
+  workingDaysCsv: z.string().optional().default(""),
+  keywordsCsv: z.string().optional().default(""),
+  logoUrl: z.string().optional().nullable().default(""),
+});
+
+const CompanyProfilePage = () => {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [avatar, setAvatar] = useState(null);
+
+  const { data: companydata } = useQuery({
+    queryKey: ["company", slug],
+    queryFn: () => getOrganizationById(slug!),
   });
 
-  const handleCreateCompany = () => {
-    if (!formData.name || !formData.industry || !formData.size || !formData.location) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const [editMode, setEditMode] = useState(false);
 
-    const newCompany: Company = {
-      id: Date.now().toString(),
-      name: formData.name,
-      industry: formData.industry,
-      size: formData.size,
-      location: formData.location,
-      description: formData.description || "",
-      jobs: 0
+  const updateMut = useMutation({
+    mutationFn: (payload: { id: string; data: Partial<any> }) =>
+      updateOrganization(payload.id, payload.data),
+    onSuccess: (data) => {
+      toast({ title: "Company updated", description: "Company saved." });
+      queryClient.invalidateQueries({ queryKey: ["company", slug] });
+      setEditMode(false);
+      setAvatar(null);
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Update failed",
+        description: err?.message || "Unable to save.",
+      });
+    },
+  });
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: "",
+      shortDescription: "",
+      longDescription: "",
+      website: "",
+      headquartersAddress: "",
+      organizationSize: "",
+      employeeCount: "",
+      country: "",
+      city: "",
+      workingDaysCsv: "",
+      keywordsCsv: "",
+    },
+  });
+
+  // reset form when companydata loads/changes
+  useEffect(() => {
+    if (!companydata) return;
+    reset({
+      name: companydata.name ?? "",
+      shortDescription: companydata.shortDescription ?? "",
+      longDescription:
+        companydata.longDescription ?? companydata.longDescription ?? "",
+      website: companydata.website ?? "",
+      headquartersAddress: companydata.headquartersAddress ?? "",
+      organizationSize: companydata.organizationSize ?? "",
+      employeeCount:
+        typeof companydata.employeeCount === "number"
+          ? companydata.employeeCount
+          : "",
+      country: companydata.country ?? "",
+      city: companydata.city ?? "",
+      workingDaysCsv: Array.isArray(companydata.workingDays)
+        ? companydata.workingDays.join(",")
+        : "",
+      keywordsCsv: Array.isArray((companydata as any).keywords)
+        ? (companydata as any).keywords.join(",")
+        : "",
+    });
+  }, [companydata, reset]);
+
+  const onSubmit = async (values: CompanyFormValues) => {
+    if (!slug) return;
+    const payload: Partial<any> = {
+      name: values.name,
+      shortDescription: values.shortDescription || null,
+      longDescription: values.longDescription || null,
+      website: values.website || null,
+      headquartersAddress: values.headquartersAddress || null,
+      organizationSize: values.organizationSize || null,
+      employeeCount:
+        typeof values.employeeCount === "number"
+          ? values.employeeCount
+          : undefined,
+      country: values.country || null,
+      city: values.city || null,
+      workingDays: values.workingDaysCsv
+        ? values.workingDaysCsv
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined,
+      keywords: values.keywordsCsv
+        ? values.keywordsCsv
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : undefined,
+      logoFileId: avatar?.id,
     };
 
-    setCompanies([...companies, newCompany]);
-    setFormData({ name: "", industry: "", size: "", location: "", description: "" });
-    setIsCreateDialogOpen(false);
-    toast({
-      title: "Success",
-      description: "Company created successfully!"
-    });
+    updateMut.mutate({ id: slug, data: payload });
   };
 
-  const handleEditCompany = () => {
-    if (!selectedCompany || !formData.name) return;
-
-    const updatedCompanies = companies.map(c => 
-      c.id === selectedCompany.id 
-        ? { ...c, ...formData }
-        : c
-    );
-    setCompanies(updatedCompanies);
-    setIsEditDialogOpen(false);
-    setSelectedCompany(null);
-    toast({
-      title: "Success", 
-      description: "Company updated successfully!"
-    });
-  };
-
-  const handleJoinCompany = () => {
-    // Mock join logic
-    if (joinCode === "DEMO123") {
-      const mockCompany: Company = {
-        id: Date.now().toString(),
-        name: "Demo Company",
-        industry: "Technology",
-        size: "50-100",
-        location: "Ha Noi",
-        description: "A demo company for testing purposes.",
-        jobs: 5
+  // logo upload flow (similar to AvatarEditor)
+  const handleLogoFile = async (file?: File) => {
+    if (!file || !slug) return;
+    try {
+      const signed = await getSignUrl();
+      const dto = {
+        signature: signed.signature,
+        timestamp: signed.timestamp,
+        cloud_name: signed.cloudName,
+        api_key: signed.apiKey,
+        public_id: signed.publicId,
+        folder: signed.folder || "",
+        resourceType: signed.resourceType || "",
+        fileId: signed.fileId || "",
+        file,
       };
-      setCompanies([...companies, mockCompany]);
-      setJoinCode("");
-      setIsJoinDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Successfully joined Demo Company!"
+      const createRes = await createFileEntity(dto as any);
+      const uploadRes = await uploadFile({
+        fileId: signed.fileId,
+        data: createRes,
+      } as any);
+      setAvatar({
+        id: uploadRes.id,
+        url: uploadRes.url,
       });
-    } else {
+    } catch (err: any) {
+      console.error(err);
       toast({
-        title: "Error",
-        description: "Invalid join code. Try 'DEMO123' for demo.",
-        variant: "destructive"
+        title: "Upload failed",
+        description: err?.message || "Unable to upload logo.",
       });
     }
   };
 
-  const openEditDialog = (company: Company) => {
-    setSelectedCompany(company);
-    setFormData(company);
-    setIsEditDialogOpen(true);
-  };
+  if (!companydata) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Company not found
+          </h2>
+          <Button onClick={() => navigate("/")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Company Profile</h1>
-          <p className="text-muted-foreground">Manage your company information and settings</p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Users className="h-4 w-4 mr-2" />
-                Join Company
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Join Existing Company</DialogTitle>
-                <DialogDescription>
-                  Enter the company join code to become part of an existing company.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="joinCode">Company Join Code</Label>
-                  <Input
-                    id="joinCode"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
-                    placeholder="Enter join code"
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-6">
+              <div className="relative">
+                <Avatar className="h-32 w-32 border-4 border-white">
+                  <AvatarImage
+                    src={avatar?.url || companydata.logoFileId || undefined}
                   />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleJoinCompany}>Join Company</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                  <AvatarFallback className="text-4xl">
+                    {companydata.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
 
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Company
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Create New Company</DialogTitle>
-                <DialogDescription>
-                  Set up your company profile to start posting jobs.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Company Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter company name"
+                {editMode && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0 bg-white/90"
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      await handleLogoFile(f);
+                    }}
                   />
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-3">
+                  {editMode ? (
+                    <Controller
+                      control={control}
+                      name="name"
+                      render={({ field }) => (
+                        <Input className="text-4xl font-bold p-2" {...field} />
+                      )}
+                    />
+                  ) : (
+                    <h1 className="text-4xl font-bold mb-2">
+                      {companydata.name}
+                    </h1>
+                  )}
                 </div>
-                <div>
-                  <Label htmlFor="industry">Industry *</Label>
-                  <Select value={formData.industry} onValueChange={(value) => setFormData({ ...formData, industry: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="technology">Technology</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
-                      <SelectItem value="healthcare">Healthcare</SelectItem>
-                      <SelectItem value="education">Education</SelectItem>
-                      <SelectItem value="retail">Retail</SelectItem>
-                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="size">Company Size *</Label>
-                  <Select value={formData.size} onValueChange={(value) => setFormData({ ...formData, size: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select company size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1-10">1-10 employees</SelectItem>
-                      <SelectItem value="11-50">11-50 employees</SelectItem>
-                      <SelectItem value="51-100">51-100 employees</SelectItem>
-                      <SelectItem value="101-500">101-500 employees</SelectItem>
-                      <SelectItem value="501-1000">501-1000 employees</SelectItem>
-                      <SelectItem value="1000+">1000+ employees</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="location">Location *</Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Company location"
+
+                {editMode ? (
+                  <Controller
+                    control={control}
+                    name="shortDescription"
+                    render={({ field }) => (
+                      <Textarea
+                        className="text-xl text-blue-100 mb-4"
+                        rows={2}
+                        {...field}
+                      />
+                    )}
                   />
+                ) : (
+                  <p className="text-xl text-blue-100 mb-4">
+                    {companydata.shortDescription}
+                  </p>
+                )}
+
+                <div className="flex items-center space-x-6 text-blue-100">
+                  {editMode ? (
+                    <Controller
+                      control={control}
+                      name="headquartersAddress"
+                      render={({ field }) => (
+                        <Input
+                          placeholder="Headquarters"
+                          {...field}
+                          className="w-80"
+                        />
+                      )}
+                    />
+                  ) : (
+                    companydata.headquartersAddress && (
+                      <span className="flex items-center">
+                        <MapPin className="h-5 w-5 mr-2" />
+                        {companydata.headquartersAddress}
+                      </span>
+                    )
+                  )}
+
+                  {editMode ? (
+                    <Controller
+                      control={control}
+                      name="organizationSize"
+                      render={({ field }) => (
+                        <Input placeholder="Company size" {...field} />
+                      )}
+                    />
+                  ) : (
+                    companydata.organizationSize && (
+                      <span className="flex items-center">
+                        <Users className="h-5 w-5 mr-2" />
+                        {companydata.organizationSize}
+                      </span>
+                    )
+                  )}
                 </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe your company..."
-                    rows={3}
-                  />
+
+                <div className="flex items-center space-x-6 mt-4 text-sm">
+                  {editMode ? (
+                    <>
+                      <Controller
+                        control={control}
+                        name="employeeCount"
+                        render={({ field }) => (
+                          <Input
+                            type="number"
+                            placeholder="Employees"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value === ""
+                                  ? ""
+                                  : Number(e.target.value)
+                              )
+                            }
+                            className="w-40"
+                          />
+                        )}
+                      />
+                      <Controller
+                        control={control}
+                        name="website"
+                        render={({ field }) => (
+                          <Input
+                            placeholder="Website"
+                            {...field}
+                            className="w-64"
+                          />
+                        )}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {typeof companydata.employeeCount === "number" && (
+                        <span>{companydata.employeeCount} employees</span>
+                      )}
+                      {companydata.website && (
+                        <span className="flex items-center">
+                          <Globe className="h-4 w-4 mr-1" />
+                          {new URL(companydata.website).hostname}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
-              <DialogFooter>
-                <Button onClick={handleCreateCompany}>Create Company</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {!editMode && companydata.website && (
+                <Button
+                  variant="outline"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  onClick={() => window.open(companydata.website, "_blank")}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Website
+                </Button>
+              )}
+
+              <Button
+                onClick={() => {
+                  setEditMode((s) => !s);
+                }}
+                variant="outline"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                {editMode ? "Cancel" : "Edit Company"}
+              </Button>
+
+              {editMode && (
+                <Button
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isSubmitting}
+                >
+                  Save
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6">
-        {companies.length > 0 ? (
-          companies.map((company) => (
-            <Card key={company.id}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* About Section */}
+            <Card>
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Building className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl">{company.name}</CardTitle>
-                      <CardDescription className="flex items-center gap-4 mt-1">
-                        <span>{company.industry}</span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          {company.size}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {company.location}
-                        </span>
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(company)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                </div>
+                <CardTitle>About {companydata.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">{company.description}</p>
-                <div className="flex items-center gap-4">
-                  <Badge variant="secondary">{company.jobs} Active Jobs</Badge>
-                  <span className="text-sm text-muted-foreground">Company ID: {company.id}</span>
+                {editMode ? (
+                  <Controller
+                    control={control}
+                    name="longDescription"
+                    render={({ field }) => <Textarea rows={8} {...field} />}
+                  />
+                ) : (
+                  <Markdown
+                    content={
+                      companydata.longDescription ||
+                      companydata.shortDescription ||
+                      ""
+                    }
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Company Reviews (unchanged display) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Employee Reviews</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-4 mb-6">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-gray-900">
+                        4.2
+                      </div>
+                      <div className="flex items-center mt-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-4 w-4 ${
+                              star <= 4
+                                ? "text-yellow-400 fill-current"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Based on 127 reviews
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {[
+                      {
+                        id: 1,
+                        rating: 5,
+                        title: "Great place to work",
+                        content:
+                          "Amazing company culture and great opportunities for growth. The team is very supportive and the work is challenging and rewarding.",
+                        author: "Software Engineer",
+                        date: "2024-01-10",
+                      },
+                      {
+                        id: 2,
+                        rating: 4,
+                        title: "Good work-life balance",
+                        content:
+                          "Really appreciate the flexible working arrangements and the company's focus on employee wellbeing. Management is understanding and supportive.",
+                        author: "Product Manager",
+                        date: "2024-01-05",
+                      },
+                    ].map((review) => (
+                      <div
+                        key={review.id}
+                        className="border-b border-gray-200 pb-4 last:border-b-0"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              {review.title}
+                            </h4>
+                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                              <span>{review.author}</span>
+                              <span>•</span>
+                              <span>{review.date}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-4 w-4 ${
+                                  star <= review.rating
+                                    ? "text-yellow-400 fill-current"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-gray-700 text-sm">
+                          {review.content}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ))
-        ) : (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Companies Yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Create your first company or join an existing one to start posting jobs.
-              </p>
-              <div className="flex gap-2 justify-center">
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Company
-                </Button>
-                <Button variant="outline" onClick={() => setIsJoinDialogOpen(true)}>
-                  <Users className="h-4 w-4 mr-2" />
-                  Join Company
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Edit Company Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Company</DialogTitle>
-            <DialogDescription>
-              Update your company information.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="editName">Company Name</Label>
-              <Input
-                id="editName"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="editIndustry">Industry</Label>
-              <Select value={formData.industry} onValueChange={(value) => setFormData({ ...formData, industry: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="technology">Technology</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="healthcare">Healthcare</SelectItem>
-                  <SelectItem value="education">Education</SelectItem>
-                  <SelectItem value="retail">Retail</SelectItem>
-                  <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="editSize">Company Size</Label>
-              <Select value={formData.size} onValueChange={(value) => setFormData({ ...formData, size: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1-10">1-10 employees</SelectItem>
-                  <SelectItem value="11-50">11-50 employees</SelectItem>
-                  <SelectItem value="51-100">51-100 employees</SelectItem>
-                  <SelectItem value="101-500">101-500 employees</SelectItem>
-                  <SelectItem value="501-1000">501-1000 employees</SelectItem>
-                  <SelectItem value="1000+">1000+ employees</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="editLocation">Location</Label>
-              <Input
-                id="editLocation"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="editDescription">Description</Label>
-              <Textarea
-                id="editDescription"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-              />
-            </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleEditCompany}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Company Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Company Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {editMode ? (
+                  <>
+                    <Controller
+                      control={control}
+                      name="organizationSize"
+                      render={({ field }) => (
+                        <Input {...field} placeholder="Organization size" />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name="employeeCount"
+                      render={({ field }) => (
+                        <Input
+                          type="number"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value)
+                            )
+                          }
+                          placeholder="Employee count"
+                        />
+                      )}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {companydata.organizationType && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Type</span>
+                        <span className="font-medium">
+                          {companydata.organizationType}
+                        </span>
+                      </div>
+                    )}
+                    {companydata.organizationSize && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Company Size</span>
+                        <span className="font-medium">
+                          {companydata.organizationSize}
+                        </span>
+                      </div>
+                    )}
+                    {companydata.employeeCount !== undefined && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Employees</span>
+                        <span className="font-medium">
+                          {companydata.employeeCount}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Tags */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Tags</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {editMode ? (
+                  <Controller
+                    control={control}
+                    name="keywordsCsv"
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        placeholder="Comma separated keywords"
+                      />
+                    )}
+                  />
+                ) : (
+                  companydata.keywords &&
+                  companydata.keywords.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-sm">Keywords</h4>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {companydata.keywords.map((k: string) => (
+                          <Badge key={k} variant="outline" className="text-xs">
+                            <Tag className="h-3 w-3 mr-1 inline" /> {k}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Location & Work Policy */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Location & Work</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {editMode ? (
+                  <>
+                    <Controller
+                      control={control}
+                      name="country"
+                      render={({ field }) => (
+                        <Input {...field} placeholder="Country" />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name="city"
+                      render={({ field }) => (
+                        <Input {...field} placeholder="City" />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name="workingDaysCsv"
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          placeholder="Working days (comma separated)"
+                        />
+                      )}
+                    />
+                  </>
+                ) : (
+                  <>
+                    {companydata.country && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 flex items-center">
+                          <MapPin className="h-4 w-4 mr-2" /> Country
+                        </span>
+                        <span className="font-medium">
+                          {companydata.country}
+                        </span>
+                      </div>
+                    )}
+                    {companydata.city && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600 flex items-center">
+                          <MapPin className="h-4 w-4 mr-2" /> City
+                        </span>
+                        <span className="font-medium">{companydata.city}</span>
+                      </div>
+                    )}
+                    {companydata.workingDays &&
+                      companydata.workingDays.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-sm">Working days</h4>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {companydata.workingDays.map((d: string) => (
+                              <Badge
+                                key={d}
+                                variant="outline"
+                                className="text-xs capitalize"
+                              >
+                                {d}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default CompanyProfilePage;

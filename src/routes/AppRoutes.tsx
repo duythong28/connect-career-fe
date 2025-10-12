@@ -20,7 +20,7 @@ export const AppRoutes = () => {
       />
 
       <Route
-        path="/company/*"
+        path="/company/:companyId/*"
         element={
           <ProtectedRoute allowedRoles={["candidate"]}>
             <EmployerRoutes />
