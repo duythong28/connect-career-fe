@@ -19,6 +19,7 @@ import { applyJob } from "@/api/endpoints/applications.api";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Eye, Download } from "lucide-react";
+import { increaseApplyCount } from "@/api/endpoints/jobs.api";
 
 type Props = {
   jobId: string;
@@ -39,7 +40,14 @@ export default function ApplyJobDialog({ jobId }: Props) {
   const { data: cvsData, isLoading: cvsLoading } = useQuery({
     queryKey: ["candidateCvs"],
     queryFn: () => getMyCvs(),
-    enabled: open, // only fetch when dialog opens
+    enabled: open,
+  });
+
+  const { mutate: increaseApplyCountMutate } = useMutation({
+    mutationFn: increaseApplyCount,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["job", jobId] });
+    },
   });
 
   const applyMutation = useMutation({
@@ -49,6 +57,7 @@ export default function ApplyJobDialog({ jobId }: Props) {
         title: "Application submitted",
         description: "Your application has been sent to the employer.",
       });
+      increaseApplyCountMutate(jobId);
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       setOpen(false);
       reset();

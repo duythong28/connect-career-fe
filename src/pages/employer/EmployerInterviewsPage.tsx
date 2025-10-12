@@ -14,10 +14,7 @@ const EmployerInterviewsPage = () => {
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
   const [users, setUsers] = useState<User[]>(mockUsers);
   const [interviews, setInterviews] = useState<Interview[]>(mockInterviews);
-  const employerInterviews = interviews.filter((interview) => {
-    const job = jobs.find((j) => j.id === interview.jobId);
-    return job && job.company === user?.company;
-  });
+  const employerInterviews = interviews;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -37,10 +34,8 @@ const EmployerInterviewsPage = () => {
 
         <div className="grid gap-6">
           {employerInterviews.map((interview) => {
-            const job = jobs.find((j) => j.id === interview.jobId);
-            const candidate = users.find((u) => u.id === interview.candidateId);
-            if (!job || !candidate) return null;
-
+            const job = jobs[0];
+            const candidate = users[0];
             return (
               <Card key={interview.id}>
                 <CardContent className="p-6">
