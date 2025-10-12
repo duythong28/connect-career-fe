@@ -12,9 +12,7 @@ const CandidateInterviewsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [interviews, setInterviews] = useState<Interview[]>(mockInterviews);
-  const candidateInterviews = interviews.filter(
-    (interview) => interview.candidateId === user?.id
-  );
+  const candidateInterviews = interviews;
   const [jobs, setJobs] = useState<Job[]>(mockJobs);
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -28,7 +26,7 @@ const CandidateInterviewsPage = () => {
 
         <div className="grid gap-6">
           {candidateInterviews.map((interview) => {
-            const job = jobs.find((j) => j.id === interview.jobId);
+            const job = jobs[0];
             if (!job) return null;
 
             return (
