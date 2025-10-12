@@ -110,3 +110,11 @@ export interface CvsResponse {
   limit: number;
   totalPages: number;
 }
+
+export interface UploadCvDto {
+  fileId: string;
+  title: string;
+  description: string;
+  type: string;
+  isPublic: boolean;
+}

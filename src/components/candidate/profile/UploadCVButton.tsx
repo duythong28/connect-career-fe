@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera } from "lucide-react";
+import { Camera, Upload } from "lucide-react";
 import {
   getSignUrl,
   createFileEntity,
@@ -12,21 +12,18 @@ import type {
   SignedUploadResponse,
 } from "@/api/types/files.types";
 import { useMutation } from "@tanstack/react-query";
-import { updateUserInfo } from "@/api/endpoints/users.api";
-import { useAuth } from "@/hooks/useAuth";
+import { uploadCv } from "@/api/endpoints/cvs.api";
+import { queryClient } from "@/lib/queryClient";
 
 interface Props {
-  currentUrl?: string | null;
   disabled?: boolean;
-  onUploaded: (url: string) => void;
 }
 
-export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
+export function UploadCVButton({ disabled }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { setUser, user } = useAuth();
-  const { mutate: updateUserInfoMutate } = useMutation({
-    mutationFn: updateUserInfo,
+  const { mutate: uploadCvMutate } = useMutation({
+    mutationFn: uploadCv,
   });
 
   const handleClick = () => {
@@ -40,10 +37,8 @@ export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
     setIsUploading(true);
 
     try {
-      // 1) Request signed upload metadata from backend
       const signed: SignedUploadResponse = await getSignUrl();
 
-      // 2) Build DTO expected by backend (match CreateFileEntityDto)
       const dto: CreateFileEntityDto = {
         signature: signed.signature,
         timestamp: signed.timestamp,
@@ -53,32 +48,41 @@ export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
         folder: signed.folder || "",
         resourceType: signed.resourceType || "",
         fileId: signed.fileId || "",
-        file, // pass File object directly — backend will handle actual upload to cloud
+        file,
       };
 
-      // 3) Send to backend which will perform the signed upload and return file entity
       const result = await createFileEntity(dto);
 
       const uploadFileResonse = await uploadFile({
         fileId: signed.fileId,
         data: result,
       });
-      if (uploadFileResonse?.url) {
-        updateUserInfoMutate(
-          { avatarUrl: uploadFileResonse.url },
-          {
-            onSuccess(data) {
-              onUploaded(uploadFileResonse.url);
-              setUser({ ...user, avatar: data.avatarUrl });
-              toast({
-                title: "Avatar uploaded",
-                description: "Avatar uploaded successfully.",
-              });
-            },
-          }
-        );
-      }
-      //   if (publicUrl) onUploaded(publicUrl);
+
+      uploadCvMutate(
+        {
+          fileId: uploadFileResonse?.id,
+          title: file.name,
+          description: file.name,
+          type: "pdf",
+          isPublic: true,
+        },
+        {
+          onSuccess: (cv) => {
+            queryClient.invalidateQueries({ queryKey: ["candidateCvs"] });
+            toast({
+              title: "CV uploaded",
+              description: "CV uploaded successfully.",
+            });
+          },
+          onError: (err: any) => {
+            console.error(err);
+            toast({
+              title: "Upload failed",
+              description: err?.message || "Unable to upload CV.",
+            });
+          },
+        }
+      );
     } catch (err: any) {
       console.error(err);
       toast({
@@ -96,22 +100,21 @@ export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept=".pdf,.doc,.docx"
         className="hidden"
         onChange={handleFile}
       />
       <Button
         size="sm"
-        variant="outline"
-        className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
         onClick={handleClick}
         disabled={disabled || isUploading}
-        aria-label="Upload avatar"
+        arial-label="Upload CV"
       >
-        <Camera className="w-4 h-4" />
+        <Upload className="w-4 h-4 mr-2" />
+        Upload CV
       </Button>
     </div>
   );
 }
 
-export default AvatarEditor;
+export default UploadCVButton;

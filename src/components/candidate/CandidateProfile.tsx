@@ -58,6 +58,7 @@ import {
 } from "./profile/ExperienceEditor";
 import ProfileEditor, { ProfileFormValues } from "./profile/ProfileEditor";
 import AvatarEditor from "./profile/AvatarEditor";
+import UploadCVButton from "./profile/UploadCVButton";
 
 interface Experience {
   id: string;
@@ -430,10 +431,7 @@ export function CandidateProfile() {
                   <FileText className="w-5 h-5 mr-2" />
                   CVs & Resumes
                 </div>
-                <Button size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload CV
-                </Button>
+                <UploadCVButton />
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">

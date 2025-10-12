@@ -1,13 +1,14 @@
-import { Routes, Route } from 'react-router-dom';
-import CandidateProfilePage from '@/pages/candidate/CandidateProfilePage';
-import SavedJobsPage from '@/pages/candidate/SavedJobsPage';
-import ChatbotPage from '@/pages/shared/ChatbotPage';
-import SubscriptionPage from '@/pages/shared/SubscriptionPage';
-import { CandidateDashboard } from '@/components/candidate/CandidateDashboard';
-import CandidateApplicationsPage from '@/pages/candidate/CandidateApplicationsPage';
-import CandidateInterviewsPage from '@/pages/candidate/CandidateInterviewsPage';
-import MessagesPage from '@/pages/candidate/MessagesPage';
-import NotFound from '@/pages/shared/NotFound';
+import { Routes, Route } from "react-router-dom";
+import CandidateProfilePage from "@/pages/candidate/CandidateProfilePage";
+import SavedJobsPage from "@/pages/candidate/SavedJobsPage";
+import ChatbotPage from "@/pages/shared/ChatbotPage";
+import SubscriptionPage from "@/pages/shared/SubscriptionPage";
+import { CandidateDashboard } from "@/components/candidate/CandidateDashboard";
+import CandidateApplicationsPage from "@/pages/candidate/CandidateApplicationsPage";
+import CandidateInterviewsPage from "@/pages/candidate/CandidateInterviewsPage";
+import MessagesPage from "@/pages/candidate/MessagesPage";
+import NotFound from "@/pages/shared/NotFound";
+import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
 
 export const CandidateRoutes = () => {
   return (
@@ -21,6 +22,7 @@ export const CandidateRoutes = () => {
       <Route path="messages" element={<MessagesPage />} />
       <Route path="chatbot" element={<ChatbotPage />} />
       <Route path="settings" element={<SubscriptionPage />} />
+      <Route path="create-organization" element={<CompanyProfilePage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
