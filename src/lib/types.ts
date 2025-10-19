@@ -244,3 +244,31 @@ export interface RefundRequest {
   status: "pending" | "approved" | "denied";
   requestedAt: string;
 }
+
+export interface PipelineStage {
+  id: string;
+  pipelineId: string;
+  key: string;
+  name: string;
+  type: "sourcing" | "screening" | "interview" | "offer" | "hired" | "rejected";
+  order: number;
+  terminal: boolean;
+}
+
+export interface PipelineTransition {
+  id: string;
+  pipelineId: string;
+  fromStageKey: string;
+  toStageKey: string;
+  actionName: string;
+  allowedRoles: string[];
+}
+
+export interface Pipeline {
+  id: string;
+  name: string;
+  stages: PipelineStage[];
+  transitions: PipelineTransition[];
+  createdAt: string;
+  updatedAt: string;
+}

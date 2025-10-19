@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Application, Job } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyApplications } from "@/api/endpoints/applications.api";
 import { ApplicationDetailed } from "@/api/types/users.types";
+import { Job } from "@/api/types/jobs.types";
 
 const CandidateApplicationsPage = () => {
   const navigate = useNavigate();
@@ -82,9 +82,9 @@ const CandidateApplicationsPage = () => {
         <div className="grid gap-6">
           {applications.map((application) => {
             const job: Job = application.job;
-            const companyName =
-              (job as any).companyName || job.company || "Company";
-            const companyLogo = (job as any).companyLogo || undefined;
+            const companyName = (job as any).companyName || "Company";
+            const companyLogo =
+              job?.organization?.logoFile?.url || job.companyLogo || undefined;
             const descriptionPlain =
               (job.description ?? "")
                 .replace(/<[^>]*>/g, "")

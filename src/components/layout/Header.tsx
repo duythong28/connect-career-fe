@@ -13,7 +13,7 @@ import { queryClient } from "@/lib/queryClient";
 import { ROUTES } from "@/constants/routes";
 
 const Header = () => {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
 
   const getSidebarOpen = () => {
     const stored = localStorage.getItem("sidebarOpen");
@@ -28,7 +28,6 @@ const Header = () => {
   const { mutate: logoutMutate, isPending: isLoggingOut } = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      setUser(null);
       deleteCookie("accessToken");
       deleteCookie("refreshToken");
       queryClient.clear();
@@ -39,7 +38,6 @@ const Header = () => {
       window.location.href = ROUTES.LOGIN;
     },
     onError: (error: any) => {
-      setUser(null);
       deleteCookie("accessToken");
       deleteCookie("refreshToken");
       queryClient.clear();

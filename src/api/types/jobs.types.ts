@@ -1,3 +1,5 @@
+import { LogoFile } from "./organizations.types";
+
 export interface SalaryDetails {
   currency: string;
   maxAmount: number;
@@ -49,6 +51,7 @@ export interface Organization {
   isVerified: boolean;
   keywords: string[];
   logoFileId: string;
+  logoFile?: LogoFile | null;
   longDescription: string | null;
   mission: string | null;
   name: string;

@@ -320,7 +320,12 @@ const JobSearchPage = () => {
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-4 flex-1">
                             <Avatar className="h-16 w-16">
-                              <AvatarImage src={job.companyLogo} />
+                              <AvatarImage
+                                src={
+                                  job?.organization?.logoFile?.url ||
+                                  job.companyLogo
+                                }
+                              />
                               <AvatarFallback>
                                 {job?.companyName?.charAt(0)}
                               </AvatarFallback>
