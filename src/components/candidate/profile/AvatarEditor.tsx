@@ -13,7 +13,6 @@ import type {
 } from "@/api/types/files.types";
 import { useMutation } from "@tanstack/react-query";
 import { updateUserInfo } from "@/api/endpoints/users.api";
-import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   currentUrl?: string | null;
@@ -24,7 +23,6 @@ interface Props {
 export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { setUser, user } = useAuth();
   const { mutate: updateUserInfoMutate } = useMutation({
     mutationFn: updateUserInfo,
   });
@@ -69,7 +67,6 @@ export function AvatarEditor({ currentUrl, disabled, onUploaded }: Props) {
           {
             onSuccess(data) {
               onUploaded(uploadFileResonse.url);
-              setUser({ ...user, avatar: data.avatarUrl });
               toast({
                 title: "Avatar uploaded",
                 description: "Avatar uploaded successfully.",

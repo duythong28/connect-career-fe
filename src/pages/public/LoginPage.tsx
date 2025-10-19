@@ -51,8 +51,6 @@ const LoginPage = () => {
   const { mutate: getProfileMutate } = useMutation({
     mutationFn: getProfile,
     onSuccess: (profileData) => {
-      setUser(profileData);
-
       queryClient.setQueryData(["profile"], profileData);
       toast({
         title: "Login successful",

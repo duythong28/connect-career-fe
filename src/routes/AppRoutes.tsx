@@ -13,7 +13,7 @@ export const AppRoutes = () => {
       <Route
         path="/candidate/*"
         element={
-          <ProtectedRoute allowedRoles={["candidate"]}>
+          <ProtectedRoute allowedRoles={["user"]}>
             <CandidateRoutes />
           </ProtectedRoute>
         }
@@ -22,7 +22,7 @@ export const AppRoutes = () => {
       <Route
         path="/company/:companyId/*"
         element={
-          <ProtectedRoute allowedRoles={["candidate"]}>
+          <ProtectedRoute allowedRoles={["user"]}>
             <EmployerRoutes />
           </ProtectedRoute>
         }

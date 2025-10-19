@@ -1,10 +1,14 @@
 import axios from "../client/axios";
 import {
+  Application,
   ApplyJobDto,
   GetMyApplicationsParams,
+  UpdateApplicationStageForRecruiterDto,
 } from "../types/applications.types";
 
 const BASE = "/candidates/applications";
+
+const RECRUITER_BASE = "/recruiters/applications";
 
 const applyJob = async (data: ApplyJobDto): Promise<any> => {
   const response = await axios.post(`${BASE}`, data);
@@ -39,12 +43,14 @@ const getApplicationsByCandidatesForRecruiter = async (
 const getApplicationsByJob = async (
   jobId: string,
   params?: Record<string, any>
-): Promise<any> => {
+): Promise<Application[]> => {
   const response = await axios.get(`${BASE}/jobs/${jobId}`, { params });
   return response.data;
 };
 
-const getApplicationById = async (applicationId: string): Promise<any> => {
+const getApplicationById = async (
+  applicationId: string
+): Promise<Application> => {
   const response = await axios.get(`${BASE}/${applicationId}`);
   return response.data;
 };
@@ -69,11 +75,14 @@ const getApplicationStats = async (): Promise<any> => {
   return response.data;
 };
 
-const updateApplicationStatusForRecruiter = async (
+const updateApplicationStageForRecruiter = async (
   applicationId: string,
-  data: any
+  data: UpdateApplicationStageForRecruiterDto
 ): Promise<any> => {
-  const response = await axios.put(`${BASE}/${applicationId}/status`, data);
+  const response = await axios.post(
+    `${RECRUITER_BASE}/${applicationId}/stage/change`,
+    data
+  );
   return response.data;
 };
 
@@ -101,7 +110,7 @@ export {
   getSimilarApplications,
   shortlistApplication,
   getApplicationStats,
-  updateApplicationStatusForRecruiter,
+  updateApplicationStageForRecruiter,
   updateApplicationByIdForRecruiter,
   getMyApplications,
 };

@@ -1,4 +1,5 @@
-import { Job, Candidate, CV, Interview, Offer } from "../../lib/types";
+import { Candidate, CV, Interview, Offer } from "../../lib/types";
+import { Job } from "./jobs.types";
 
 export interface updateUserInfoDto {
   avatarUrl?: string;
