@@ -25,7 +25,6 @@ import ApplyJobDialog from "@/components/candidate/applications/ApplyJobDialog";
 
 const JobDetailPage = () => {
   const { user } = useAuth();
-
   const { id } = useParams();
   const navigate = useNavigate();
   const isApplied = false;
