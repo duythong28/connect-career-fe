@@ -9,11 +9,13 @@ import CandidateProfilePage from "@/pages/candidate/CandidateProfilePage";
 import RecruiterProfilePage from "@/pages/employer/RecruiterProfilePage";
 import NotFound from "@/pages/shared/NotFound";
 import { ROUTES } from "@/constants/routes";
+import App2 from "@/pages/temp/src/App2";
 
 export const PublicRoutes = () => {
   return (
     <Routes>
       <Route index element={<HomePage />} />
+      <Route path="home" element={<App2 />} />
       <Route path="login" element={<LoginPage />} />
       <Route path="signup" element={<SignupPage />} />
       <Route path="jobs" element={<JobSearchPage />} />

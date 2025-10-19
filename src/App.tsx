@@ -8,6 +8,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import { OrganizationProvider } from "./context/OrganizationContext";
 
 function App() {
+  
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
