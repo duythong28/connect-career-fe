@@ -7,7 +7,7 @@ import {
   InterviewResponse,
 } from "../types/interviews.types";
 
-const API_URL = "/recruiters/interviews";
+const API_URL = "/recruiters/applications/interviews";
 const APPLICATIONS_URL = "/recruiters/applications";
 
 const createInterview = async (

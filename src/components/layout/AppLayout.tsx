@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { UserRole } from "@/lib/types";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { RoleSwitcher } from "./RoleSwitcher";
@@ -16,28 +16,38 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
-  const getSidebarOpen = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
     const stored = localStorage.getItem("sidebarOpen");
     return stored ? JSON.parse(stored) : true;
-  };
+  });
 
-  const sidebarOpen = getSidebarOpen();
+  useEffect(() => {
+    const handleSidebarToggle = () => {
+      const stored = localStorage.getItem("sidebarOpen");
+      setSidebarOpen(stored ? JSON.parse(stored) : true);
+    };
+
+    window.addEventListener("sidebarToggle", handleSidebarToggle);
+    handleSidebarToggle();
+
+    return () => {
+      window.removeEventListener("sidebarToggle", handleSidebarToggle);
+    };
+  }, []);
   return (
-    <div className="App">
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+    <div className="min-h-screen bg-gray-50">
+      <Header />
 
-        <div className="flex pt-16">
-          {user && <Sidebar />}
+      <div className="flex min-h-screen flex-row pt-[4.5rem] w-full">
+        {user && <Sidebar />}
 
-          <main
-            className={`flex-1 ${
-              user ? (sidebarOpen ? "ml-64" : "ml-0") : ""
-            } transition-all duration-200`}
-          >
-            {children}
-          </main>
-        </div>
+        <main
+          className={`flex-1 bg-green-50 ${
+            user ? (sidebarOpen ? "ml-64" : "ml-0") : ""
+          } transition-all duration-200`}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

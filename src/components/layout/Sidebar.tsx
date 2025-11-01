@@ -188,7 +188,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`bg-white border-r border-gray-200 h-screen fixed left-0 top-16 transition-all duration-200 z-40 ${
+      className={`bg-white border-r border-gray-200 h-screen fixed left-0 top-[4.5rem] transition-all duration-200 z-40 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       } w-64`}
     >
