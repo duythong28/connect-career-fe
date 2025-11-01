@@ -1,47 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import {
   User,
-  Mail,
-  Phone,
-  MapPin,
-  Linkedin,
-  Github,
-  Globe,
   Plus,
-  X,
   Edit,
-  Save,
-  Camera,
   Briefcase,
   GraduationCap,
   FileText,
   Eye,
-  Download,
-  Upload,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMyProfile, updateMyProfile } from "@/api/endpoints/candidates.api";
 import { getMyCvs } from "@/api/endpoints/cvs.api";
@@ -59,36 +29,6 @@ import {
 import ProfileEditor, { ProfileFormValues } from "./profile/ProfileEditor";
 import AvatarEditor from "./profile/AvatarEditor";
 import UploadCVButton from "./profile/UploadCVButton";
-
-interface Experience {
-  id: string;
-  company: string;
-  title: string;
-  startDate: string;
-  endDate?: string;
-  current: boolean;
-  description: string;
-}
-
-interface Education {
-  id: string;
-  institution: string;
-  degree: string;
-  field: string;
-  startDate: string;
-  endDate?: string;
-  current: boolean;
-}
-
-interface CV {
-  id: string;
-  name: string;
-  fileName: string;
-  uploadedAt: string;
-  type: "pdf" | "docx" | "image";
-  visibility: boolean;
-  isDefault: boolean;
-}
 
 export function CandidateProfile() {
   const [isMyProfile, setIsMyProfile] = useState(true);

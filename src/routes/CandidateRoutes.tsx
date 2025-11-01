@@ -6,9 +6,9 @@ import SubscriptionPage from "@/pages/shared/SubscriptionPage";
 import { CandidateDashboard } from "@/components/candidate/CandidateDashboard";
 import CandidateApplicationsPage from "@/pages/candidate/CandidateApplicationsPage";
 import CandidateInterviewsPage from "@/pages/candidate/CandidateInterviewsPage";
-import MessagesPage from "@/pages/candidate/MessagesPage";
 import NotFound from "@/pages/shared/NotFound";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
+import MessagePage from "@/pages/shared/MessagePage";
 
 export const CandidateRoutes = () => {
   return (
@@ -19,7 +19,7 @@ export const CandidateRoutes = () => {
       <Route path="applications" element={<CandidateApplicationsPage />} />
       <Route path="interviews" element={<CandidateInterviewsPage />} />
       <Route path="saved" element={<SavedJobsPage />} />
-      <Route path="messages" element={<MessagesPage />} />
+      <Route path="messages" element={<MessagePage />} />
       <Route path="chatbot" element={<ChatbotPage />} />
       <Route path="settings" element={<SubscriptionPage />} />
       <Route path="create-organization" element={<CompanyProfilePage />} />

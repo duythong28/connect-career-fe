@@ -1,4 +1,5 @@
 import { CV } from "./cvs.types";
+import { InterviewResponse, InterviewType } from "./interviews.types";
 import { Job } from "./jobs.types";
 
 export interface ApplyJobDto {
@@ -86,7 +87,7 @@ export interface Application {
   matchingDetails?: MatchingDetails | null;
   isAutoScored?: boolean;
   lastScoredAt?: string | null;
-  interviews?: any[]; // can be typed to InterviewResponse[]
+  interviews?: InterviewResponse[];
   totalInterviews?: number;
   completedInterviews?: number;
   nextInterviewDate?: string | null;

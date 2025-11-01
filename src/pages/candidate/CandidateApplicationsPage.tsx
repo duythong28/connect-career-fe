@@ -26,12 +26,12 @@ const CandidateApplicationsPage = () => {
       getMyApplications({
         limit: 50,
         page: 1,
-        status: "new",
-        hasInterviews: false,
-        hasOffers: false,
+        status: "offer-sent",
+        hasInterviews: true,
+        hasOffers: true,
         sortBy: "appliedDate",
         sortOrder: "DESC",
-        awaitingResponse: false,
+        awaitingResponse: true,
       }),
     enabled: !!user?.id,
   });
