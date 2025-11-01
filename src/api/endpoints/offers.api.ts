@@ -6,7 +6,7 @@ import {
   OfferResponse,
 } from "../types/offers.types";
 
-const API_URL = "/recruiters/offers";
+const API_URL = "/recruiters/applications/offers";
 const APPLICATIONS_URL = "/recruiters/applications";
 
 const createOffer = async (
