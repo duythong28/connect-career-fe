@@ -10,10 +10,19 @@ export interface OfferCreateDto {
   isNegotiable?: boolean;
 }
 
+export enum SalaryPeriod {
+  HOURLY = "hourly",
+  DAILY = "daily",
+  WEEKLY = "weekly",
+  MONTHLY = "monthly",
+  YEARLY = "yearly",
+  PROJECT = "project",
+}
+
 export interface OfferUpdateDto {
   baseSalary?: number;
   currency?: string;
-  salaryPeriod?: "YEARLY" | "MONTHLY" | string;
+  salaryPeriod?: SalaryPeriod;
   signingBonus?: number;
   equity?: string;
   benefits?: string[];
@@ -22,8 +31,14 @@ export interface OfferUpdateDto {
   isNegotiable?: boolean;
 }
 
+export enum OfferStatus {
+  PENDING = "pending",
+  ACCEPTED = "accepted",
+  REJECTED = "rejected",
+}
+
 export interface OfferCandidateResponseDto {
-  response: "ACCEPTED" | "DECLINED" | "COUNTER" | string;
+  response: OfferStatus;
   candidateNotes?: string;
   recordedBy?: string;
 }
@@ -42,4 +57,5 @@ export interface OfferResponse {
   isNegotiable?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  status: OfferStatus;
 }

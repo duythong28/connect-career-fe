@@ -9,11 +9,11 @@ import ChatbotPage from "@/pages/shared/ChatbotPage";
 import SubscriptionPage from "@/pages/shared/SubscriptionPage";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
 import { EmployerDashboard } from "@/components/employer/EmployerDashboard";
-import MessagesPage from "@/pages/candidate/MessagesPage";
 import NotFound from "@/pages/shared/NotFound";
 import JobDetail from "@/pages/employer/JobDetail";
 import PipelineTemplates from "@/pages/employer/PipelineTemplates";
 import ApplicationDetail from "@/pages/employer/ApplicationDetail";
+import MessagePage from "@/pages/shared/MessagePage";
 
 export const EmployerRoutes = () => {
   return (
@@ -26,7 +26,7 @@ export const EmployerRoutes = () => {
       <Route path="pipeline" element={<PipelineTemplates />} />
       <Route path="candidates" element={<CandidateSearchPage />} />
       <Route path="interviews" element={<EmployerInterviewsPage />} />
-      <Route path="messages" element={<MessagesPage />} />
+      <Route path="messages" element={<MessagePage />} />
       <Route path="chatbot" element={<ChatbotPage />} />
       <Route path="analytics" element={<EmployerAnalyticsPage />} />
       <Route path="profile" element={<RecruiterProfilePage />} />
