@@ -1,9 +1,9 @@
-import { enhanceCvWithAi } from "@/api/endpoints/cvs.api";
+import { enhanceCvWithAi, getMyCvs } from "@/api/endpoints/cvs.api";
 import { ExtractedCvData } from "@/api/types/cv.types";
 import { EnhanceCvWithAiDto } from "@/api/types/cvs.types";
 import UploadFilButton from "@/components/ai/UploadFileButton";
 import UploadCVButton from "@/components/candidate/profile/UploadCVButton";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import React, { useState, useMemo, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 
@@ -274,6 +274,12 @@ const CVSelectionStep = ({ onNext, onCancel }) => {
   const [selectedCV, setSelectedCV] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [initialCvData, setInitialCvData] = useState(null);
+  const { data: cvsData } = useQuery({
+    queryKey: ["candidateCvs"],
+    queryFn: async () => {
+      return getMyCvs();
+    },
+  });
 
   const handleFileUpload = (cvData: ExtractedCvData) => {
     setInitialCvData(cvData);
@@ -282,6 +288,7 @@ const CVSelectionStep = ({ onNext, onCancel }) => {
   const handleProceed = async () => {
     // setIsProcessing(true);
     // await new Promise((resolve) => setTimeout(resolve, 1500));
+    console.log("Proceeding with CV Data:", initialCvData);
     onNext(initialCvData);
   };
 
@@ -394,7 +401,7 @@ const CVSelectionStep = ({ onNext, onCancel }) => {
 
               {selectedOption === "existing" && (
                 <div className="mt-4 space-y-2">
-                  {mockExistingCVs.map((cv) => (
+                  {(cvsData.data ? cvsData.data : []).map((cv) => (
                     <div
                       key={cv.id}
                       onClick={(e) => {
@@ -408,9 +415,9 @@ const CVSelectionStep = ({ onNext, onCancel }) => {
                       }`}
                     >
                       <p className="font-medium text-sm text-gray-800">
-                        {cv.name}
+                        {cv.title}
                       </p>
-                      <p className="text-xs text-gray-500">{cv.date}</p>
+                      <p className="text-xs text-gray-500">{cv.createdAt}</p>
                     </div>
                   ))}
                 </div>
@@ -451,9 +458,10 @@ const JobDescriptionStep = ({ cvData, onNext, onBack, onCancel }) => {
   const handleAnalyze = async () => {
     // setIsAnalyzing(true);
     enhanceCvWithAiMutate(
-      { cvData, jobDescription },
+      { cv: cvData, jobDescription },
       {
         onSuccess: (data) => {
+          onNext({ cvAssessment: data.data.cvAssessment });
           console.log("Enhanced CV Data:", data);
         },
       }
@@ -541,33 +549,88 @@ const JobDescriptionStep = ({ cvData, onNext, onBack, onCancel }) => {
 
 const EditableField = ({ path, value, suggestion, onApprove, onEdit }) => {
   if (suggestion) {
-    return (
-      <span className="p-1 rounded-md bg-gray-100 border border-dashed border-blue-400 relative">
-        {suggestion.diff.map((segment, index) => (
-          <span
-            key={index}
-            className={
-              segment.type === "deletion"
-                ? "bg-red-100 text-red-700 line-through"
-                : segment.type === "suggestion"
-                ? "bg-green-100 text-green-700 font-medium"
-                : ""
-            }
-          >
-            {segment.value}
+    // BUG FIX: Handle complex array diffs (like workExperience)
+    // by showing a generic message instead of rendering the raw JSON.
+    if (
+      suggestion.path === "workExperience" ||
+      suggestion.path === "projects"
+    ) {
+      return (
+        <span className="p-1 rounded-md bg-gray-100 border border-dashed border-blue-400 relative">
+          <span className="text-blue-700 font-medium italic text-sm">
+            Suggestion available in the right panel.
           </span>
-        ))}
-        <button
-          title="Approve suggestion"
-          className="ml-2 px-2 py-0.5 rounded-full bg-green-200 text-green-800 hover:bg-green-300 transition-all text-xs"
-          onClick={() => onApprove(suggestion)}
-        >
-          ✅ Approve
-        </button>
-      </span>
-    );
+          <button
+            title="Approve suggestion"
+            className="ml-2 px-2 py-0.5 rounded-full bg-green-200 text-green-800 hover:bg-green-300 transition-all text-xs"
+            onClick={() => onApprove(suggestion)}
+          >
+            ✅ Approve
+          </button>
+        </span>
+      );
+    }
+
+    // Special handling for simple array suggestions like 'skills'
+    if (Array.isArray(suggestion.diff) && suggestion.path === "skills") {
+      return (
+        <span className="p-1 rounded-md bg-gray-100 border border-dashed border-blue-400 relative">
+          {suggestion.diff.map((segment, index) => (
+            <span
+              key={index}
+              className={
+                segment.type === "deletion"
+                  ? "bg-red-100 text-red-700 line-through mr-1 px-2 py-0.5 rounded-full"
+                  : segment.type === "suggestion"
+                  ? "bg-green-100 text-green-700 font-medium mr-1 px-2 py-0.5 rounded-full"
+                  : "bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full mr-1"
+              }
+            >
+              {segment.value}
+            </span>
+          ))}
+          <button
+            title="Approve suggestion"
+            className="ml-2 px-2 py-0.5 rounded-full bg-green-200 text-green-800 hover:bg-green-300 transition-all text-xs"
+            onClick={() => onApprove(suggestion)}
+          >
+            ✅ Approve
+          </button>
+        </span>
+      );
+    }
+
+    // Default: Handle string diffs
+    if (Array.isArray(suggestion.diff)) {
+      return (
+        <span className="p-1 rounded-md bg-gray-100 border border-dashed border-blue-400 relative">
+          {suggestion.diff.map((segment, index) => (
+            <span
+              key={index}
+              className={
+                segment.type === "deletion"
+                  ? "bg-red-100 text-red-700 line-through"
+                  : segment.type === "suggestion"
+                  ? "bg-green-100 text-green-700 font-medium"
+                  : "text-gray-700"
+              }
+            >
+              {segment.value}
+            </span>
+          ))}
+          <button
+            title="Approve suggestion"
+            className="ml-2 px-2 py-0.5 rounded-full bg-green-200 text-green-800 hover:bg-green-300 transition-all text-xs"
+            onClick={() => onApprove(suggestion)}
+          >
+            ✅
+          </button>
+        </span>
+      );
+    }
   }
 
+  // No suggestion, render the editable field
   return (
     <span
       contentEditable={true}
@@ -580,25 +643,215 @@ const EditableField = ({ path, value, suggestion, onApprove, onEdit }) => {
 };
 
 const SuggestionCard = ({ suggestion, onApprove, onDismiss }) => {
+  // Check if this is a complex array suggestion (like workExperience or projects)
+  const isComplexArraySuggestion =
+    suggestion.path === "workExperience" || suggestion.path === "projects";
+
+  // Check if this is an object suggestion (like personalInfo)
+  const isObjectSuggestion =
+    suggestion.path === "personalInfo" ||
+    (suggestion.diff &&
+      suggestion.diff.length > 0 &&
+      typeof suggestion.diff[0].value === "object" &&
+      !Array.isArray(suggestion.diff[0].value));
+
+  // Check if this is a simple array suggestion (like skills)
+  const isSimpleArraySuggestion =
+    suggestion.path === "skills" && Array.isArray(suggestion.diff);
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md border border-gray-100">
-      <p className="text-sm text-gray-600 mb-3">{suggestion.reason}</p>
-      <div className="text-sm bg-gray-50 p-3 rounded-md mb-4">
-        {suggestion.diff.map((segment, index) => (
-          <span
-            key={index}
-            className={
-              segment.type === "deletion"
-                ? "bg-red-100 text-red-700 line-through"
-                : segment.type === "suggestion"
-                ? "bg-green-100 text-green-700 font-medium"
-                : "text-gray-700"
-            }
-          >
-            {segment.value}
-          </span>
-        ))}
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="text-sm font-semibold text-gray-800 capitalize">
+          {suggestion.path.replace(/([A-Z])/g, " $1").trim()}
+        </h4>
       </div>
+      <p className="text-sm text-gray-600 mb-3">{suggestion.reason}</p>
+
+      <div className="text-sm bg-gray-50 p-3 rounded-md mb-4 max-h-96 overflow-y-auto">
+        {isComplexArraySuggestion ? (
+          // Render complex array suggestions as formatted JSON
+          <div className="space-y-3">
+            {suggestion.diff.map((segment, index) => {
+              if (segment.type === "suggestion" && segment.value) {
+                const value = segment.value;
+                return (
+                  <div
+                    key={index}
+                    className="bg-green-50 border border-green-200 rounded-md p-3"
+                  >
+                    <div className="text-xs font-semibold text-green-800 mb-2">
+                      Suggested Changes:
+                    </div>
+                    {Array.isArray(value) ? (
+                      value.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="mb-2 pb-2 border-b border-green-100 last:border-0"
+                        >
+                          {typeof item === "object" && item !== null ? (
+                            Object.entries(item).map(([key, val]) => (
+                              <div key={key} className="text-xs">
+                                <span className="font-medium text-gray-700">
+                                  {key}:
+                                </span>{" "}
+                                <span className="text-gray-600">
+                                  {Array.isArray(val)
+                                    ? val.join(", ")
+                                    : typeof val === "object" && val !== null
+                                    ? JSON.stringify(val)
+                                    : String(val)}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-xs text-gray-700">
+                              {String(item)}
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    ) : typeof value === "object" && value !== null ? (
+                      <div className="space-y-1">
+                        {Object.entries(value).map(([key, val]) => (
+                          <div key={key} className="text-xs">
+                            <span className="font-medium text-gray-700">
+                              {key}:
+                            </span>{" "}
+                            <span className="text-gray-600">
+                              {Array.isArray(val)
+                                ? val.join(", ")
+                                : typeof val === "object" && val !== null
+                                ? JSON.stringify(val)
+                                : String(val)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-700">
+                        {String(value)}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+        ) : isObjectSuggestion ? (
+          // Render object suggestions (like personalInfo) as field-by-field comparison
+          <div className="space-y-2">
+            {suggestion.diff.map((segment, index) => {
+              if (
+                segment.type === "suggestion" &&
+                typeof segment.value === "object" &&
+                segment.value !== null
+              ) {
+                // Show the object as key-value pairs
+                return (
+                  <div
+                    key={index}
+                    className="bg-green-50 border border-green-200 rounded-md p-3"
+                  >
+                    <div className="text-xs font-semibold text-green-800 mb-2">
+                      Suggested Changes:
+                    </div>
+                    <div className="space-y-1">
+                      {Object.entries(segment.value).map(([key, val]) => (
+                        <div key={key} className="text-xs">
+                          <span className="font-medium text-gray-700">
+                            {key}:
+                          </span>{" "}
+                          <span className="text-green-700">
+                            {Array.isArray(val)
+                              ? val.join(", ")
+                              : typeof val === "object" && val !== null
+                              ? JSON.stringify(val)
+                              : String(val || "null")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              } else if (
+                segment.type === "deletion" &&
+                typeof segment.value === "object" &&
+                segment.value !== null
+              ) {
+                // Show deleted object
+                return (
+                  <div
+                    key={index}
+                    className="bg-red-50 border border-red-200 rounded-md p-3"
+                  >
+                    <div className="text-xs font-semibold text-red-800 mb-2">
+                      Current Values:
+                    </div>
+                    <div className="space-y-1">
+                      {Object.entries(segment.value).map(([key, val]) => (
+                        <div key={key} className="text-xs">
+                          <span className="font-medium text-gray-700">
+                            {key}:
+                          </span>{" "}
+                          <span className="text-red-700 line-through">
+                            {Array.isArray(val)
+                              ? val.join(", ")
+                              : typeof val === "object" && val !== null
+                              ? JSON.stringify(val)
+                              : String(val || "null")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+        ) : isSimpleArraySuggestion ? (
+          // Render simple array suggestions as pills
+          <div className="flex flex-wrap gap-1">
+            {suggestion.diff.map((segment, index) => (
+              <span
+                key={index}
+                className={
+                  segment.type === "deletion"
+                    ? "bg-red-100 text-red-700 line-through px-2 py-0.5 rounded-full text-xs"
+                    : segment.type === "suggestion"
+                    ? "bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full text-xs"
+                    : "bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium"
+                }
+              >
+                {typeof segment.value === "object"
+                  ? JSON.stringify(segment.value)
+                  : String(segment.value)}
+              </span>
+            ))}
+          </div>
+        ) : (
+          // Render string suggestions as inline text
+          suggestion.diff.map((segment, index) => (
+            <span
+              key={index}
+              className={
+                segment.type === "deletion"
+                  ? "bg-red-100 text-red-700 line-through"
+                  : segment.type === "suggestion"
+                  ? "bg-green-100 text-green-700 font-medium"
+                  : "text-gray-700"
+              }
+            >
+              {typeof segment.value === "object"
+                ? JSON.stringify(segment.value)
+                : String(segment.value)}
+            </span>
+          ))
+        )}
+      </div>
+
       <div className="flex justify-end space-x-2">
         <button
           title="Dismiss suggestion"
@@ -650,17 +903,44 @@ const ReviewSuggestionsStep = ({
   };
 
   const handleApprove = (suggestion) => {
-    // Check if the suggestion path is for the entire 'skills' array
-    const isSkillsArraySuggestion = suggestion.path === "skills";
     let newValue;
 
-    if (isSkillsArraySuggestion) {
-      // Handle array diffs (like for 'skills')
+    // Check the type of suggestion based on the diff structure
+    const firstDiff = suggestion.diff.find((s) => s.type === "suggestion");
+
+    if (!firstDiff) {
+      // No suggestion to apply, just remove the suggestion card
+      removeSuggestion(suggestion.id);
+      return;
+    }
+
+    // Handle object suggestions (like personalInfo)
+    if (
+      typeof firstDiff.value === "object" &&
+      firstDiff.value !== null &&
+      !Array.isArray(firstDiff.value)
+    ) {
+      newValue = firstDiff.value;
+    }
+    // Handle array of objects (like workExperience, projects)
+    else if (
+      Array.isArray(firstDiff.value) &&
+      firstDiff.value.length > 0 &&
+      typeof firstDiff.value[0] === "object"
+    ) {
+      newValue = firstDiff.value;
+    }
+    // Handle simple array suggestions (like skills)
+    else if (
+      suggestion.path === "skills" ||
+      (Array.isArray(firstDiff.value) && typeof firstDiff.value[0] === "string")
+    ) {
       newValue = suggestion.diff
         .filter((s) => s.type !== "deletion")
         .map((s) => s.value);
-    } else {
-      // Handle string diffs
+    }
+    // Handle string diffs
+    else {
       newValue = suggestion.diff
         .filter((s) => s.type !== "deletion")
         .map((s) => s.value)
@@ -679,10 +959,9 @@ const ReviewSuggestionsStep = ({
     setCvData((prev) => set(prev, path, newValue));
   };
 
-  const totalSuggestions = Object.values(assessmentData.cvAssessment).reduce(
-    (sum, suggestions: any) => sum + suggestions.length,
-    0
-  );
+  const totalSuggestions = Object.values(
+    assessmentData.cvAssessment
+  ).reduce<number>((sum, suggestions: any) => sum + suggestions.length, 0);
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -1095,6 +1374,27 @@ const getSectionRenderOrder = (cvData) => {
   );
 };
 
+// Helper function to render tech stack
+const renderTechStack = (techStack, color) => {
+  if (!techStack || techStack.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <p className="text-xs font-semibold text-gray-600 mb-1">Tech Stack:</p>
+      <div className="flex flex-wrap gap-1">
+        {techStack.map((tech, idx) => (
+          <span
+            key={idx}
+            className="text-xs px-2 py-0.5 rounded"
+            style={{ backgroundColor: `${color}15`, color: color }}
+          >
+            {tech}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const CVTemplateRenderer = ({
   cvData,
   templateId,
@@ -1216,6 +1516,7 @@ const CVTemplateRenderer = ({
                       ))}
                     </ul>
                   )}
+                {renderTechStack(project.techStack, color)}
               </div>
             ))}
           </section>
@@ -1378,6 +1679,7 @@ const CVTemplateRenderer = ({
                       ))}
                     </ul>
                   )}
+                {renderTechStack(project.techStack, color)}
               </div>
             ))}
           </section>
@@ -1516,6 +1818,7 @@ const CVTemplateRenderer = ({
                       ))}
                     </ul>
                   )}
+                {renderTechStack(project.techStack, color)}
               </div>
             ))}
           </section>
@@ -1660,6 +1963,7 @@ const CVTemplateRenderer = ({
                       ))}
                     </ul>
                   )}
+                {renderTechStack(project.techStack, color)}
               </div>
             ))}
           </section>
@@ -1815,6 +2119,7 @@ const CVTemplateRenderer = ({
                         ))}
                       </ul>
                     )}
+                  {renderTechStack(project.techStack, color)}
                 </div>
               ))}
             </div>
@@ -1975,6 +2280,7 @@ const CVTemplateRenderer = ({
                           ))}
                         </ul>
                       )}
+                    {renderTechStack(project.techStack, color)}
                   </div>
                 </div>
               ))}
@@ -2123,6 +2429,7 @@ const CVTemplateRenderer = ({
                   </span>
                 </div>
                 <p className="text-xs mt-1">{project.description}</p>
+                {renderTechStack(project.techStack, color)}
               </div>
             ))}
           </section>
@@ -2239,6 +2546,7 @@ const CVTemplateRenderer = ({
                   </span>
                 </div>
                 <p className="text-gray-700 mb-2">{project.description}</p>
+                {renderTechStack(project.techStack, color)}
               </div>
             ))}
           </section>
@@ -2571,6 +2879,7 @@ const CVTemplateRenderer = ({
                   </span>
                 </div>
                 <p className="text-gray-700 mb-2">{project.description}</p>
+                {renderTechStack(project.techStack, color)}
               </div>
             ))}
           </section>
@@ -2657,18 +2966,50 @@ const TemplateSelectionStep = ({ cvData, onNext, onBack, onCancel }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [hoveredTemplate, setHoveredTemplate] = useState(null);
 
+  // Safety check: ensure cvData has all required fields
+  const safeCvData = {
+    personalInfo: cvData?.personalInfo || {
+      name: "",
+      title: "",
+      email: "",
+      phone: "",
+      address: "",
+    },
+    skills: cvData?.skills || [],
+    workExperience: cvData?.workExperience || [],
+    education: cvData?.education || [],
+    projects: cvData?.projects || [],
+    awards: cvData?.awards || [],
+    sectionVisibility: cvData?.sectionVisibility || {
+      personalInfo: true,
+      skills: true,
+      workExperience: true,
+      education: true,
+      projects: true,
+      awards: true,
+    },
+    sectionOrder: cvData?.sectionOrder || [
+      "personalInfo",
+      "skills",
+      "workExperience",
+      "education",
+      "projects",
+      "awards",
+    ],
+  };
+
   const previewData = {
-    ...cvData,
+    ...safeCvData,
     personalInfo: {
-      ...cvData.personalInfo,
+      ...safeCvData.personalInfo,
       name: "John Doe",
       title: "Professional Title",
     },
-    skills: cvData.skills.slice(0, 6),
-    workExperience: cvData.workExperience.slice(0, 1),
-    education: cvData.education.slice(0, 1),
-    projects: cvData.projects.slice(0, 1),
-    awards: cvData.awards.slice(0, 1),
+    skills: safeCvData.skills.slice(0, 6),
+    workExperience: safeCvData.workExperience.slice(0, 1),
+    education: safeCvData.education.slice(0, 1),
+    projects: safeCvData.projects.slice(0, 1),
+    awards: safeCvData.awards.slice(0, 1),
   };
 
   return (
@@ -2768,7 +3109,7 @@ const TemplateSelectionStep = ({ cvData, onNext, onBack, onCancel }) => {
         {selectedTemplate && (
           <div className="text-center">
             <button
-              onClick={() => onNext(cvData, selectedTemplate)}
+              onClick={() => onNext(safeCvData, selectedTemplate)}
               className="px-10 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:shadow-xl transition-all font-semibold text-lg"
             >
               Customize Template →
@@ -3942,6 +4283,7 @@ export default function CvImprovenentPage() {
       setCvData(data);
       setCurrentStep(2);
     } else if (step === 2) {
+      console.log("Assessment Data from Step 2:", data);
       setAssessmentData(data);
       setCurrentStep(3);
     } else if (step === 3) {

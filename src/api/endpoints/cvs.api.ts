@@ -3,6 +3,7 @@ import { ExtractedCvData, ParseCvFromPdfResponse } from "../types/cv.types";
 import {
   CV,
   CvsResponse,
+  EnhanceCvResponse,
   EnhanceCvWithAiDto,
   UploadCvDto,
 } from "../types/cvs.types";
@@ -54,11 +55,11 @@ const parseCvFromPdf = async (url: string): Promise<ParseCvFromPdfResponse> => {
 };
 
 const enhanceCvWithAi = async ({
-  cvData,
+  cv,
   jobDescription,
-}: EnhanceCvWithAiDto): Promise<any> => {
+}: EnhanceCvWithAiDto): Promise<EnhanceCvResponse> => {
   const response = await axios.post(`/ai/cv/enhance`, {
-    cvData,
+    cv,
     jobDescription,
   });
   return response.data;

@@ -66,7 +66,7 @@ export function UploadCVButton({ disabled }: Props) {
 
       const url = uploadFileResonse?.url;
 
-      // const parseResult = await parseCvFromPdf(url!);
+      const parseResult = await parseCvFromPdf(url!);
 
       uploadCvMutate(
         {
@@ -79,10 +79,10 @@ export function UploadCVButton({ disabled }: Props) {
         },
         {
           onSuccess: (cv) => {
-            // updateCvMutate({
-            //   id: cv.id,
-            //   content: parseResult.data.extractedText,
-            // });
+            updateCvMutate({
+              id: cv.id,
+              content: parseResult.data.extractedText,
+            });
             queryClient.invalidateQueries({ queryKey: ["candidateCvs"] });
             toast({
               title: "CV uploaded",
