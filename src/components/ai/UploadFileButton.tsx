@@ -12,25 +12,18 @@ import type {
   SignedUploadResponse,
 } from "@/api/types/files.types";
 import { useMutation } from "@tanstack/react-query";
-import { parseCvFromPdf, updateCv, uploadCv } from "@/api/endpoints/cvs.api";
+import { parseCvFromPdf, uploadCv } from "@/api/endpoints/cvs.api";
 import { queryClient } from "@/lib/queryClient";
 import { ExtractedCvData } from "@/api/types/cv.types";
 
 interface Props {
   disabled?: boolean;
+  onUploadSuccess?: (extractedData: ExtractedCvData) => void;
 }
 
-export function UploadCVButton({ disabled }: Props) {
+export function UploadFilButton({ disabled, onUploadSuccess }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { mutate: uploadCvMutate } = useMutation({
-    mutationFn: uploadCv,
-  });
-
-  const { mutate: updateCvMutate } = useMutation({
-    mutationFn: ({ id, content }: { id: string; content: ExtractedCvData }) =>
-      updateCv(id, content),
-  });
 
   const handleClick = () => {
     if (disabled) return;
@@ -66,38 +59,35 @@ export function UploadCVButton({ disabled }: Props) {
 
       const url = uploadFileResonse?.url;
 
-      // const parseResult = await parseCvFromPdf(url!);
+      const parseResult = await parseCvFromPdf(url!);
 
-      uploadCvMutate(
-        {
-          fileId: uploadFileResonse?.id,
-          title: file.name,
-          description: file.name,
-          type: "pdf",
-          isPublic: true,
-          status: "published",
-        },
-        {
-          onSuccess: (cv) => {
-            // updateCvMutate({
-            //   id: cv.id,
-            //   content: parseResult.data.extractedText,
-            // });
-            queryClient.invalidateQueries({ queryKey: ["candidateCvs"] });
-            toast({
-              title: "CV uploaded",
-              description: "CV uploaded successfully.",
-            });
-          },
-          onError: (err: any) => {
-            console.error(err);
-            toast({
-              title: "Upload failed",
-              description: err?.message || "Unable to upload CV.",
-            });
-          },
-        }
-      );
+      onUploadSuccess(parseResult.data.extractedText);
+
+      //   uploadCvMutate(
+      //     {
+      //       fileId: uploadFileResonse?.id,
+      //       title: file.name,
+      //       description: file.name,
+      //       type: "pdf",
+      //       isPublic: true,
+      //     },
+      //     {
+      //       onSuccess: (cv) => {
+      //         queryClient.invalidateQueries({ queryKey: ["candidateCvs"] });
+      //         toast({
+      //           title: "CV uploaded",
+      //           description: "CV uploaded successfully.",
+      //         });
+      //       },
+      //       onError: (err: any) => {
+      //         console.error(err);
+      //         toast({
+      //           title: "Upload failed",
+      //           description: err?.message || "Unable to upload CV.",
+      //         });
+      //       },
+      //     }
+      //   );
     } catch (err: any) {
       console.error(err);
       toast({
@@ -123,13 +113,13 @@ export function UploadCVButton({ disabled }: Props) {
         size="sm"
         onClick={handleClick}
         disabled={disabled || isUploading}
-        arial-label="Upload CV"
+        arial-label="Choose File"
       >
         <Upload className="w-4 h-4 mr-2" />
-        Upload CV
+        Choose File
       </Button>
     </div>
   );
 }
 
-export default UploadCVButton;
+export default UploadFilButton;

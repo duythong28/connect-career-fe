@@ -1,5 +1,11 @@
 import axios from "../client/axios";
-import { CvsResponse, UploadCvDto } from "../types/cvs.types";
+import { ExtractedCvData, ParseCvFromPdfResponse } from "../types/cv.types";
+import {
+  CV,
+  CvsResponse,
+  EnhanceCvWithAiDto,
+  UploadCvDto,
+} from "../types/cvs.types";
 const API_URL = "/cvs/candidate";
 
 const getMyCvs = async (): Promise<CvsResponse> => {
@@ -12,12 +18,11 @@ const getCvById = async (id: string): Promise<CvsResponse> => {
   return response.data;
 };
 
-const updateCv = async (id: string, data: FormData): Promise<CvsResponse> => {
-  const response = await axios.patch(`${API_URL}/${id}`, data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+const updateCv = async (
+  id: string,
+  content?: ExtractedCvData
+): Promise<CvsResponse> => {
+  const response = await axios.patch(`${API_URL}/${id}`, { content });
   return response.data;
 };
 
@@ -37,10 +42,28 @@ const publishCv = async (id: string): Promise<CvsResponse> => {
   return response.data;
 };
 
-const uploadCv = async (data: UploadCvDto): Promise<CvsResponse> => {
+const uploadCv = async (data: UploadCvDto): Promise<CV> => {
   const response = await axios.post(`${API_URL}/upload`, data);
   return response.data;
 };
+
+const parseCvFromPdf = async (url: string): Promise<ParseCvFromPdfResponse> => {
+  const response = await axios.post(`/ai/cv/parse-resume-from-pdf`, { url });
+
+  return response.data;
+};
+
+const enhanceCvWithAi = async ({
+  cvData,
+  jobDescription,
+}: EnhanceCvWithAiDto): Promise<any> => {
+  const response = await axios.post(`/ai/cv/enhance`, {
+    cvData,
+    jobDescription,
+  });
+  return response.data;
+};
+
 export {
   uploadCv,
   getMyCvs,
@@ -49,4 +72,6 @@ export {
   deleteCv,
   downloadCv,
   publishCv,
+  parseCvFromPdf,
+  enhanceCvWithAi,
 };

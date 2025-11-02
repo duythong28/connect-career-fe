@@ -1,3 +1,5 @@
+import { ExtractedCvData } from "./cv.types";
+
 export interface User {
   id: string;
   email: string;
@@ -117,4 +119,10 @@ export interface UploadCvDto {
   description: string;
   type: string;
   isPublic: boolean;
+  status?: string;
+}
+
+export interface EnhanceCvWithAiDto {
+  cvData: ExtractedCvData;
+  jobDescription: string;
 }

@@ -170,3 +170,35 @@ export interface SavedJobsResponse {
   limit: number;
   totalPages: number;
 }
+
+export enum JobSeniorityLevel {
+  ENTRY_LEVEL = "Entry level",
+  MID_SENIOR = "Mid-Senior level",
+  DIRECTOR = "Director",
+  EXECUTIVE = "Executive",
+  ASSOCIATE = "Associate",
+  INTERNSHIP = "Internship",
+  NOT_APPLICABLE = "Not Applicable",
+}
+
+export interface GenerateJobDto {
+  title: string;
+  jobType: string;
+  location: string;
+  companyName: string;
+  seniorityLevel: string;
+  companyDescription: string;
+}
+
+export interface GenerateJobResponse {
+  data: {
+    description: string;
+    summary: string;
+    keywords: string[];
+    requirements: string[];
+    responsibilities: string[];
+    benefits: string[];
+    suggestedTitle: string;
+    confidence: number;
+  };
+}

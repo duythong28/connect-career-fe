@@ -42,7 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {user && <Sidebar />}
 
         <main
-          className={`flex-1 bg-green-50 ${
+          className={`flex-1 ${
             user ? (sidebarOpen ? "ml-64" : "ml-0") : ""
           } transition-all duration-200`}
         >

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,7 +13,11 @@ import {
   Eye,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyProfile, updateMyProfile } from "@/api/endpoints/candidates.api";
+import {
+  createMyProfile,
+  getMyProfile,
+  updateMyProfile,
+} from "@/api/endpoints/candidates.api";
 import { getMyCvs } from "@/api/endpoints/cvs.api";
 import { useAuth } from "@/hooks/useAuth";
 import { SkillsEditor } from "./profile/SkillsEditor";
@@ -42,12 +46,34 @@ export function CandidateProfile() {
   >(undefined);
   const { user } = useAuth();
 
-  const { data: profileData } = useQuery({
+  const { mutate: createProfileMutate } = useMutation({
+    mutationFn: ({ email, userId }: { email: string; userId: string }) =>
+      createMyProfile({ email, userId }),
+  });
+
+  const {
+    data: profileData,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["candidateProfile"],
     queryFn: async () => {
       return getMyProfile();
     },
   });
+
+  useEffect(() => {
+    if (error) {
+      createProfileMutate(
+        { email: user?.email || "", userId: user.id },
+        {
+          onSuccess: () => {
+            refetch();
+          },
+        }
+      );
+    }
+  }, [error]);
 
   const queryClient = useQueryClient();
 

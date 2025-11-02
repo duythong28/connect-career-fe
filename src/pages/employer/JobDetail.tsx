@@ -202,9 +202,7 @@ export default function JobDetail() {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>
-                Posted {new Date(job.postedDate).toLocaleDateString()}
-              </span>
+              <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         </CardContent>

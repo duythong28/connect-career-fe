@@ -20,8 +20,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { getCandidateJobById } from "@/api/endpoints/jobs.api";
-import RenderMarkDown from "@/components/shared/RenderMarkDown";
+import RenderMarkDown, {
+  isHtmlContent,
+} from "@/components/shared/RenderMarkDown";
 import ApplyJobDialog from "@/components/candidate/applications/ApplyJobDialog";
+import { Markdown } from "@/components/ui/markdown";
 
 const JobDetailPage = () => {
   const { user } = useAuth();
@@ -123,12 +126,12 @@ const JobDetailPage = () => {
                 <div className="flex items-center space-x-6 text-sm text-gray-500 mt-4">
                   <span className="flex items-center">
                     <Clock className="h-4 w-4 mr-1" />
-                    Posted {jobData.postedDate}
+                    Posted {new Date(jobData.createdAt).toLocaleDateString()}
                   </span>
-                  <span className="flex items-center">
+                  {/* <span className="flex items-center">
                     <Eye className="h-4 w-4 mr-1" />
                     {jobData.views} views
-                  </span>
+                  </span> */}
                   <span className="flex items-center">
                     <Users className="h-4 w-4 mr-1" />
                     {jobData.applications} applicants
@@ -142,7 +145,14 @@ const JobDetailPage = () => {
                     <h3 className="text-xl font-semibold mb-4">
                       Job Description
                     </h3>
-                    <RenderMarkDown content={jobData.description} />
+                    {isHtmlContent(jobData.description) ? (
+                      <RenderMarkDown content={jobData.description} />
+                    ) : (
+                      <Markdown
+                        content={jobData.description}
+                        className="prose-sm"
+                      />
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">

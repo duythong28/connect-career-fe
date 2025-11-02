@@ -136,11 +136,11 @@ const CompanyProfilePage = () => {
       longDescription: "",
       website: "",
       headquartersAddress: "",
-      organizationSize: "",
+      organizationSize: "51-200 employees",
       employeeCount: "",
       country: "",
       city: "",
-      workingDaysCsv: "",
+      workingDaysCsv: "monday",
       keywordsCsv: "",
     },
   });
@@ -260,7 +260,7 @@ const CompanyProfilePage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600  py-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-6">
@@ -418,7 +418,7 @@ const CompanyProfilePage = () => {
               {!editMode && companydata?.website && (
                 <Button
                   variant="outline"
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  className="bg-white/10 border-white/20  hover:bg-white/20"
                   onClick={() => window.open(companydata?.website, "_blank")}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
@@ -431,7 +431,7 @@ const CompanyProfilePage = () => {
                   setEditMode((s) => !s);
                 }}
                 variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                className="bg-white/10 border-white/20  hover:bg-white/20"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 {editMode ? "Cancel" : "Edit Company"}
@@ -479,7 +479,7 @@ const CompanyProfilePage = () => {
             </Card>
 
             {/* Company Reviews (unchanged display) */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Employee Reviews</CardTitle>
               </CardHeader>
@@ -565,7 +565,7 @@ const CompanyProfilePage = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Sidebar */}

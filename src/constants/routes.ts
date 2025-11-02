@@ -19,6 +19,7 @@ export const ROUTES = {
     CHATBOT: "/candidate/chatbot",
     SETTINGS: "/candidate/settings",
     CREATE_ORGANIZATION: "/candidate/create-organization",
+    RESUME_IMPROVEMENT: "/candidate/resume-improvement",
   },
 
   // Company routes (accessed by candidates)

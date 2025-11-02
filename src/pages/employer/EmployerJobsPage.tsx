@@ -139,7 +139,7 @@ const EmployerJobsPage = () => {
                   </div>
                   <div>
                     <span>
-                      Posted {new Date(job.postedDate).toLocaleDateString()}
+                      Posted {new Date(job.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                   <div>

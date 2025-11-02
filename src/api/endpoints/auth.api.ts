@@ -3,6 +3,7 @@ import {
   LoginCredentials,
   LoginResponse,
   ProfileResponse,
+  RegisterCredentials,
 } from "../types/auth.types";
 
 const API_URL = "/auth";
@@ -12,7 +13,7 @@ const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
   return response.data;
 };
 
-const register = async (userData) => {
+const register = async (userData: RegisterCredentials) => {
   const response = await axios.post(`${API_URL}/register`, userData);
   return response.data;
 };
@@ -22,7 +23,7 @@ const loginNormalUser = async (credentials) => {
   return response.data;
 };
 
-const verifyEmail = async (token) => {
+const verifyEmail = async (token: string) => {
   const response = await axios.post(`${API_URL}/verify-email`, { token });
   return response.data;
 };
