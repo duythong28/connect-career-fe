@@ -157,7 +157,7 @@ const JobSearchPage = () => {
                   </Select>
                 </div>
 
-                <div>
+                {/* <div>
                   <Label>Industry</Label>
                   <Select
                     value={searchFilters.industry ?? ""}
@@ -185,9 +185,9 @@ const JobSearchPage = () => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
 
-                <div>
+                {/* <div>
                   <Label>Salary Range</Label>
                   <div className="px-2 py-4">
                     <Slider
@@ -217,7 +217,7 @@ const JobSearchPage = () => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <Button
                   onClick={() =>
@@ -376,7 +376,7 @@ const JobSearchPage = () => {
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                   <Clock className="h-4 w-4 mr-2" />
-                                  {job.postedDate}
+                                  {new Date(job.createdAt).toLocaleDateString()}
                                 </div>
                               </div>
 
@@ -403,10 +403,10 @@ const JobSearchPage = () => {
 
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  <span className="flex items-center">
+                                  {/* <span className="flex items-center">
                                     <Eye className="h-4 w-4 mr-1" />
                                     {job.views} views
-                                  </span>
+                                  </span> */}
                                   <span className="flex items-center">
                                     <Users className="h-4 w-4 mr-1" />
                                     {job.applications} applicants

@@ -155,22 +155,9 @@ const generateJobDescription = async (
   return response.data;
 };
 
-export {
-  getCandidateJobs,
-  getCandidateJobStats,
-  getCandidateJobLatest,
-  getFeaturedJobs,
-  getCandidateJobsByLocation,
-  getCandidateJobsByKeyword,
-  getCandidateJobSearchByKeyword,
-  getCandidateJobsByOrganization,
-  getCandidateSimilarJobs,
-  getCandidateJobById,
-  increaseApplyCount,
-  saveCandidateJobById,
-  getCandidateSavedJobs,
-  getCandidateSavedJobById,
-  deleteCandidateSavedJobById,
-  createRecruiterJob,
-  generateJobDescription,
+const getAllUsers = async () => {
+  const response = await axios.get(`users/back-office?page=1&pageSize=10`);
+  return response.data;
 };
+
+export { getAllUsers };

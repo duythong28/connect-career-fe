@@ -14,106 +14,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
-import { Candidate, User } from "@/lib/types";
-import { mockCandidates, mockUsers } from "@/lib/mock-data";
+import { useMutation } from "@tanstack/react-query";
+import { RegisterCredentials } from "@/api/types/auth.types";
+import { register } from "@/api/endpoints/auth.api";
 
 const SignupPage = () => {
   const [signupForm, setSignupForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
-    role: "candidate" as "candidate" | "employer",
+    username: "",
   });
-  const [candidates, setCandidates] = useState<Candidate[]>(mockCandidates);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const handleSignup = (e: React.FormEvent) => {
+
+  const { mutate } = useMutation({
+    mutationFn: (data: RegisterCredentials) => register(data),
+  });
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Check if email already exists
-    const existingUser = users.find((u) => u.email === signupForm.email);
-    if (existingUser) {
-      toast({
-        title: "Registration failed",
-        description: "Email already exists",
-      });
-      return;
-    }
-
-    // Create new user
-    const newUser: User = {
-      id: `user${Date.now()}`,
-      name: signupForm.name,
+    mutate({
       email: signupForm.email,
-      role: signupForm.role,
-      avatar: "/api/placeholder/150/150",
-      privacy: { phone: true, email: true },
-      subscription: { plan: "Free" },
-    };
-
-    setUsers([...users, newUser]);
-
-    // If employer, show onboarding
-    if (signupForm.role === "employer") {
-      setShowOnboarding(true);
-    } else {
-      // For candidates, create basic profile
-      const newCandidate: Candidate = {
-        id: `cand${Date.now()}`,
-        userId: newUser.id,
-        headline: "Looking for opportunities",
-        skills: [],
-        experience: [],
-        education: [],
-        cvs: [],
-        savedJobs: [],
-        followedCompanies: [],
-        settings: { profileVisibility: true, jobAlerts: true },
-        name: "",
-        email: "",
-        title: "",
-        location: "",
-        status: "active"
-      };
-      setCandidates([...candidates, newCandidate]);
-
-      toast({
-        title: "Registration successful",
-        description: "Welcome to our platform!",
-      });
-      navigate("/candidate/dashboard");
-    }
+      password: signupForm.password,
+      username: signupForm.username,
+      firstName: signupForm.firstName,
+      lastName: signupForm.lastName,
+      fullName: `${signupForm.firstName} ${signupForm.lastName}`,
+    });
+    toast({
+      title: "An Email Verification Sent",
+      description: "An Email Verification Sent",
+    });
+    navigate("/login");
   };
-
-  if (showOnboarding && signupForm.role === "employer") {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-2xl">
-          <CardHeader>
-            <CardTitle>Complete Your Employer Profile</CardTitle>
-            <CardDescription>
-              You'll be redirected to the company onboarding flow
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={() => {
-                toast({
-                  title: "Registration successful",
-                  description: "Welcome! Please complete your company setup.",
-                });
-                navigate("/employer/company");
-              }}
-              className="w-full"
-            >
-              Continue to Company Setup
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -124,15 +58,41 @@ const SignupPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={signupForm.firstName}
+                  onChange={(e) =>
+                    setSignupForm({ ...signupForm, firstName: e.target.value })
+                  }
+                  placeholder="First name"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={signupForm.lastName}
+                  onChange={(e) =>
+                    setSignupForm({ ...signupForm, lastName: e.target.value })
+                  }
+                  placeholder="Last name"
+                  required
+                />
+              </div>
+            </div>
             <div>
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="name"
-                value={signupForm.name}
+                id="username"
+                value={signupForm.username}
                 onChange={(e) =>
-                  setSignupForm({ ...signupForm, name: e.target.value })
+                  setSignupForm({ ...signupForm, username: e.target.value })
                 }
-                placeholder="Enter your full name"
+                placeholder="Choose a username"
                 required
               />
             </div>
@@ -161,28 +121,6 @@ const SignupPage = () => {
                 placeholder="Create a password"
                 required
               />
-            </div>
-            <div>
-              <Label>I am a:</Label>
-              <RadioGroup
-                value={signupForm.role}
-                onValueChange={(value) =>
-                  setSignupForm({
-                    ...signupForm,
-                    role: value as "candidate" | "employer",
-                  })
-                }
-                className="mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="candidate" id="candidate" />
-                  <Label htmlFor="candidate">Job Seeker / Candidate</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="employer" id="employer" />
-                  <Label htmlFor="employer">Employer / Recruiter</Label>
-                </div>
-              </RadioGroup>
             </div>
             <Button type="submit" className="w-full">
               Create Account

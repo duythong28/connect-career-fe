@@ -58,9 +58,7 @@ const LoginPage = () => {
       });
 
       navigate(
-        profileData.role === "admin"
-          ? ROUTES.ADMIN.DASHBOARD
-          : ROUTES.CANDIDATE.DASHBOARD
+        profileData.username === "admin" ? ROUTES.ADMIN.DASHBOARD : ROUTES.JOBS
       );
     },
   });

@@ -49,9 +49,9 @@ const Sidebar = () => {
   }, []);
 
   const getCandidateMenuItems = () => [
-    { title: "Dashboard", url: ROUTES.CANDIDATE.DASHBOARD, icon: Home },
-    { title: "My Profile", url: ROUTES.CANDIDATE.PROFILE, icon: User },
+    // { title: "Dashboard", url: ROUTES.CANDIDATE.DASHBOARD, icon: Home },
     { title: "Job Search", url: ROUTES.JOBS, icon: Search },
+    { title: "My Profile", url: ROUTES.CANDIDATE.PROFILE, icon: User },
     {
       title: "Applications",
       url: ROUTES.CANDIDATE.APPLICATIONS,
@@ -60,8 +60,13 @@ const Sidebar = () => {
     { title: "Interviews", url: ROUTES.CANDIDATE.INTERVIEWS, icon: Calendar },
     { title: "Saved Jobs", url: ROUTES.CANDIDATE.SAVED_JOBS, icon: Heart },
     { title: "Messages", url: ROUTES.CANDIDATE.MESSAGES, icon: MessageCircle },
-    { title: "Career Assistant", url: ROUTES.CANDIDATE.CHATBOT, icon: Brain },
-    { title: "Settings", url: ROUTES.CANDIDATE.SETTINGS, icon: Settings },
+    {
+      title: "Imrpove Resume",
+      url: ROUTES.CANDIDATE.RESUME_IMPROVEMENT,
+      icon: Brain,
+    },
+    // { title: "Career Assistant", url: ROUTES.CANDIDATE.CHATBOT, icon: Brain },
+    // { title: "Settings", url: ROUTES.CANDIDATE.SETTINGS, icon: Settings },
   ];
 
   const getCompanyMenuItems = (id: string) => [
@@ -105,21 +110,21 @@ const Sidebar = () => {
       url: "/company/" + id + ROUTES.COMPANY.MESSAGES,
       icon: MessageCircle,
     },
-    {
-      title: "Recruiter Assistant",
-      url: "/company/" + id + ROUTES.COMPANY.CHATBOT,
-      icon: Brain,
-    },
-    {
-      title: "Analytics",
-      url: "/company/" + id + ROUTES.COMPANY.ANALYTICS,
-      icon: BarChart3,
-    },
-    {
-      title: "Settings",
-      url: "/company/" + id + ROUTES.COMPANY.SETTINGS,
-      icon: Settings,
-    },
+    // {
+    //   title: "Recruiter Assistant",
+    //   url: "/company/" + id + ROUTES.COMPANY.CHATBOT,
+    //   icon: Brain,
+    // },
+    // {
+    //   title: "Analytics",
+    //   url: "/company/" + id + ROUTES.COMPANY.ANALYTICS,
+    //   icon: BarChart3,
+    // },
+    // {
+    //   title: "Settings",
+    //   url: "/company/" + id + ROUTES.COMPANY.SETTINGS,
+    //   icon: Settings,
+    // },
   ];
 
   const getAdminMenuItems = () => [
@@ -150,7 +155,7 @@ const Sidebar = () => {
     if (!user) return [];
 
     // Admin users only see admin menu
-    if (user.role === "admin") {
+    if (user.username === "admin") {
       return getAdminMenuItems();
     }
 
@@ -170,7 +175,7 @@ const Sidebar = () => {
   const getMenuTitle = () => {
     if (!user) return "";
 
-    if (user.role === "admin") {
+    if (user.username === "admin") {
       return "Admin Panel";
     }
 
@@ -236,7 +241,7 @@ const Sidebar = () => {
             </p>
             <div className="space-y-1">
               <Link
-                to={ROUTES.CANDIDATE.DASHBOARD}
+                to={ROUTES.JOBS}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   currentPath.startsWith("/candidate") &&
                   currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION

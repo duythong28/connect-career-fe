@@ -185,8 +185,8 @@ const SavedJobsPage = () => {
                             </div>
                             <div className="flex items-center text-gray-600">
                               <Clock className="h-4 w-4 mr-2" />
-                              {job.postedDate
-                                ? new Date(job.postedDate).toLocaleDateString()
+                              {job.createdAt
+                                ? new Date(job.createdAt).toLocaleDateString()
                                 : "—"}
                             </div>
                           </div>
@@ -212,10 +212,10 @@ const SavedJobsPage = () => {
 
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span className="flex items-center">
+                              {/* <span className="flex items-center">
                                 <Eye className="h-4 w-4 mr-1" />
                                 {job.views ?? 0} views
-                              </span>
+                              </span> */}
                               <span className="flex items-center">
                                 <Users className="h-4 w-4 mr-1" />
                                 {job.applications ?? 0} applicants

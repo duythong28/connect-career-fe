@@ -32,6 +32,11 @@ const updateMyProfile = async (data): Promise<CandidateProfile> => {
   return response.data;
 };
 
+const createMyProfile = async (data): Promise<CandidateProfile> => {
+  const response = await axios.post(`${API_URL}/profiles`, data);
+  return response.data;
+};
+
 export {
   getMyProfile,
   getCandidateProfile,
@@ -39,4 +44,5 @@ export {
   getCandidateJobsRecommendations,
   getCandidateJobsRelated,
   updateMyProfile,
+  createMyProfile,
 };

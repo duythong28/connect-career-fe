@@ -10,6 +10,7 @@ import RecruiterProfilePage from "@/pages/employer/RecruiterProfilePage";
 import NotFound from "@/pages/shared/NotFound";
 import { ROUTES } from "@/constants/routes";
 import App2 from "@/pages/temp/src/App2";
+import VerifyEmail from "@/pages/public/VerifyEmail";
 
 export const PublicRoutes = () => {
   return (
@@ -18,6 +19,7 @@ export const PublicRoutes = () => {
       <Route path="home" element={<App2 />} />
       <Route path="login" element={<LoginPage />} />
       <Route path="signup" element={<SignupPage />} />
+      <Route path="verify-email" element={<VerifyEmail />} />
       <Route path="jobs" element={<JobSearchPage />} />
       <Route path="jobs/:id" element={<JobDetailPage />} />
       <Route path="companies/:slug" element={<CompanyProfilePage />} />

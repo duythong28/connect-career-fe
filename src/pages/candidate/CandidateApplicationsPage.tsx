@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getMyApplications } from "@/api/endpoints/applications.api";
 import { ApplicationDetailed } from "@/api/types/users.types";
 import { Job } from "@/api/types/jobs.types";
@@ -14,7 +14,6 @@ import { Job } from "@/api/types/jobs.types";
 const CandidateApplicationsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   const {
     data: applicationsResponse,
@@ -26,12 +25,8 @@ const CandidateApplicationsPage = () => {
       getMyApplications({
         limit: 50,
         page: 1,
-        status: "offer-sent",
-        hasInterviews: true,
-        hasOffers: true,
         sortBy: "appliedDate",
         sortOrder: "DESC",
-        awaitingResponse: true,
       }),
     enabled: !!user?.id,
   });
@@ -221,7 +216,11 @@ const CandidateApplicationsPage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/jobs/${job.id}`)}
+                          onClick={() =>
+                            navigate(
+                              `/candidate/applications/${application.id}`
+                            )
+                          }
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View Details
@@ -231,9 +230,9 @@ const CandidateApplicationsPage = () => {
                       <div className="text-sm text-gray-500">
                         <div className="flex items-center">
                           <Eye className="h-4 w-4 mr-1" />{" "}
-                          <span className="mr-3">
+                          {/* <span className="mr-3">
                             {(job as any).views ?? 0} views
-                          </span>
+                          </span> */}
                           <span className="flex items-center">
                             <svg
                               className="h-4 w-4 mr-1"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -58,7 +58,6 @@ import {
   updateApplicationStageForRecruiter,
 } from "@/api/endpoints/applications.api";
 import { PipelineTransition } from "@/api/types/pipelines.types";
-import { getPipelineByJobId } from "@/api/endpoints/pipelines.api";
 import { UpdateApplicationStageForRecruiterDto } from "@/api/types/applications.types";
 import {
   InterviewResponse,
@@ -97,8 +96,8 @@ import {
 } from "@/api/endpoints/offers.api";
 import { useAuth } from "@/hooks/useAuth";
 
-export default function ApplicationDetail() {
-  const { applicationId, jobId } = useParams();
+export default function CandidateApplicationDetailPage() {
+  const { applicationId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -156,9 +155,7 @@ export default function ApplicationDetail() {
 
   const { data: applicationData } = useQuery({
     queryKey: ["applications", applicationId],
-    queryFn: async () => {
-      return getApplicationById(applicationId);
-    },
+    queryFn: async () => getApplicationById(applicationId),
     enabled: !!applicationId,
     staleTime: 0,
     refetchOnMount: "always",
@@ -192,14 +189,6 @@ export default function ApplicationDetail() {
     setFeedbackWeaknesses("");
     setFeedbackComments("");
   };
-
-  const { data: pipeline } = useQuery({
-    queryKey: ["pipeline", jobId],
-    queryFn: async () => {
-      return getPipelineByJobId(jobId);
-    },
-    enabled: !!jobId,
-  });
 
   // Stage transition mutation
   const { mutate: updateApplicationStageMutate } = useMutation({
@@ -324,22 +313,6 @@ export default function ApplicationDetail() {
     },
   });
 
-  const { mutate: addFeedbackMutate } = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: InterviewFeedbackDto }) =>
-      addInterviewFeedback(id, data),
-    onSuccess: () => {
-      toast.success("Feedback added successfully");
-      setShowFeedbackDialog(false);
-      resetFeedbackForm();
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
-      });
-    },
-    onError: () => {
-      toast.error("Failed to add feedback");
-    },
-  });
-
   const { mutate: rescheduleMutate } = useMutation({
     mutationFn: ({ id, data }: { id: string; data: InterviewRescheduleDto }) =>
       rescheduleInterview(id, data),
@@ -356,21 +329,9 @@ export default function ApplicationDetail() {
     },
   });
 
-  if (!applicationData || !pipeline) {
+  if (!applicationData) {
     return <div>Loading...</div>;
   }
-
-  const currentStage = pipeline.stages.find(
-    (s) => s.key === applicationData.currentStageKey
-  );
-  const availableTransitions =
-    pipeline?.transitions.filter(
-      (t) => t.fromStageKey === applicationData.currentStageKey
-    ) || [];
-
-  // Check if current stage requires interviews or offers
-  const isInterviewStage = currentStage?.type === "interview";
-  const isOfferStage = currentStage?.type === "offer";
 
   // Get pending offer (if any)
   const pendingOffer = applicationData.offers?.find(
@@ -379,140 +340,6 @@ export default function ApplicationDetail() {
   const acceptedOffer = applicationData.offers?.find(
     (o: OfferResponse) => o.status === OfferStatus.ACCEPTED
   );
-
-  const handleTransitionClick = (transition: PipelineTransition) => {
-    const toStage = pipeline.stages.find(
-      (s) => s.key === transition.toStageKey
-    );
-
-    // Check if moving from offer stage requires accepted offer
-    if (currentStage?.type === "offer" && toStage?.key !== "rejected") {
-      if (!acceptedOffer) {
-        toast.error("Cannot proceed without an accepted offer");
-        return;
-      }
-    }
-
-    updateApplicationStageMutate({
-      applicationId: applicationId!,
-      data: {
-        stageKey: toStage.key,
-        reason: `Moved to ${toStage.name} stage`,
-        notes: "",
-      },
-    });
-  };
-
-  const handleAddInterview = () => {
-    if (!interviewDateTime || !interviewerName) {
-      toast.error("Please fill in required fields");
-      return;
-    }
-
-    const data: InterviewCreateDto = {
-      interviewerName,
-      interviewerEmail: interviewerEmail || null,
-      scheduledDate: interviewDateTime,
-      type: interviewType,
-      interviewRound: currentStage?.name,
-      duration,
-      notes: interviewNotes || null,
-    };
-
-    if (interviewType === "video" && meetingLink) {
-      data.meetingLink = meetingLink;
-    } else if (interviewType === "in-person" && location) {
-      data.location = location;
-    }
-
-    createInterviewMutate({ applicationId: applicationId!, data });
-  };
-
-  const handleEditInterview = (interview: InterviewResponse) => {
-    setSelectedInterview(interview);
-    setInterviewDateTime(interview.scheduledDate);
-    setInterviewerName(interview.interviewerName || "");
-    setInterviewerEmail(interview.interviewerEmail || "");
-    setInterviewType(interview.type as InterviewType);
-    setDuration(interview.duration || 60);
-    setLocation(interview.location || "");
-    setMeetingLink(interview.meetingLink || "");
-    setInterviewNotes(interview.notes || "");
-    setShowEditInterviewDialog(true);
-  };
-
-  const handleUpdateInterview = () => {
-    if (!selectedInterview || !interviewDateTime || !interviewerName) {
-      toast.error("Please fill in required fields");
-      return;
-    }
-
-    const data: InterviewUpdateDto = {
-      scheduledDate: interviewDateTime,
-      interviewerName,
-      interviewerEmail: interviewerEmail || null,
-      type: interviewType,
-      duration,
-      notes: interviewNotes || null,
-    };
-
-    if (interviewType === "video") {
-      data.meetingLink = meetingLink || null;
-      data.location = null;
-    } else if (interviewType === "in-person") {
-      data.location = location || null;
-      data.meetingLink = null;
-    }
-
-    updateInterviewMutate({ id: selectedInterview.id, data });
-  };
-
-  const handleDeleteInterview = (interview: InterviewResponse) => {
-    setSelectedInterview(interview);
-    setShowDeleteInterviewDialog(true);
-  };
-
-  const confirmDeleteInterview = () => {
-    if (selectedInterview) {
-      deleteInterviewMutate(selectedInterview.id);
-    }
-  };
-
-  const handleAddFeedback = (interview: InterviewResponse) => {
-    setSelectedInterview(interview);
-    setShowFeedbackDialog(true);
-  };
-
-  const submitFeedback = () => {
-    if (!selectedInterview || !feedbackRating) {
-      toast.error("Please fill in required fields");
-      return;
-    }
-
-    const strengths = feedbackStrengths
-      ? feedbackStrengths.split(",").map((s) => s.trim())
-      : null;
-    const weaknesses = feedbackWeaknesses
-      ? feedbackWeaknesses.split(",").map((s) => s.trim())
-      : null;
-
-    addFeedbackMutate({
-      id: selectedInterview.id,
-      data: {
-        rating: parseInt(feedbackRating),
-        recommendation: feedbackRecommendation,
-        submittedBy: user.id,
-        ...(strengths && { strengths }),
-        ...(weaknesses && { weaknesses }),
-        ...(feedbackComments && { comments: feedbackComments }),
-      },
-    });
-  };
-
-  const handleReschedule = (interview: InterviewResponse) => {
-    setSelectedInterview(interview);
-    setShowRescheduleDialog(true);
-  };
 
   const submitReschedule = () => {
     if (!selectedInterview || !rescheduleDate) {
@@ -618,6 +445,42 @@ export default function ApplicationDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* Application Info Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Application for {applicationData?.job?.title}
+              </CardTitle>
+              <CardDescription>
+                Applied on{" "}
+                {new Date(applicationData.appliedDate).toLocaleDateString()}
+              </CardDescription>
+            </CardHeader>
+            {/* <CardContent className="space-y-4">
+              <div>
+                <Label>Notes</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {applicationData.notes || "No notes added yet"}
+                </p>
+              </div>
+              {applicationData.matchingScore && (
+                <div>
+                  <Label>Matching Score</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 bg-muted rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full"
+                        style={{ width: `${applicationData.matchingScore}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium">
+                      {applicationData.matchingScore}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </CardContent> */}
+          </Card>
           {/* Candidate Info Card */}
           <Card>
             <CardHeader>
@@ -669,49 +532,12 @@ export default function ApplicationDetail() {
             </CardContent>
           </Card>
 
-          {/* Application Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Application for {applicationData?.job?.title}
-              </CardTitle>
-              <CardDescription>
-                Applied on{" "}
-                {new Date(applicationData.appliedDate).toLocaleDateString()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Notes</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {applicationData.notes || "No notes added yet"}
-                </p>
-              </div>
-              {applicationData.matchingScore && (
-                <div>
-                  <Label>Matching Score</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${applicationData.matchingScore}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {applicationData.matchingScore}%
-                    </span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Offers Section */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Offers</CardTitle>
-                {!pendingOffer && isOfferStage && (
+                {!pendingOffer && (
                   <Button size="sm" onClick={() => setShowAddOfferDialog(true)}>
                     <Plus className="h-4 w-4 mr-1" />
                     Make Offer
@@ -767,7 +593,7 @@ export default function ApplicationDetail() {
 
                     {offer.status === OfferStatus.PENDING && (
                       <div className="flex gap-2 pt-2">
-                        <Button
+                        {/* <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleEditOffer(offer)}
@@ -775,7 +601,7 @@ export default function ApplicationDetail() {
                           <Edit className="h-3 w-3 mr-1" />
                           Edit
                         </Button>
-                        {/* <Button
+                        <Button
                           size="sm"
                           variant="destructive"
                           onClick={() => handleDeleteOffer(offer)}
@@ -783,6 +609,30 @@ export default function ApplicationDetail() {
                           <Trash2 className="h-3 w-3 mr-1" />
                           Delete
                         </Button> */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteOffer(offer)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteOffer(offer)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Re Counter
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteOffer(offer)}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Reject
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -800,15 +650,6 @@ export default function ApplicationDetail() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Interviews</CardTitle>
-                {isInterviewStage && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowAddInterviewDialog(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Interview
-                  </Button>
-                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -995,45 +836,6 @@ export default function ApplicationDetail() {
                           </div>
                         </div>
                       )}
-
-                      {["scheduled", "rescheduled"].includes(
-                        interview.status
-                      ) && (
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditInterview(interview)}
-                          >
-                            <Edit className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReschedule(interview)}
-                          >
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            Reschedule
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleAddFeedback(interview)}
-                          >
-                            <MessageSquare className="h-3 w-3 mr-1" />
-                            Feedback
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteInterview(interview)}
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   )
                 )
@@ -1044,7 +846,10 @@ export default function ApplicationDetail() {
               )}
             </CardContent>
           </Card>
+        </div>
 
+        {/* Sidebar */}
+        <div className="space-y-6">
           {/* Status Log Card */}
           <Card>
             <CardHeader>
@@ -1067,63 +872,6 @@ export default function ApplicationDetail() {
                   )
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Available Actions Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Actions</CardTitle>
-              <CardDescription>
-                Current stage: {applicationData.currentStageName}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {availableTransitions.length > 0 ? (
-                availableTransitions.map((transition) => {
-                  const isRejection = transition.toStageKey === "rejected";
-
-                  return (
-                    <Button
-                      key={transition.id}
-                      className="w-full justify-between"
-                      variant={isRejection ? "destructive" : "default"}
-                      onClick={() => handleTransitionClick(transition)}
-                    >
-                      <span>{transition.actionName}</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No actions available from this stage
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Add Notes Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                placeholder="Add your notes about this candidate..."
-                value={applicationNotes}
-                onChange={(e) => setApplicationNotes(e.target.value)}
-                rows={4}
-              />
-              <Button
-                className="w-full"
-                onClick={() => toast.success("Notes saved")}
-              >
-                Save Notes
-              </Button>
             </CardContent>
           </Card>
         </div>
@@ -1233,245 +981,10 @@ export default function ApplicationDetail() {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={handleAddInterview}>
-                Schedule Interview
-              </Button>
+              <Button className="flex-1">Schedule Interview</Button>
               <Button
                 variant="outline"
                 onClick={() => setShowAddInterviewDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Interview Dialog */}
-      <Dialog
-        open={showEditInterviewDialog}
-        onOpenChange={setShowEditInterviewDialog}
-      >
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Interview</DialogTitle>
-            <DialogDescription>Update interview details</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Interviewer Name *</Label>
-              <Input
-                placeholder="John Doe"
-                value={interviewerName}
-                onChange={(e) => setInterviewerName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Interviewer Email</Label>
-              <Input
-                type="email"
-                placeholder="interviewer@company.com"
-                value={interviewerEmail}
-                onChange={(e) => setInterviewerEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Date & Time *</Label>
-              <Input
-                type="datetime-local"
-                value={interviewDateTime}
-                onChange={(e) => setInterviewDateTime(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Interview Type</Label>
-              <Select
-                value={interviewType}
-                onValueChange={(value) =>
-                  setInterviewType(value as InterviewType)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="in-person">In Person</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {interviewType === "video" && (
-              <div className="space-y-2">
-                <Label>Meeting Link</Label>
-                <Input
-                  placeholder="https://meet.google.com/..."
-                  value={meetingLink}
-                  onChange={(e) => setMeetingLink(e.target.value)}
-                />
-              </div>
-            )}
-
-            {interviewType === "in-person" && (
-              <div className="space-y-2">
-                <Label>Location</Label>
-                <Input
-                  placeholder="Office Room 301"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Duration (minutes)</Label>
-              <Input
-                type="number"
-                placeholder="60"
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                placeholder="Additional notes..."
-                value={interviewNotes}
-                onChange={(e) => setInterviewNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={handleUpdateInterview}>
-                Update Interview
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowEditInterviewDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Interview Dialog */}
-      <AlertDialog
-        open={showDeleteInterviewDialog}
-        onOpenChange={setShowDeleteInterviewDialog}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Interview</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this interview? This action cannot
-              be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteInterview}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Add Feedback Dialog */}
-      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Interview Feedback</DialogTitle>
-            <DialogDescription>
-              Provide feedback for this interview
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Rating (1-10) *</Label>
-              <Input
-                type="number"
-                min="1"
-                max="10"
-                value={feedbackRating}
-                onChange={(e) => setFeedbackRating(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Recommendation *</Label>
-              <Select
-                value={feedbackRecommendation}
-                onValueChange={(value) =>
-                  setFeedbackRecommendation(value as Recommendation)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={Recommendation.STRONGLY_RECOMMEND}>
-                    Strongly recommend
-                  </SelectItem>
-                  <SelectItem value={Recommendation.RECOMMEND}>
-                    Recommend
-                  </SelectItem>
-                  <SelectItem value={Recommendation.NEUTRAL}>
-                    Neutral
-                  </SelectItem>
-                  <SelectItem value={Recommendation.DO_NOT_RECOMMEND}>
-                    Do not recommend
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Strengths (comma-separated)</Label>
-              <Textarea
-                placeholder="Communication, Technical skills, Problem solving"
-                value={feedbackStrengths}
-                onChange={(e) => setFeedbackStrengths(e.target.value)}
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Weaknesses (comma-separated)</Label>
-              <Textarea
-                placeholder="Time management, Documentation"
-                value={feedbackWeaknesses}
-                onChange={(e) => setFeedbackWeaknesses(e.target.value)}
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Additional Comments</Label>
-              <Textarea
-                placeholder="Overall assessment and notes..."
-                value={feedbackComments}
-                onChange={(e) => setFeedbackComments(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={submitFeedback}>
-                Submit Feedback
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowFeedbackDialog(false)}
               >
                 Cancel
               </Button>

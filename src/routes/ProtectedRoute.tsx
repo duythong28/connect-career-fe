@@ -21,13 +21,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const userRole = user?.role || "user";
+  const userRole = user?.username || "user";
 
-  if (!allowedRoles.includes(userRole)) {
-    const dashboardPath =
-      userRole === "admin" ? "/admin/dashboard" : "/candidate/dashboard";
-    return <Navigate to={dashboardPath} replace />;
-  }
+  // if (!allowedRoles.includes(userRole)) {
+  //   const dashboardPath =
+  //     userRole === "admin" ? "/admin/dashboard" : "/candidate/dashboard";
+  //   return <Navigate to={dashboardPath} replace />;
+  // }
 
   return <>{children}</>;
 };
