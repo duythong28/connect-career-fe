@@ -2,9 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import "stream-chat-react/dist/css/v2/index.css";
+@import '@stream-io/video-react-sdk/dist/css/styles.css';
 
 @layer base {
   :root {
@@ -46,10 +45,26 @@ All colors MUST be HSL.
     --brand-error: 0 84% 60%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--brand-primary)), hsl(210 85% 55%));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--brand-secondary)), hsl(220 15% 35%));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--brand-primary)), hsl(var(--brand-accent)));
-    --gradient-success: linear-gradient(135deg, hsl(var(--brand-accent)), hsl(145 70% 55%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(var(--brand-primary)),
+      hsl(210 85% 55%)
+    );
+    --gradient-secondary: linear-gradient(
+      135deg,
+      hsl(var(--brand-secondary)),
+      hsl(220 15% 35%)
+    );
+    --gradient-hero: linear-gradient(
+      135deg,
+      hsl(var(--brand-primary)),
+      hsl(var(--brand-accent))
+    );
+    --gradient-success: linear-gradient(
+      135deg,
+      hsl(var(--brand-accent)),
+      hsl(145 70% 55%)
+    );
 
     /* Shadows */
     --shadow-primary: 0 10px 30px -10px hsl(var(--brand-primary) / 0.3);
@@ -170,21 +185,111 @@ All colors MUST be HSL.
   .animate-scale-in {
     animation: scaleIn 0.4s ease-out;
   }
+
+  /* Stream Chat Custom Styles - Add these custom styles here */
+  .str-chat {
+    height: 100%;
+    font-family: inherit;
+  }
+
+  .str-chat__main-panel {
+    height: 100%;
+  }
+
+  .str-chat__channel-header {
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .str-chat__message-list {
+    background: hsl(var(--background));
+    height: 100%;
+  }
+
+  .str-chat__message-input {
+    border-top: 1px solid hsl(var(--border));
+    background: hsl(var(--background));
+  }
+
+  /* Specific styles for chatbox */
+  .str-chat__container--chatbox {
+    height: 100%;
+  }
+
+  .str-chat__container--chatbox .str-chat__main-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .str-chat__container--chatbox .str-chat__message-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .str-chat__container--chatbox .str-chat__message-input {
+    flex-shrink: 0;
+    min-height: auto;
+  }
+
+  /* Fix message list scrolling in chatbox */
+  .str-chat__container--chatbox .str-chat__message-list-scroll {
+    height: 100%;
+    max-height: none;
+  }
+
+  /* Adjust message input size for chatbox */
+  .str-chat__container--chatbox .str-chat__message-input-inner {
+    padding: 0.5rem;
+  }
+
+  .str-chat__container--chatbox .str-chat__textarea__textarea {
+    max-height: 60px;
+    font-size: 0.875rem;
+  }
+
+  /* Hide channel header in chatbox since we have our own */
+  .str-chat__container--chatbox .str-chat__channel-header {
+    display: none;
+  }
+
+  /* Ensure proper spacing */
+  .str-chat__container--chatbox .str-chat__message-list-notifications {
+    position: static;
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Print styles for CV templates */
@@ -194,20 +299,20 @@ All colors MUST be HSL.
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
-  
+
   .print-bg,
   .print-bg * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
-  
+
   .print-color {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
-  
+
   .no-print {
     display: none !important;
   }

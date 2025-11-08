@@ -128,7 +128,7 @@ const PostJobPage = () => {
       organizationId: jobForm.organizationId,
       hiringPipelineId: jobForm.hiringPipelineId,
       keywords: jobForm.keywords,
-      conditions: jobForm.conditions,
+      requirements: jobForm.conditions,
     };
 
     postJobMutation.mutate(jobData);

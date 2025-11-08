@@ -1,31 +1,69 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Calendar, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { mockInterviews, mockJobs } from "@/lib/mock-data";
-import { Interview, Job } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
-import { getInterviewsByCandidate } from "@/api/endpoints/interviews.api";
 import { useQuery } from "@tanstack/react-query";
+import { getMyInterviews } from "@/api/endpoints/candidates.api";
+import { useChatContext } from "@/context/ChatContext";
+import { useChatClient } from "@/hooks/useChatClient";
+import { createDirectMessageChannel } from "@/lib/streamChat";
 
 const CandidateInterviewsPage = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  // const [interviews, setInterviews] = useState<Interview[]>(mockInterviews);
-  // const candidateInterviews = interviews;
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
+  const { openChatBox } = useChatContext();
+  const { client } = useChatClient();
 
   const {
     data: interviews,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["applications", user?.id],
-    queryFn: () => getInterviewsByCandidate(user?.id || ""),
+    queryKey: ["my-interviews"],
+    queryFn: getMyInterviews,
     enabled: !!user?.id,
   });
+
+  const handleMessageRecruiter = async (recruiterId: string) => {
+    if (!client || !user) return;
+
+    try {
+      // First, get the recruiter's info from Stream Chat
+      const userResponse = await client.queryUsers(
+        { id: { $eq: recruiterId } },
+        {},
+        { limit: 1 }
+      );
+
+      const recruiterUser = userResponse.users[0];
+      const recruiterName = recruiterUser?.name || "Recruiter";
+      const recruiterAvatar = recruiterUser?.image;
+
+      // Create the direct message channel
+      const channel = await createDirectMessageChannel(
+        client,
+        user.id,
+        recruiterId
+      );
+
+      // Open the chatbox with the correct user info
+      openChatBox(channel, recruiterId, recruiterName, recruiterAvatar);
+    } catch (error) {
+      console.error("Failed to start chat with recruiter:", error);
+
+      // Fallback: still try to create channel even if user query fails
+      try {
+        const channel = await createDirectMessageChannel(
+          client,
+          user.id,
+          recruiterId
+        );
+        openChatBox(channel, recruiterId, "Recruiter");
+      } catch (fallbackError) {
+        console.error("Fallback chat creation also failed:", fallbackError);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -38,9 +76,10 @@ const CandidateInterviewsPage = () => {
         </div>
 
         <div className="grid gap-6">
-          {interviews && interviews?.length > 0 ? (
-            interviews.map((interview) => {
-              const job = jobs[0];
+          {interviews?.data && interviews.data?.length > 0 ? (
+            interviews.data.map((interview) => {
+              console.log(interview);
+              const job = interview?.application?.job;
               if (!job) return null;
 
               return (
@@ -53,7 +92,7 @@ const CandidateInterviewsPage = () => {
                             <h3 className="text-xl font-semibold">
                               {job.title}
                             </h3>
-                            <p className="text-gray-600">{job.company}</p>
+                            <p className="text-gray-600">{job.companyName}</p>
                           </div>
                         </div>
 
@@ -90,7 +129,15 @@ const CandidateInterviewsPage = () => {
                             Add to Calendar
                           </Button>
                         )}
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleMessageRecruiter(
+                              job.userId || "recruiter-id" // Replace with actual recruiter ID
+                            )
+                          }
+                        >
                           <MessageSquare className="h-4 w-4 mr-1" />
                           Message Recruiter
                         </Button>

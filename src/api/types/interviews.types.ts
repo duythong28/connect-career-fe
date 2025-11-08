@@ -1,3 +1,5 @@
+import { Application } from "./applications.types";
+
 export interface InterviewCreateDto {
   interviewerName: string;
   interviewerEmail?: string;
@@ -49,6 +51,7 @@ export interface InterviewRescheduleDto {
 export interface InterviewResponse {
   id: string;
   applicationId: string;
+  application?: Application;
   date: string;
   type: InterviewType;
   status: string;
