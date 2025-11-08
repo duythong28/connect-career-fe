@@ -1,5 +1,6 @@
 import axios from "../client/axios";
 import { CandidateProfile } from "../types/candidates.types";
+import { InterviewResponse } from "../types/interviews.types";
 const API_URL = "/candidates";
 
 const getMyProfile = async (): Promise<CandidateProfile> => {
@@ -37,6 +38,13 @@ const createMyProfile = async (data): Promise<CandidateProfile> => {
   return response.data;
 };
 
+const getMyInterviews = async (): Promise<{
+  data: InterviewResponse[];
+}> => {
+  const response = await axios.get(`${API_URL}/profiles/me/interviews`);
+  return response.data;
+};
+
 export {
   getMyProfile,
   getCandidateProfile,
@@ -45,4 +53,5 @@ export {
   getCandidateJobsRelated,
   updateMyProfile,
   createMyProfile,
+  getMyInterviews,
 };

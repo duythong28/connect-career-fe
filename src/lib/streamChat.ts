@@ -33,7 +33,7 @@ export const createOrUpdateUser = async (
   }
 };
 
-export const createDirectMessageChannel = async (
+export const createSelfDirectMessageChannel = async (
   client: StreamChat,
   userId: string
 ) => {
@@ -44,6 +44,40 @@ export const createDirectMessageChannel = async (
       members: [userId],
       created_by_id: userId,
       ...{ name: "Personal Notes" },
+    });
+
+    try {
+      await channel.watch();
+      return channel;
+    } catch (watchError) {
+      try {
+        await channel.create();
+        return channel;
+      } catch (createError) {
+        throw createError;
+      }
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const createDirectMessageChannel = async (
+  client: StreamChat,
+  currentUserId: string,
+  targetUserId?: string
+) => {
+  try {
+    // If no target user, create self-DM
+    if (!targetUserId || targetUserId === currentUserId) {
+      return createSelfDirectMessageChannel(client, currentUserId);
+    }
+
+    // Let Stream Chat automatically handle the channel ID generation
+    // This ensures the same channel is used regardless of who initiates
+    const channel = client.channel("messaging", {
+      members: [currentUserId, targetUserId],
+      created_by_id: currentUserId,
     });
 
     try {

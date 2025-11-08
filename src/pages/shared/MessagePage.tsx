@@ -17,19 +17,43 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, ArrowLeft } from "lucide-react";
 import CustomChannelPreview from "@/components/chat/customChannelPreview";
 import { useAuth } from "@/hooks/useAuth";
+import { useChatContext } from "@/context/ChatContext";
+import { Channel as StreamChannel } from "stream-chat";
 
 const MessagePage = () => {
   const { user } = useAuth();
   const { client, loading, error } = useChatClient();
+  const { openChatBox } = useChatContext();
   const isMobile = useIsMobile();
 
-  const [selectedChannel, setSelectedChannel] = useState<any>(null);
+  const [selectedChannel, setSelectedChannel] = useState<StreamChannel | null>(
+    null
+  );
 
   const filters = {
     members: { $in: [user?.id || ""] },
   };
   const options = { presence: true, state: true };
   const sort = { last_message_at: -1 as const };
+
+  const handleChannelSelect = (channel: StreamChannel) => {
+    setSelectedChannel(channel);
+
+    // If on mobile, also open this channel in the chatbox system
+    if (isMobile) {
+      // Extract recipient info from channel members
+      const otherMember = Object.values(channel.state.members).find(
+        (member) => member.user?.id !== user?.id
+      );
+
+      openChatBox(
+        channel,
+        otherMember?.user?.id,
+        otherMember?.user?.name || "Unknown User",
+        otherMember?.user?.image
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -72,9 +96,15 @@ const MessagePage = () => {
                 sort={sort}
                 showChannelSearch
                 Preview={(props) => (
-                  <div onClick={() => setSelectedChannel(props.channel)}>
-                    <CustomChannelPreview {...props} />
-                  </div>
+                  <CustomChannelPreview
+                    {...props}
+                    setActiveChannel={(channel, watchers) => {
+                      handleChannelSelect(channel);
+                      if (props.setActiveChannel) {
+                        props.setActiveChannel(channel, watchers);
+                      }
+                    }}
+                  />
                 )}
                 additionalChannelSearchProps={{
                   searchForChannels: true,
@@ -105,10 +135,10 @@ const MessagePage = () => {
                   </p>
                 </div>
               </div>
-            ) : (
-              <Channel>
+            ) : selectedChannel ? (
+              <Channel channel={selectedChannel}>
                 <Window>
-                  {isMobile && selectedChannel && (
+                  {isMobile && (
                     <div className="flex items-center p-3 border-b bg-background">
                       <Button
                         variant="ghost"
@@ -129,7 +159,7 @@ const MessagePage = () => {
                 </Window>
                 <Thread />
               </Channel>
-            )}
+            ) : null}
           </div>
         </div>
       </Chat>

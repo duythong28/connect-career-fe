@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { StreamChat } from "stream-chat";
 import {
   getChatClient,
-  createDirectMessageChannel,
   generateUserToken,
   createOrUpdateUser,
+  createSelfDirectMessageChannel,
 } from "@/lib/streamChat";
 import { useAuth } from "./useAuth";
 
@@ -38,7 +38,7 @@ export const useChatClient = () => {
 
         setClient(chatClient);
 
-        await createDirectMessageChannel(chatClient, user.id);
+        await createSelfDirectMessageChannel(chatClient, user.id);
         console.log("Self DM channel created/ensured");
       } catch (err) {
         console.error("Failed to initialize chat:", err);

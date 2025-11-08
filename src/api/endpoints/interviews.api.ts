@@ -61,11 +61,11 @@ const rescheduleInterview = async (
   return response.data;
 };
 
-const getInterviewsByCandidate = async (
-  candidateId: string
+const getInterviewsByApplicationId = async (
+  applicationId: string
 ): Promise<InterviewResponse[]> => {
   const response = await axios.get(
-    `${CANDIDATE_APPLICATIONS_URL}/me/${candidateId}/interviews`
+    `${CANDIDATE_APPLICATIONS_URL}/me/${applicationId}/interviews`
   );
   return response.data;
 };
@@ -77,5 +77,5 @@ export {
   deleteInterview,
   addInterviewFeedback,
   rescheduleInterview,
-  getInterviewsByCandidate,
+  getInterviewsByApplicationId,
 };
