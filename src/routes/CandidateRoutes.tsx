@@ -9,6 +9,7 @@ import CandidateInterviewsPage from "@/pages/candidate/CandidateInterviewsPage";
 import MessagesPage from "@/pages/candidate/MessagesPage";
 import NotFound from "@/pages/shared/NotFound";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
+import MockInterviewCreator from "@/components/candidate/ai-mock-interview";
 
 export const CandidateRoutes = () => {
   return (
@@ -23,6 +24,7 @@ export const CandidateRoutes = () => {
       <Route path="chatbot" element={<ChatbotPage />} />
       <Route path="settings" element={<SubscriptionPage />} />
       <Route path="create-organization" element={<CompanyProfilePage />} />
+      <Route path="ai-mock-interview" element={<MockInterviewCreator />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
