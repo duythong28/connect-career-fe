@@ -8,10 +8,10 @@ import {
 import { getCookie } from "@/api/client/axios";
 import { useQuery } from "@tanstack/react-query";
 import { getMyOrganizations } from "@/api/endpoints/organizations.api";
-import { Company } from "@/api/types/organizations.types";
+import { Organization } from "@/api/types/organizations.types";
 
 interface OrganizationContextType {
-  myOrganizations: Company[] | null;
+  myOrganizations: Organization[] | null;
 }
 
 export const OrganizationContext = createContext<
@@ -19,7 +19,7 @@ export const OrganizationContext = createContext<
 >(undefined);
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
-  const [myOrganizations, setMyOrganizations] = useState<Company[] | null>(
+  const [myOrganizations, setMyOrganizations] = useState<Organization[] | null>(
     null
   );
 
@@ -33,7 +33,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false,
   });
 
-  const handleSetUser = (organizationsData: Company[] | null) => {
+  const handleSetUser = (organizationsData: Organization[] | null) => {
     setMyOrganizations(organizationsData);
   };
 

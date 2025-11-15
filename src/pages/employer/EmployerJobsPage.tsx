@@ -68,7 +68,7 @@ const EmployerJobsPage = () => {
             View and manage all your job postings
           </p>
         </div>
-        <Button onClick={() => navigate("create")}>
+        <Button onClick={() => navigate(`/company/${companyId}/post-job`)}>
           <Plus className="h-4 w-4 mr-2" />
           Create New Job
         </Button>

@@ -39,7 +39,6 @@ export const useChatClient = () => {
         setClient(chatClient);
 
         await createSelfDirectMessageChannel(chatClient, user.id);
-        console.log("Self DM channel created/ensured");
       } catch (err) {
         console.error("Failed to initialize chat:", err);
         setError("Failed to connect to chat. Please try again.");

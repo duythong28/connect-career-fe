@@ -123,20 +123,6 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ chatBox, style }) => {
     maximizeChatBox(chatBox.id);
   };
 
-  useEffect(() => {
-    if (chatBox.channel) {
-      console.log("Channel Debug Info:", {
-        channelId: chatBox.channel.id,
-        cid: chatBox.channel.cid,
-        members: Object.keys(chatBox.channel.state.members),
-        membership: chatBox.channel.state.membership,
-        ownCapabilities: chatBox.channel.data?.own_capabilities,
-        frozen: chatBox.channel.data?.frozen,
-        disabled: chatBox.channel.data?.disabled,
-      });
-    }
-  }, [chatBox.channel]);
-
   return (
     <Card
       className="fixed bottom-0 w-80 h-96 shadow-xl border-t-2 border-t-primary z-50 flex flex-col overflow-hidden"

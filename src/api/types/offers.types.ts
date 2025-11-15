@@ -58,4 +58,18 @@ export interface OfferResponse {
   createdAt?: string;
   updatedAt?: string;
   status: OfferStatus;
+  isOfferedByCandidate?: boolean;
+}
+
+export interface CandidateCreateOfferDto {
+  baseSalary: number;
+  currency: string;
+  salaryPeriod?: SalaryPeriod | string;
+  signingBonus?: number;
+  equity?: string;
+  benefits?: string[];
+  notes?: string;
+  offeredBy?: string;
+  isNegotiable?: boolean;
+  isOfferedByCandidate?: boolean;
 }

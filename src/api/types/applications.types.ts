@@ -189,3 +189,31 @@ export interface UpdateApplicationStageForRecruiterDto {
   reason: string;
   notes: string;
 }
+
+
+export interface MyApplicationsResponse {
+  data: Application[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// --- ENUMS & LABELS ---
+export enum ApplicationStatus {
+  SOURCING = "sourcing",
+  SCREENING = "screening",
+  INTERVIEW = "interview",
+  OFFER = "offer",
+  HIRED = "hired",
+  REJECTED = "rejected",
+}
+
+export const ApplicationStatusLabel: Record<ApplicationStatus, string> = {
+  [ApplicationStatus.SOURCING]: "Sourcing",
+  [ApplicationStatus.SCREENING]: "Screening",
+  [ApplicationStatus.INTERVIEW]: "Interview",
+  [ApplicationStatus.OFFER]: "Offer",
+  [ApplicationStatus.HIRED]: "Hired",
+  [ApplicationStatus.REJECTED]: "Rejected",
+};

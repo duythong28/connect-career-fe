@@ -5,7 +5,7 @@ export const ROUTES = {
   SIGNUP: "/signup",
   JOBS: "/jobs",
   JOB_DETAIL: "/jobs/:id",
-  COMPANY_PROFILE: "/companies/:slug",
+  COMPANY_PROFILE: "/companies/:companyId",
   CANDIDATE_PUBLIC_PROFILE: "/candidates/:candidateId",
 
   // Candidate routes

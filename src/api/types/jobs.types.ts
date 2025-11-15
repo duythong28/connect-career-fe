@@ -130,16 +130,31 @@ export interface JobsResponse {
   totalPages: number;
 }
 
+export enum JobSortBy {
+  POSTED_DATE = "postedDate",
+  APPLICATIONS = "applications",
+}
+
+export const JobSortByLabel: Record<JobSortBy, string> = {
+  [JobSortBy.POSTED_DATE]: "Most Recent",
+  [JobSortBy.APPLICATIONS]: "Most Applications",
+};
+
 export interface JobFilters {
-  search?: string;
+  pageNumber?: number;
+  pageSize?: number;
+  searchTerm?: string;
   location?: string;
   type?: string;
-  salaryMin?: number;
-  salaryMax?: number;
-  industry?: string;
+  status?: string;
   seniorityLevel?: string;
-  page?: number;
-  limit?: number;
+  organizationId?: string;
+  companyName?: string;
+  keywords?: string[];
+  postedAfter?: string;
+  postedBefore?: string;
+  sortBy?: JobSortBy;
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface JobApplication {
@@ -178,8 +193,31 @@ export enum JobSeniorityLevel {
   EXECUTIVE = "Executive",
   ASSOCIATE = "Associate",
   INTERNSHIP = "Internship",
-  NOT_APPLICABLE = "Not Applicable",
 }
+
+export enum JobType {
+  ALL = "all",
+  FULL_TIME = "full_time",
+  PART_TIME = "part_time",
+  FREELANCE = "freelance",
+  CONTRACT = "contract",
+  SEASONAL = "seasonal",
+  INTERNSHIP = "internship",
+  REMOTE = "remote",
+  OTHER = "other",
+}
+
+export const JobTypeLabel: Record<JobType, string> = {
+  [JobType.ALL]: "All types",
+  [JobType.FULL_TIME]: "Full-time",
+  [JobType.PART_TIME]: "Part-time",
+  [JobType.FREELANCE]: "Freelance",
+  [JobType.CONTRACT]: "Contract",
+  [JobType.SEASONAL]: "Seasonal",
+  [JobType.INTERNSHIP]: "Internship",
+  [JobType.REMOTE]: "Remote",
+  [JobType.OTHER]: "Other",
+};
 
 export interface GenerateJobDto {
   title: string;

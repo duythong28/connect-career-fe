@@ -11,7 +11,6 @@ import { ChatIcon } from "./components/chat/ChatIcon";
 import { ChatSearchModal } from "./components/chat/ChatSearchModal";
 import { ChatBoxManager } from "./components/chat/ChatBoxManager";
 import { CallManager } from "./components/chat/CallManager";
-import { StreamVideo, StreamVideoClient } from "@stream-io/video-react-sdk";
 import '@stream-io/video-react-sdk/dist/css/styles.css';
 
 function App() {

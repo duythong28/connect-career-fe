@@ -1,23 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Users,
-  MapPin,
-  DollarSign,
-  Clock,
-  Eye,
-  CheckCircle,
-  Filter,
-  Heart,
-} from "lucide-react";
-
-// UI Components
+import { Filter, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -25,32 +10,108 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getCandidateJobs,
   saveCandidateJobById,
 } from "@/api/endpoints/jobs.api";
-import { JobFilters } from "@/api/types/jobs.types";
+import { JobFilters, JobSortBy, JobSortByLabel } from "@/api/types/jobs.types";
+import JobCard from "@/components/jobs/JobCard";
+import JobFilterFields from "@/components/jobs/JobFilterFields";
+import { SmartPagination } from "@/components/shared/SmartPagination";
+
+// --- Highlight Area Component (Design Convention) ---
+const HighlightArea = () => (
+  <div
+    className="
+      w-full rounded-xl mb-4
+      px-4 py-4
+      sm:px-6 sm:py-6
+      md:px-10 md:py-8
+      bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg text-white
+      flex flex-col gap-3
+      md:flex-row md:items-center md:justify-between
+      relative
+    "
+    style={{ minHeight: "90px" }}
+  >
+    <div>
+      <h1
+        className="
+          text-xl font-bold mb-1
+          sm:text-2xl md:text-4xl md:mb-2
+          leading-tight
+        "
+      >
+        Find Your Next Career Move
+      </h1>
+      <p className="text-sm sm:text-base md:text-lg opacity-90">
+        Search and apply for jobs from top companies, tailored for you.
+      </p>
+    </div>
+    <div className="flex gap-4 sm:gap-8 mt-3 md:mt-0 flex-wrap sm:flex-nowrap">
+      <div className="flex flex-col items-center min-w-[80px]">
+        <span className="text-base sm:text-lg md:text-2xl font-semibold">
+          200K+
+        </span>
+        <span className="text-xs sm:text-sm md:text-base opacity-80">
+          Jobs Listed
+        </span>
+      </div>
+      <div className="flex flex-col items-center min-w-[80px]">
+        <span className="text-base sm:text-lg md:text-2xl font-semibold">
+          5K+
+        </span>
+        <span className="text-xs sm:text-sm md:text-base opacity-80">
+          Companies
+        </span>
+      </div>
+    </div>
+    <div className="absolute left-0 right-0 bottom-0 h-2 bg-gradient-to-b from-transparent to-gray-50 opacity-60 rounded-b-xl pointer-events-none" />
+  </div>
+);
+
+const DEFAULT_FILTERS: JobFilters = {
+  pageNumber: 1,
+  pageSize: 20,
+  searchTerm: "",
+  location: "",
+  type: undefined,
+  status: undefined,
+  seniorityLevel: undefined,
+  companyName: undefined,
+  keywords: [],
+  postedAfter: undefined,
+  postedBefore: undefined,
+  sortBy: JobSortBy.POSTED_DATE,
+  sortOrder: "DESC",
+};
 
 const JobSearchPage = () => {
   const navigate = useNavigate();
   const [searchFilters, setSearchFilters] = useState<JobFilters>({
-    search: "",
-    location: "",
-    type: undefined,
-    salaryMin: 0,
-    salaryMax: 200000,
-    industry: undefined,
-    seniorityLevel: "",
-    page: 1,
-    limit: 20,
+    ...DEFAULT_FILTERS,
   });
+  const [filterOpen, setFilterOpen] = useState(false);
 
-  const { data: jobsData, error } = useQuery({
+  // Strictly use JobFilters keys for API
+  const {
+    data: jobsData,
+    error,
+    isFetching,
+  } = useQuery({
     queryKey: ["jobs", searchFilters],
     queryFn: () => getCandidateJobs(searchFilters),
+    staleTime: 1000 * 30,
+    refetchOnWindowFocus: false,
   });
 
   const saveJobMutation = useMutation({
@@ -85,12 +146,17 @@ const JobSearchPage = () => {
     }
   }, [error]);
 
+  const totalPages = jobsData?.totalPages || 1;
+  const currentPage = searchFilters.pageNumber || 1;
+
+  // --- UI ---
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 py-8">
+        <HighlightArea />
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
-          <div className="lg:w-80 space-y-6">
+          {/* Filters Sidebar (desktop only) */}
+          <div className="hidden lg:block lg:w-80 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -99,345 +165,119 @@ const JobSearchPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label>Keyword</Label>
-                  <Input
-                    placeholder="Job title, skills..."
-                    value={searchFilters.search ?? ""}
-                    onChange={(e) =>
-                      setSearchFilters((prev) => ({
-                        ...prev,
-                        search: e.target.value,
-                        page: 1,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label>Location</Label>
-                  <Input
-                    placeholder="City, state, or remote"
-                    value={searchFilters.location ?? ""}
-                    onChange={(e) =>
-                      setSearchFilters((prev) => ({
-                        ...prev,
-                        location: e.target.value,
-                        page: 1,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div>
-                  <Label>Job Type</Label>
-                  <Select
-                    value={searchFilters.type ?? ""}
-                    onValueChange={(value) =>
-                      setSearchFilters((prev) => ({
-                        ...prev,
-                        type: value,
-                        page: 1,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="full_time">Full-time</SelectItem>
-                      <SelectItem value="part_time">Part-time</SelectItem>
-                      <SelectItem value="freelance">Freelance</SelectItem>
-                      <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="seasonal">Seasonal</SelectItem>
-                      <SelectItem value="internship">Internship</SelectItem>
-                      <SelectItem value="remote">Remote</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* <div>
-                  <Label>Industry</Label>
-                  <Select
-                    value={searchFilters.industry ?? ""}
-                    onValueChange={(value) =>
-                      setSearchFilters((prev) => ({
-                        ...prev,
-                        industry: value,
-                        page: 1,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All industries" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Technology">Technology</SelectItem>
-                      <SelectItem value="AI & Machine Learning">
-                        AI & Machine Learning
-                      </SelectItem>
-                      <SelectItem value="Design & Creative">
-                        Design & Creative
-                      </SelectItem>
-                      <SelectItem value="Financial Services">
-                        Financial Services
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div> */}
-
-                {/* <div>
-                  <Label>Salary Range</Label>
-                  <div className="px-2 py-4">
-                    <Slider
-                      value={[
-                        searchFilters.salaryMin ?? 0,
-                        searchFilters.salaryMax ?? 200000,
-                      ]}
-                      onValueChange={(value) =>
-                        setSearchFilters((prev) => ({
-                          ...prev,
-                          salaryMin: value[0],
-                          salaryMax: value[1],
-                          page: 1,
-                        }))
-                      }
-                      max={200000}
-                      min={0}
-                      step={10000}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-sm text-gray-500 mt-2">
-                      <span>
-                        ${(searchFilters.salaryMin ?? 0).toLocaleString()}
-                      </span>
-                      <span>
-                        ${(searchFilters.salaryMax ?? 200000).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div> */}
-
-                <Button
-                  onClick={() =>
-                    setSearchFilters((prev) => ({
-                      ...prev,
-                      search: "",
-                      location: "",
-                      type: undefined,
-                      salaryMin: 0,
-                      salaryMax: 200000,
-                      industry: undefined,
-                      seniorityLevel: "",
-                      page: 1,
-                      limit: prev?.limit ?? 20,
-                    }))
-                  }
-                  variant="outline"
-                  className="w-full"
-                >
-                  Clear Filters
-                </Button>
+                <JobFilterFields
+                  searchFilters={searchFilters}
+                  setSearchFilters={setSearchFilters}
+                  onClear={() => setSearchFilters({ ...DEFAULT_FILTERS })}
+                />
               </CardContent>
             </Card>
-
-            {/* {candidate && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Target className="h-5 w-5 mr-2" />
-                    Recommended for You
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {getRecommendedJobs(candidate.id)
-                      .slice(0, 3)
-                      .map((job) => {
-                        const company = companies.find(
-                          (c) => c.id === job.companyId
-                        );
-                        return (
-                          <div
-                            key={job.id}
-                            className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                            onClick={() => navigate(`/jobs/${job.id}`)}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="font-medium text-sm">
-                                {job.title}
-                              </h4>
-                              <Badge variant="secondary" className="text-xs">
-                                {job.matchScore}% match
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-gray-600">
-                              {company?.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {job.location}
-                            </p>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </CardContent>
-              </Card>
-            )} */}
           </div>
 
           {/* Job Results */}
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {jobsData?.total || 0} Jobs Found
-              </h1>
-              <Select defaultValue="relevance">
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="relevance">Most Relevant</SelectItem>
-                  <SelectItem value="date">Most Recent</SelectItem>
-                  <SelectItem value="salary">Highest Salary</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Mobile filter button and Jobs Found */}
+            <div className="flex items-center justify-between mb-6 lg:mb-6">
+              <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
+                {isFetching
+                  ? "Loading..."
+                  : `${jobsData?.total || 0} Jobs Found`}
+              </h2>
+              <div className="lg:hidden">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => setFilterOpen(true)}
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Filters
+                </Button>
+              </div>
+              <div className="hidden lg:block">
+                <Select
+                  value={searchFilters.sortBy ?? JobSortBy.POSTED_DATE}
+                  onValueChange={(value) =>
+                    setSearchFilters((prev) => ({
+                      ...prev,
+                      sortBy: value as JobSortBy,
+                      pageNumber: 1,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(JobSortBy).map((sortKey) => (
+                      <SelectItem key={sortKey} value={sortKey}>
+                        {JobSortByLabel[sortKey as JobSortBy]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              {jobsData?.data &&
-                jobsData?.data?.map((job) => {
-                  const isApplied = false;
-                  const isSaved = false;
-
-                  return (
-                    <Card
-                      key={job.id}
-                      className="hover:shadow-md transition-shadow"
+            {/* Mobile filter dialog */}
+            <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
+              <DialogContent className="max-w-md w-full">
+                <DialogHeader>
+                  <DialogTitle>
+                    <Filter className="h-5 w-5 mr-2 inline" />
+                    Filters
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <JobFilterFields
+                    searchFilters={searchFilters}
+                    setSearchFilters={setSearchFilters}
+                    onClear={() => setSearchFilters({ ...DEFAULT_FILTERS })}
+                  />
+                  <DialogClose asChild>
+                    <Button
+                      className="w-full mt-2"
+                      onClick={() => setFilterOpen(false)}
                     >
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-4 flex-1">
-                            <Avatar className="h-16 w-16">
-                              <AvatarImage
-                                src={
-                                  job?.organization?.logoFile?.url ||
-                                  job.companyLogo
-                                }
-                              />
-                              <AvatarFallback>
-                                {job?.companyName?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
+                      Apply Filters
+                    </Button>
+                  </DialogClose>
+                </div>
+              </DialogContent>
+            </Dialog>
 
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                    {job.title}
-                                  </h3>
-                                  <p className="text-lg text-gray-700 mb-2">
-                                    {job.companyName}
-                                  </p>
-                                </div>
-
-                                <div className="flex items-center space-x-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleSaveJob(job.id)}
-                                  >
-                                    <Heart
-                                      className={`h-4 w-4 ${
-                                        isSaved
-                                          ? "fill-red-500 text-red-500"
-                                          : ""
-                                      }`}
-                                    />
-                                  </Button>
-                                  <Badge
-                                    variant="secondary"
-                                    className="capitalize"
-                                  >
-                                    {job.type}
-                                  </Badge>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div className="flex items-center text-gray-600">
-                                  <MapPin className="h-4 w-4 mr-2" />
-                                  {job.location}
-                                </div>
-                                <div className="flex items-center text-gray-600">
-                                  <DollarSign className="h-4 w-4 mr-2" />
-                                  {job.salary}
-                                </div>
-                                <div className="flex items-center text-gray-600">
-                                  <Clock className="h-4 w-4 mr-2" />
-                                  {new Date(job.createdAt).toLocaleDateString()}
-                                </div>
-                              </div>
-
-                              <div className="mb-4">
-                                <p className="text-gray-700 line-clamp-2">
-                                  {job.description
-                                    .replace(/[#*]/g, "")
-                                    .substring(0, 150)}
-                                  ...
-                                </p>
-                              </div>
-
-                              <div className="flex flex-wrap gap-2 mb-4">
-                                {job.keywords.slice(0, 5).map((keyword) => (
-                                  <Badge
-                                    key={keyword}
-                                    variant="outline"
-                                    className="text-xs"
-                                  >
-                                    {keyword}
-                                  </Badge>
-                                ))}
-                              </div>
-
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  {/* <span className="flex items-center">
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    {job.views} views
-                                  </span> */}
-                                  <span className="flex items-center">
-                                    <Users className="h-4 w-4 mr-1" />
-                                    {job.applications} applicants
-                                  </span>
-                                </div>
-
-                                <div className="flex items-center space-x-2">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => navigate(`/jobs/${job.id}`)}
-                                  >
-                                    View Details
-                                  </Button>
-
-                                  <Button>Apply Now</Button>
-
-                                  {isApplied && (
-                                    <Button disabled variant="secondary">
-                                      <CheckCircle className="h-4 w-4 mr-2" />
-                                      Applied
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+            <div className="space-y-4">
+              {jobsData?.data?.length === 0 && (
+                <Card>
+                  <CardContent className="p-8 text-center text-gray-500">
+                    No jobs found matching your criteria.
+                  </CardContent>
+                </Card>
+              )}
+              {jobsData?.data?.map((job) => {
+                const isApplied = false;
+                const isSaved = false;
+                return (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    isApplied={isApplied}
+                    isSaved={isSaved}
+                    onSave={() => handleSaveJob(job.id)}
+                    onView={() => navigate(`/jobs/${job.id}`)}
+                    onApply={() => {
+                      /* handle apply logic here */
+                    }}
+                  />
+                );
+              })}
+              <SmartPagination
+                page={currentPage}
+                totalPages={totalPages}
+                onPageChange={(p) =>
+                  setSearchFilters((f) => ({ ...f, pageNumber: p }))
+                }
+              />
             </div>
           </div>
         </div>

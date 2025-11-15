@@ -4,11 +4,15 @@ import {
   Users,
   MapPin,
   Edit,
-  Star,
   ArrowLeft,
   ExternalLink,
   Globe,
-  Tag,
+  Building,
+  Calendar,
+  Factory,
+  Eye,
+  Save,
+  X,
 } from "lucide-react";
 
 // UI Components
@@ -20,6 +24,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -32,11 +44,19 @@ import {
   createFileEntity,
   uploadFile,
 } from "@/api/endpoints/files.api";
+import { getIndistries } from "@/api/endpoints/industries.api";
 
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ROUTES } from "@/constants/routes";
+import {
+  WorkingDay,
+  OrganizationType,
+  OrganizationSize,
+  OvertimePolicy,
+  WorkScheduleType,
+} from "@/api/types/organizations.types";
 
 type CompanyFormValues = {
   name: string;
@@ -44,12 +64,15 @@ type CompanyFormValues = {
   longDescription: string;
   website: string;
   headquartersAddress: string;
-  organizationSize: string;
+  organizationType: OrganizationType;
+  organizationSize: OrganizationSize;
+  industryId: string;
   employeeCount?: number | "";
   country: string;
   city: string;
-  workingDaysCsv: string;
-  keywordsCsv: string;
+  workingDays: WorkingDay[];
+  overtimePolicy: OvertimePolicy;
+  workScheduleTypes: WorkScheduleType[];
 };
 
 const schema = z.object({
@@ -58,7 +81,9 @@ const schema = z.object({
   longDescription: z.string().optional().nullable().default(""),
   website: z.string().url().optional().nullable().or(z.literal("")).default(""),
   headquartersAddress: z.string().optional().nullable().default(""),
-  organizationSize: z.string().optional().nullable().default(""),
+  organizationType: z.nativeEnum(OrganizationType).optional(),
+  organizationSize: z.nativeEnum(OrganizationSize).optional(),
+  industryId: z.string().optional().default(""),
   employeeCount: z
     .union([z.number().int().nonnegative(), z.undefined(), z.null()])
     .optional()
@@ -67,22 +92,38 @@ const schema = z.object({
     .nullable(),
   country: z.string().optional().nullable().default(""),
   city: z.string().optional().nullable().default(""),
-  workingDaysCsv: z.string().optional().default(""),
-  keywordsCsv: z.string().optional().default(""),
-  logoUrl: z.string().optional().nullable().default(""),
+  workingDays: z.array(z.nativeEnum(WorkingDay)).default([]),
+  overtimePolicy: z.nativeEnum(OvertimePolicy).optional(),
+  workScheduleTypes: z.array(z.nativeEnum(WorkScheduleType)).default([]),
 });
+
+// Helper functions to format enum values for display
+const formatEnumValue = (value: string) => {
+  return value
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
 
 const CompanyProfilePage = () => {
   const { companyId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [avatar, setAvatar] = useState(null);
+  const [avatar, setAvatar] = useState<{ id: string; url: string } | null>(
+    null
+  );
   const { pathname } = useLocation();
+  const [previewMode, setPreviewMode] = useState(false);
 
   const { data: companydata } = useQuery({
     queryKey: ["company", companyId],
     queryFn: () => getOrganizationById(companyId!),
     enabled: !!companyId,
+  });
+
+  const { data: industriesData } = useQuery({
+    queryKey: ["industries"],
+    queryFn: getIndistries,
   });
 
   const [editMode, setEditMode] = useState(
@@ -96,6 +137,7 @@ const CompanyProfilePage = () => {
       toast({ title: "Company updated", description: "Company saved." });
       queryClient.invalidateQueries({ queryKey: ["company", companyId] });
       setEditMode(false);
+      setPreviewMode(false);
       setAvatar(null);
     },
     onError: (err: any) => {
@@ -112,6 +154,7 @@ const CompanyProfilePage = () => {
       toast({ title: "Company created", description: "Company saved." });
       navigate("/company/" + data.id + ROUTES.COMPANY.DASHBOARD);
       setEditMode(false);
+      setPreviewMode(false);
       setAvatar(null);
       queryClient.invalidateQueries({ queryKey: ["my-organizations"] });
     },
@@ -127,8 +170,10 @@ const CompanyProfilePage = () => {
     control,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { isSubmitting },
-  } = useForm({
+  } = useForm<CompanyFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: "",
@@ -136,78 +181,103 @@ const CompanyProfilePage = () => {
       longDescription: "",
       website: "",
       headquartersAddress: "",
-      organizationSize: "51-200 employees",
+      organizationType: OrganizationType.STARTUP,
+      organizationSize: OrganizationSize.MEDIUM,
+      industryId: "",
       employeeCount: "",
       country: "",
       city: "",
-      workingDaysCsv: "monday",
-      keywordsCsv: "",
+      workingDays: [
+        WorkingDay.MONDAY,
+        WorkingDay.TUESDAY,
+        WorkingDay.WEDNESDAY,
+        WorkingDay.THURSDAY,
+        WorkingDay.FRIDAY,
+      ],
+      overtimePolicy: OvertimePolicy.AS_NEEDED,
+      workScheduleTypes: [WorkScheduleType.FULL_TIME],
     },
   });
 
-  // reset form when companydata loads/changes
+  const workingDaysValue = watch("workingDays");
+  const workScheduleTypesValue = watch("workScheduleTypes");
+  const watchedValues = watch(); // Watch all values for preview
+
+  // Reset form when companydata loads/changes
   useEffect(() => {
-    reset({
-      name: companydata?.name ?? "",
-      shortDescription: companydata?.shortDescription ?? "",
-      longDescription:
-        companydata?.longDescription ?? companydata?.longDescription ?? "",
-      website: companydata?.website ?? "",
-      headquartersAddress: companydata?.headquartersAddress ?? "",
-      organizationSize: companydata?.organizationSize ?? "",
-      employeeCount:
-        typeof companydata?.employeeCount === "number"
-          ? companydata?.employeeCount
-          : "",
-      country: companydata?.country ?? "",
-      city: companydata?.city ?? "",
-      workingDaysCsv: Array.isArray(companydata?.workingDays)
-        ? companydata?.workingDays?.join(",")
-        : "",
-      keywordsCsv: Array.isArray((companydata as any)?.keywords)
-        ? (companydata as any)?.keywords?.join(",")
-        : "",
-    });
+    if (companydata) {
+      reset({
+        name: companydata.name || "",
+        shortDescription: companydata.shortDescription || "",
+        longDescription: companydata.longDescription || "",
+        website: companydata.website || "",
+        headquartersAddress: companydata.headquartersAddress || "",
+        organizationType:
+          companydata.organizationType || OrganizationType.STARTUP,
+        organizationSize:
+          companydata.organizationSize || OrganizationSize.MEDIUM,
+        industryId: companydata.industryId || "",
+        employeeCount:
+          typeof companydata.employeeCount === "number"
+            ? companydata.employeeCount
+            : "",
+        country: companydata.country || "",
+        city: companydata.city || "",
+        workingDays: companydata.workingDays || [
+          WorkingDay.MONDAY,
+          WorkingDay.TUESDAY,
+          WorkingDay.WEDNESDAY,
+          WorkingDay.THURSDAY,
+          WorkingDay.FRIDAY,
+        ],
+        overtimePolicy: companydata.overtimePolicy || OvertimePolicy.AS_NEEDED,
+        workScheduleTypes: companydata.workScheduleTypes || [
+          WorkScheduleType.FULL_TIME,
+        ],
+      });
+    }
   }, [companydata, reset]);
 
   const onSubmit = async (values: CompanyFormValues) => {
-    const payload: Partial<any> = {
-      name: values.name,
-      shortDescription: values.shortDescription || null,
-      longDescription: values.longDescription || null,
-      website: values.website || null,
-      headquartersAddress: values.headquartersAddress || null,
-      organizationSize: values.organizationSize || null,
-      employeeCount:
-        typeof values.employeeCount === "number"
-          ? values.employeeCount
-          : undefined,
-      country: values.country || null,
-      city: values.city || null,
-      workingDays: values.workingDaysCsv
-        ? values.workingDaysCsv
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : undefined,
-      keywords: values.keywordsCsv
-        ? values.keywordsCsv
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : undefined,
-      logoFileId: avatar?.id,
-    };
-    if (companyId && editMode) {
-      updateMut.mutate({ id: companyId, data: payload });
-    }
+    try {
+      const payload: Partial<any> = {
+        name: values.name,
+        shortDescription: values.shortDescription || null,
+        longDescription: values.longDescription || null,
+        website: values.website || null,
+        headquartersAddress: values.headquartersAddress || null,
+        organizationType: values.organizationType || null,
+        organizationSize: values.organizationSize || null,
+        industryId: values.industryId || null,
+        employeeCount:
+          typeof values.employeeCount === "number"
+            ? values.employeeCount
+            : null,
+        country: values.country || null,
+        city: values.city || null,
+        workingDays: values.workingDays?.length > 0 ? values.workingDays : null,
+        overtimePolicy: values.overtimePolicy || null,
+        workScheduleTypes:
+          values.workScheduleTypes?.length > 0
+            ? values.workScheduleTypes
+            : null,
+        logoFileId: avatar?.id || null,
+      };
 
-    if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION) {
-      createMut.mutate(payload);
+      if (companyId && editMode && !pathname.includes("create")) {
+        updateMut.mutate({ id: companyId, data: payload });
+      } else if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION) {
+        createMut.mutate(payload);
+      }
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save company profile.",
+      });
     }
   };
 
-  // logo upload flow (similar to AvatarEditor)
   const handleLogoFile = async (file?: File) => {
     if (!file) return;
     try {
@@ -233,7 +303,7 @@ const CompanyProfilePage = () => {
         url: uploadRes.url,
       });
     } catch (err: any) {
-      console.error(err);
+      console.error("Logo upload error:", err);
       toast({
         title: "Upload failed",
         description: err?.message || "Unable to upload logo.",
@@ -241,511 +311,968 @@ const CompanyProfilePage = () => {
     }
   };
 
-  if (!companydata && pathname !== ROUTES.CANDIDATE.CREATE_ORGANIZATION) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Company not found
-          </h2>
-          <Button onClick={() => navigate("/")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
-          </Button>
+  const handleWorkingDayChange = (day: WorkingDay, checked: boolean) => {
+    const currentDays = workingDaysValue || [];
+    if (checked) {
+      setValue("workingDays", [...currentDays, day]);
+    } else {
+      setValue(
+        "workingDays",
+        currentDays.filter((d) => d !== day)
+      );
+    }
+  };
+
+  const handleWorkScheduleTypeChange = (
+    type: WorkScheduleType,
+    checked: boolean
+  ) => {
+    const currentTypes = workScheduleTypesValue || [];
+    if (checked) {
+      setValue("workScheduleTypes", [...currentTypes, type]);
+    } else {
+      setValue(
+        "workScheduleTypes",
+        currentTypes.filter((t) => t !== type)
+      );
+    }
+  };
+
+  // Find industry name by ID
+  const getIndustryName = (industryId: string) => {
+    if (!industryId || !industriesData?.data) return "";
+    const industry = industriesData.data.find((ind) => ind.id === industryId);
+    return industry?.name || "";
+  };
+
+  // Get display data (either from form or company data)
+  const getDisplayData = () => {
+    if (editMode && previewMode) {
+      // In preview mode, merge watched values with company data
+      return {
+        ...companydata,
+        ...watchedValues,
+        logoFile: avatar ? { url: avatar.url } : companydata?.logoFile,
+      };
+    }
+    return companydata;
+  };
+
+  const displayData = getDisplayData();
+
+  // Show loading for create organization page
+  if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION) {
+    if (!industriesData) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+  } else {
+    // For existing company pages
+    if (!companydata) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Company not found
+            </h2>
+            <Button onClick={() => navigate("/")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      );
+    }
   }
+
+  const isViewMode = !editMode || previewMode;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600  py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-6">
-              <div className="relative">
-                <Avatar className="h-32 w-32 border-4 border-white">
+      <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-8">
+        {/* Highlight Section - View Mode */}
+        {isViewMode && displayData && (
+          <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-xl p-6 md:p-8 text-white">
+            <div className="flex flex-col md:flex-row md:items-start gap-6">
+              {/* Logo */}
+              <div className="relative flex-shrink-0">
+                <Avatar className="h-28 w-28 border-4 border-white/20 shadow-lg">
                   <AvatarImage
-                    src={avatar?.url || companydata?.logoFile?.url || undefined}
+                    src={displayData?.logoFile?.url || undefined}
+                    alt={displayData?.name || "Company"}
                   />
-                  <AvatarFallback className="text-4xl">
-                    {companydata?.name?.charAt(0)}
+                  <AvatarFallback className="text-3xl bg-white/20 text-white">
+                    {displayData?.name?.charAt(0) || "C"}
                   </AvatarFallback>
                 </Avatar>
-
-                {editMode && (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0 bg-white/90"
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      await handleLogoFile(f);
-                    }}
-                  />
-                )}
               </div>
 
-              <div>
-                <div className="flex items-center gap-3">
-                  {editMode ? (
-                    <Controller
-                      control={control}
-                      name="name"
-                      render={({ field }) => (
-                        <Input className="text-4xl font-bold p-2" {...field} />
-                      )}
-                    />
-                  ) : (
-                    <h1 className="text-4xl font-bold mb-2">
-                      {companydata.name}
+              {/* Company Info */}
+              <div className="flex-grow">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                  <div className="flex-grow">
+                    {/* Company Name */}
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">
+                      {displayData?.name || "Company Name"}
                     </h1>
-                  )}
-                </div>
 
-                {editMode ? (
-                  <Controller
-                    control={control}
-                    name="shortDescription"
-                    render={({ field }) => (
-                      <Textarea
-                        className="text-xl text-blue-100 mb-4"
-                        rows={2}
-                        {...field}
-                      />
+                    {/* Short Description */}
+                    {displayData?.shortDescription && (
+                      <p className="text-blue-50 text-base md:text-lg leading-relaxed mb-6">
+                        {displayData.shortDescription}
+                      </p>
                     )}
-                  />
-                ) : (
-                  <p className="text-xl text-blue-100 mb-4">
-                    {companydata?.shortDescription}
-                  </p>
-                )}
 
-                <div className="flex items-center space-x-6 text-blue-100">
-                  {editMode ? (
-                    <Controller
-                      control={control}
-                      name="headquartersAddress"
-                      render={({ field }) => (
-                        <Input
-                          placeholder="Headquarters"
-                          {...field}
-                          className="w-80"
-                        />
-                      )}
-                    />
-                  ) : (
-                    companydata?.headquartersAddress && (
-                      <span className="flex items-center">
-                        <MapPin className="h-5 w-5 mr-2" />
-                        {companydata?.headquartersAddress}
-                      </span>
-                    )
-                  )}
-
-                  {editMode ? (
-                    <Controller
-                      control={control}
-                      name="organizationSize"
-                      render={({ field }) => (
-                        <Input placeholder="Company size" {...field} />
-                      )}
-                    />
-                  ) : (
-                    companydata?.organizationSize && (
-                      <span className="flex items-center">
-                        <Users className="h-5 w-5 mr-2" />
-                        {companydata?.organizationSize}
-                      </span>
-                    )
-                  )}
-                </div>
-
-                <div className="flex items-center space-x-6 mt-4 text-sm">
-                  {editMode ? (
-                    <>
-                      <Controller
-                        control={control}
-                        name="employeeCount"
-                        render={({ field }) => (
-                          <Input
-                            type="number"
-                            placeholder="Employees"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(
-                                e.target.value === ""
-                                  ? ""
-                                  : Number(e.target.value)
-                              )
-                            }
-                            className="w-40"
-                          />
-                        )}
-                      />
-                      <Controller
-                        control={control}
-                        name="website"
-                        render={({ field }) => (
-                          <Input
-                            placeholder="Website"
-                            {...field}
-                            className="w-64"
-                          />
-                        )}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      {typeof companydata?.employeeCount === "number" && (
-                        <span>{companydata?.employeeCount} employees</span>
-                      )}
-                      {companydata?.website && (
-                        <span className="flex items-center">
-                          <Globe className="h-4 w-4 mr-1" />
-                          {new URL(companydata?.website).hostname}
+                    {/* Quick Info */}
+                    <div className="flex flex-wrap gap-4 text-blue-100">
+                      {displayData?.organizationSize && (
+                        <span className="flex items-center text-base">
+                          <Users className="h-5 w-5 mr-2" />
+                          {displayData.organizationSize}
                         </span>
                       )}
-                    </>
-                  )}
+
+                      {displayData?.industryId &&
+                        getIndustryName(displayData.industryId) && (
+                          <span className="flex items-center text-base">
+                            <Factory className="h-5 w-5 mr-2" />
+                            {getIndustryName(displayData.industryId)}
+                          </span>
+                        )}
+
+                      {displayData?.city && displayData?.country && (
+                        <span className="flex items-center text-base">
+                          <MapPin className="h-5 w-5 mr-2" />
+                          {displayData.city}, {displayData.country}
+                        </span>
+                      )}
+
+                      {displayData?.website && (
+                        <span className="flex items-center text-base">
+                          <Globe className="h-5 w-5 mr-2" />
+                          {(() => {
+                            try {
+                              return new URL(displayData.website).hostname;
+                            } catch {
+                              return displayData.website;
+                            }
+                          })()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    {!editMode && displayData?.website && (
+                      <Button
+                        className="bg-white/20 text-white border-white/20 hover:bg-white/30 hover:border-white/30"
+                        onClick={() => {
+                          try {
+                            const url = displayData.website.startsWith("http")
+                              ? displayData.website
+                              : `https://${displayData.website}`;
+                            window.open(url, "_blank");
+                          } catch (error) {
+                            console.error("Invalid URL:", error);
+                          }
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Website
+                      </Button>
+                    )}
+
+                    {!editMode && (
+                      <Button
+                        variant="outline"
+                        className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:border-white/40"
+                        onClick={() => setEditMode(true)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
+
+                    {editMode && previewMode && (
+                      <>
+                        <Button
+                          className="bg-white/20 text-white border-white/20 hover:bg-white/30 hover:border-white/30"
+                          onClick={() => setPreviewMode(false)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:border-white/40"
+                          onClick={handleSubmit(onSubmit)}
+                          disabled={isSubmitting}
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          {isSubmitting ? "Saving..." : "Save Changes"}
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="flex items-center space-x-3">
-              {!editMode && companydata?.website && (
+        {/* Highlight Section - Edit Mode */}
+        {editMode && !previewMode && (
+          <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-xl p-6 md:p-8 text-white">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+              <div className="flex-grow">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">
+                  {pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION
+                    ? "Create Company Profile"
+                    : "Edit Company Profile"}
+                </h1>
+                <p className="text-blue-50 text-base md:text-lg leading-relaxed">
+                  {pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION
+                    ? "Set up your company profile to start posting jobs and attracting talent."
+                    : "Update your company information to keep your profile current and engaging."}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <Button
+                  className="bg-white/20 text-white border-white/20 hover:bg-white/30 hover:border-white/30"
+                  onClick={() => setPreviewMode(true)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview
+                </Button>
                 <Button
                   variant="outline"
-                  className="bg-white/10 border-white/20  hover:bg-white/20"
-                  onClick={() => window.open(companydata?.website, "_blank")}
+                  className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:border-white/40"
+                  onClick={() => {
+                    if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION) {
+                      navigate(-1);
+                    } else {
+                      setEditMode(false);
+                      setPreviewMode(false);
+                      reset();
+                      setAvatar(null);
+                    }
+                  }}
                 >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Website
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
                 </Button>
-              )}
-
-              <Button
-                onClick={() => {
-                  setEditMode((s) => !s);
-                }}
-                variant="outline"
-                className="bg-white/10 border-white/20  hover:bg-white/20"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                {editMode ? "Cancel" : "Edit Company"}
-              </Button>
-
-              {editMode && (
                 <Button
+                  className="bg-white text-blue-700 hover:bg-white/90"
                   onClick={handleSubmit(onSubmit)}
                   disabled={isSubmitting}
                 >
-                  Save
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSubmitting
+                    ? "Saving..."
+                    : pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION
+                    ? "Create Company"
+                    : "Save Changes"}
                 </Button>
-              )}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* About Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>About {companydata?.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {editMode ? (
-                  <Controller
-                    control={control}
-                    name="longDescription"
-                    render={({ field }) => <Textarea rows={8} {...field} />}
-                  />
-                ) : (
-                  <Markdown
-                    content={
-                      companydata?.longDescription ||
-                      companydata?.shortDescription ||
-                      ""
-                    }
-                  />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Company Reviews (unchanged display) */}
-            {/* <Card>
-              <CardHeader>
-                <CardTitle>Employee Reviews</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-4 mb-6">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-gray-900">
-                        4.2
-                      </div>
-                      <div className="flex items-center mt-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`h-4 w-4 ${
-                              star <= 4
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        Based on 127 reviews
-                      </div>
+        {/* Main Content */}
+        {/* View Mode */}
+        {isViewMode && displayData && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Main Content */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* About Section - Only show if has content */}
+              {displayData?.longDescription && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-lg md:text-xl">
+                      <Building className="h-5 w-5 mr-2" />
+                      About {displayData?.name || "Company"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-gray max-w-none text-base">
+                      <Markdown content={displayData.longDescription} />
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
+            {/* Right Column - Company Info */}
+            <div className="space-y-6">
+              {/* Company Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">
+                    Company Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="space-y-4">
-                    {[
-                      {
-                        id: 1,
-                        rating: 5,
-                        title: "Great place to work",
-                        content:
-                          "Amazing company culture and great opportunities for growth. The team is very supportive and the work is challenging and rewarding.",
-                        author: "Software Engineer",
-                        date: "2024-01-10",
-                      },
-                      {
-                        id: 2,
-                        rating: 4,
-                        title: "Good work-life balance",
-                        content:
-                          "Really appreciate the flexible working arrangements and the company's focus on employee wellbeing. Management is understanding and supportive.",
-                        author: "Product Manager",
-                        date: "2024-01-05",
-                      },
-                    ].map((review) => (
-                      <div
-                        key={review.id}
-                        className="border-b border-gray-200 pb-4 last:border-b-0"
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-medium text-gray-900">
-                              {review.title}
-                            </h4>
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
-                              <span>{review.author}</span>
-                              <span>•</span>
-                              <span>{review.date}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-4 w-4 ${
-                                  star <= review.rating
-                                    ? "text-yellow-400 fill-current"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-gray-700 text-sm">
-                          {review.content}
-                        </p>
+                    {displayData?.organizationType && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-base text-gray-600">Type</span>
+                        <span className="text-base font-medium">
+                          {formatEnumValue(displayData.organizationType)}
+                        </span>
                       </div>
-                    ))}
+                    )}
+
+                    {typeof displayData?.employeeCount === "number" && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-base text-gray-600">
+                          Employees
+                        </span>
+                        <span className="text-base font-medium">
+                          {displayData.employeeCount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {displayData?.foundedDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-base text-gray-600">Founded</span>
+                        <span className="text-base font-medium">
+                          {new Date(displayData.foundedDate).getFullYear()}
+                        </span>
+                      </div>
+                    )}
+
+                    {displayData?.headquartersAddress && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-base text-gray-600">
+                          Headquarters
+                        </span>
+                        <span className="text-base font-medium text-right max-w-[200px] truncate">
+                          {displayData.headquartersAddress}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card> */}
-          </div>
+                </CardContent>
+              </Card>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Company Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Company Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {editMode ? (
-                  <>
-                    <Controller
-                      control={control}
-                      name="organizationSize"
-                      render={({ field }) => (
-                        <Input {...field} placeholder="Organization size" />
-                      )}
-                    />
-                    <Controller
-                      control={control}
-                      name="employeeCount"
-                      render={({ field }) => (
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value === ""
-                                ? ""
-                                : Number(e.target.value)
-                            )
-                          }
-                          placeholder="Employee count"
-                        />
-                      )}
-                    />
-                  </>
-                ) : (
-                  <>
-                    {companydata?.organizationType && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Type</span>
-                        <span className="font-medium">
-                          {companydata?.organizationType}
-                        </span>
-                      </div>
-                    )}
-                    {companydata?.organizationSize && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Company Size</span>
-                        <span className="font-medium">
-                          {companydata?.organizationSize}
-                        </span>
-                      </div>
-                    )}
-                    {companydata?.employeeCount !== undefined && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Employees</span>
-                        <span className="font-medium">
-                          {companydata?.employeeCount}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Tags */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tags</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {editMode ? (
-                  <Controller
-                    control={control}
-                    name="keywordsCsv"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        placeholder="Comma separated keywords"
-                      />
-                    )}
-                  />
-                ) : (
-                  companydata?.keywords &&
-                  companydata?.keywords.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm">Keywords</h4>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {companydata?.keywords?.map((k: string) => (
-                          <Badge key={k} variant="outline" className="text-xs">
-                            <Tag className="h-3 w-3 mr-1 inline" /> {k}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Location & Work Policy */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Location & Work</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {editMode ? (
-                  <>
-                    <Controller
-                      control={control}
-                      name="country"
-                      render={({ field }) => (
-                        <Input {...field} placeholder="Country" />
-                      )}
-                    />
-                    <Controller
-                      control={control}
-                      name="city"
-                      render={({ field }) => (
-                        <Input {...field} placeholder="City" />
-                      )}
-                    />
-                    <Controller
-                      control={control}
-                      name="workingDaysCsv"
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          placeholder="Working days (comma separated)"
-                        />
-                      )}
-                    />
-                  </>
-                ) : (
-                  <>
-                    {companydata?.country && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 flex items-center">
-                          <MapPin className="h-4 w-4 mr-2" /> Country
-                        </span>
-                        <span className="font-medium">
-                          {companydata?.country}
-                        </span>
-                      </div>
-                    )}
-                    {companydata?.city && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 flex items-center">
-                          <MapPin className="h-4 w-4 mr-2" /> City
-                        </span>
-                        <span className="font-medium">{companydata?.city}</span>
-                      </div>
-                    )}
-                    {companydata?.workingDays &&
-                      companydata?.workingDays?.length > 0 && (
+              {/* Work Information - Only show if has content */}
+              {(displayData?.workingDays?.length > 0 ||
+                displayData?.workScheduleTypes?.length > 0 ||
+                displayData?.overtimePolicy) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-lg md:text-xl">
+                      <Calendar className="h-5 w-5 mr-2" />
+                      Work Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {displayData?.workingDays &&
+                      displayData.workingDays.length > 0 && (
                         <div>
-                          <h4 className="font-medium text-sm">Working days</h4>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {companydata?.workingDays?.map((d: string) => (
+                          <span className="text-base text-gray-600 block mb-2">
+                            Working Days
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {displayData.workingDays.map((day: string) => (
                               <Badge
-                                key={d}
+                                key={day}
                                 variant="outline"
-                                className="text-xs capitalize"
+                                className="capitalize"
                               >
-                                {d}
+                                {day.toLowerCase()}
                               </Badge>
                             ))}
                           </div>
                         </div>
                       )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+
+                    {displayData?.workScheduleTypes &&
+                      displayData.workScheduleTypes.length > 0 && (
+                        <div>
+                          <span className="text-base text-gray-600 block mb-2">
+                            Work Schedule
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {displayData.workScheduleTypes.map(
+                              (type: string) => (
+                                <Badge key={type} variant="secondary">
+                                  {formatEnumValue(type)}
+                                </Badge>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                    {displayData?.overtimePolicy && (
+                      <div>
+                        <span className="text-base text-gray-600 block mb-2">
+                          Overtime Policy
+                        </span>
+                        <Badge variant="outline">
+                          {formatEnumValue(displayData.overtimePolicy)}
+                        </Badge>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Edit Mode */}
+        {editMode && !previewMode && (
+          <div className="mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+              {/* Left Column */}
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center text-xl md:text-2xl">
+                      <Building className="h-6 w-6 mr-3" />
+                      Basic Information
+                    </CardTitle>
+                    <p className="text-base text-gray-600 mt-2">
+                      Essential details about your company that appear in the
+                      header
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    {/* Logo Upload - Enhanced */}
+                    <div className="bg-gray-50 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                      <div className="flex flex-col md:flex-row md:items-center gap-6">
+                        <Avatar className="h-24 w-24 border-4 border-white shadow-lg mx-auto md:mx-0">
+                          <AvatarImage
+                            src={
+                              avatar?.url ||
+                              companydata?.logoFile?.url ||
+                              undefined
+                            }
+                            alt={companydata?.name || "Company"}
+                          />
+                          <AvatarFallback className="text-3xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                            {(
+                              companydata?.name ||
+                              watchedValues?.name ||
+                              "C"
+                            ).charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-grow text-center md:text-left">
+                          <h4 className="text-lg font-semibold mb-2">
+                            Company Logo
+                          </h4>
+                          <label className="block cursor-pointer">
+                            <span className="sr-only">Choose logo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="block w-full text-base text-gray-600 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-base file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer"
+                              onChange={async (e) => {
+                                const f = e.target.files?.[0];
+                                if (!f) return;
+                                await handleLogoFile(f);
+                              }}
+                            />
+                          </label>
+                          <p className="text-base text-gray-500 mt-2">
+                            Upload a company logo (JPG, PNG, max 5MB). This will
+                            appear in your profile header.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Company Name *
+                        </label>
+                        <Controller
+                          control={control}
+                          name="name"
+                          render={({ field, fieldState }) => (
+                            <>
+                              <Input
+                                placeholder="Enter your company name"
+                                className="text-base h-12 border-2 focus:border-blue-500"
+                                {...field}
+                              />
+                              {fieldState.error && (
+                                <p className="text-red-600 text-base mt-2 flex items-center">
+                                  <span className="w-2 h-2 bg-red-600 rounded-full mr-2"></span>
+                                  {fieldState.error.message}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Short Description
+                        </label>
+                        <Controller
+                          control={control}
+                          name="shortDescription"
+                          render={({ field }) => (
+                            <Textarea
+                              placeholder="Brief description that appears in your profile header (e.g., 'Leading fintech company revolutionizing digital payments')"
+                              rows={4}
+                              className="text-base border-2 focus:border-blue-500 resize-none"
+                              {...field}
+                            />
+                          )}
+                        />
+                        <p className="text-base text-gray-600 mt-2">
+                          This appears prominently in your company header. Keep
+                          it concise and impactful.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Company Website
+                        </label>
+                        <Controller
+                          control={control}
+                          name="website"
+                          render={({ field, fieldState }) => (
+                            <>
+                              <Input
+                                placeholder="https://yourcompany.com"
+                                className="text-base h-12 border-2 focus:border-blue-500"
+                                {...field}
+                              />
+                              {fieldState.error && (
+                                <p className="text-red-600 text-base mt-2 flex items-center">
+                                  <span className="w-2 h-2 bg-red-600 rounded-full mr-2"></span>
+                                  {fieldState.error.message}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        />
+                        <p className="text-base text-gray-600 mt-2">
+                          Your official website URL for external links and
+                          verification.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Company Classification */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center text-xl md:text-2xl">
+                      <Factory className="h-6 w-6 mr-3" />
+                      Company Classification
+                    </CardTitle>
+                    <p className="text-base text-gray-600 mt-2">
+                      Help candidates understand your company type and industry
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Industry
+                        </label>
+                        <Controller
+                          control={control}
+                          name="industryId"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="text-base h-12 border-2">
+                                <SelectValue placeholder="Select your industry" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {industriesData?.data?.map((industry) => (
+                                  <SelectItem
+                                    key={industry.id}
+                                    value={industry.id}
+                                    className="text-base py-3"
+                                  >
+                                    {industry.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Organization Type
+                        </label>
+                        <Controller
+                          control={control}
+                          name="organizationType"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="text-base h-12 border-2">
+                                <SelectValue placeholder="Select organization type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.values(OrganizationType).map((type) => (
+                                  <SelectItem
+                                    key={type}
+                                    value={type}
+                                    className="text-base py-3"
+                                  >
+                                    {formatEnumValue(type)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Organization Size
+                        </label>
+                        <Controller
+                          control={control}
+                          name="organizationSize"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="text-base h-12 border-2">
+                                <SelectValue placeholder="Select company size" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.values(OrganizationSize).map((size) => (
+                                  <SelectItem
+                                    key={size}
+                                    value={size}
+                                    className="text-base py-3"
+                                  >
+                                    {formatEnumValue(size)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Employee Count
+                        </label>
+                        <Controller
+                          control={control}
+                          name="employeeCount"
+                          render={({ field }) => (
+                            <Input
+                              type="number"
+                              placeholder="e.g., 150"
+                              className="text-base h-12 border-2 focus:border-blue-500"
+                              {...field}
+                              onChange={(e) =>
+                                field.onChange(
+                                  e.target.value === ""
+                                    ? ""
+                                    : Number(e.target.value)
+                                )
+                              }
+                            />
+                          )}
+                        />
+                        <p className="text-base text-gray-600 mt-2">
+                          Optional: Exact number of employees for more precision
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Location Information */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center text-xl md:text-2xl">
+                      <MapPin className="h-6 w-6 mr-3" />
+                      Location Information
+                    </CardTitle>
+                    <p className="text-base text-gray-600 mt-2">
+                      Where your company is based and operates
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    <div>
+                      <label className="text-lg font-semibold text-gray-800 block mb-3">
+                        Headquarters Address
+                      </label>
+                      <Controller
+                        control={control}
+                        name="headquartersAddress"
+                        render={({ field }) => (
+                          <Input
+                            placeholder="e.g., 1600 Amphitheatre Parkway, Mountain View, CA"
+                            className="text-base h-12 border-2 focus:border-blue-500"
+                            {...field}
+                          />
+                        )}
+                      />
+                      <p className="text-base text-gray-600 mt-2">
+                        Full address of your main office or headquarters
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Country
+                        </label>
+                        <Controller
+                          control={control}
+                          name="country"
+                          render={({ field }) => (
+                            <Input
+                              placeholder="e.g., United States"
+                              className="text-base h-12 border-2 focus:border-blue-500"
+                              {...field}
+                            />
+                          )}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          City
+                        </label>
+                        <Controller
+                          control={control}
+                          name="city"
+                          render={({ field }) => (
+                            <Input
+                              placeholder="e.g., San Francisco"
+                              className="text-base h-12 border-2 focus:border-blue-500"
+                              {...field}
+                            />
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-6">
+                {/* Company Description */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center text-xl md:text-2xl">
+                      <Building className="h-6 w-6 mr-3" />
+                      Company Description
+                    </CardTitle>
+                    <p className="text-base text-gray-600 mt-2">
+                      Tell your story in detail using Markdown formatting
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div>
+                        <label className="text-lg font-semibold text-gray-800 block mb-3">
+                          Detailed Description (Markdown)
+                        </label>
+                        <Controller
+                          control={control}
+                          name="longDescription"
+                          render={({ field }) => (
+                            <Textarea
+                              rows={25}
+                              placeholder={`## About Us
+We are a leading technology company focused on innovation and excellence. Our mission is to transform industries through cutting-edge solutions.
+
+## What We Do
+- Develop innovative software solutions
+- Provide enterprise consulting services
+- Build scalable cloud infrastructure
+
+## Our Culture
+- Collaborative and inclusive environment
+- Continuous learning and growth
+- Work-life balance and flexibility
+
+## Why Join Us?
+- Competitive compensation and benefits
+- Remote work opportunities
+- Professional development programs
+- Health and wellness benefits
+- Stock options and equity participation
+
+## Our Values
+1. **Innovation** - We push boundaries and embrace new ideas
+2. **Integrity** - We operate with honesty and transparency
+3. **Excellence** - We strive for the highest quality in everything
+4. **Collaboration** - We work together to achieve great results`}
+                              className="min-h-[600px] font-mono text-base border-2 focus:border-blue-500 resize-none"
+                              {...field}
+                            />
+                          )}
+                        />
+                        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <h4 className="text-base font-semibold text-blue-800 mb-2">
+                            💡 Markdown Tips
+                          </h4>
+                          <ul className="text-base text-blue-700 space-y-1">
+                            <li>• Use ## for section headings</li>
+                            <li>• Use **bold** for emphasis</li>
+                            <li>• Use - or * for bullet points</li>
+                            <li>• Use 1. 2. 3. for numbered lists</li>
+                            <li>
+                              • Include company mission, values, culture, and
+                              benefits
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Work Environment */}
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center text-xl md:text-2xl">
+                      <Calendar className="h-6 w-6 mr-3" />
+                      Work Environment
+                    </CardTitle>
+                    <p className="text-base text-gray-600 mt-2">
+                      Define your work schedule and policies
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    <div>
+                      <label className="text-lg font-semibold text-gray-800 block mb-4">
+                        Working Days
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {Object.values(WorkingDay).map((day) => (
+                          <div
+                            key={day}
+                            className="flex items-center space-x-3 p-3 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors"
+                          >
+                            <Checkbox
+                              id={`working-day-${day}`}
+                              checked={workingDaysValue?.includes(day) || false}
+                              onCheckedChange={(checked) =>
+                                handleWorkingDayChange(day, checked as boolean)
+                              }
+                              className="w-5 h-5"
+                            />
+                            <label
+                              htmlFor={`working-day-${day}`}
+                              className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize cursor-pointer flex-grow"
+                            >
+                              {day.toLowerCase()}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-lg font-semibold text-gray-800 block mb-4">
+                        Work Schedule Types
+                      </label>
+                      <div className="grid grid-cols-1 gap-4">
+                        {Object.values(WorkScheduleType).map((type) => (
+                          <div
+                            key={type}
+                            className="flex items-center space-x-3 p-4 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors"
+                          >
+                            <Checkbox
+                              id={`schedule-type-${type}`}
+                              checked={
+                                workScheduleTypesValue?.includes(type) || false
+                              }
+                              onCheckedChange={(checked) =>
+                                handleWorkScheduleTypeChange(
+                                  type,
+                                  checked as boolean
+                                )
+                              }
+                              className="w-5 h-5"
+                            />
+                            <label
+                              htmlFor={`schedule-type-${type}`}
+                              className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-grow"
+                            >
+                              {formatEnumValue(type)}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-lg font-semibold text-gray-800 block mb-3">
+                        Overtime Policy
+                      </label>
+                      <Controller
+                        control={control}
+                        name="overtimePolicy"
+                        render={({ field }) => (
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger className="text-base h-12 border-2">
+                              <SelectValue placeholder="Select overtime policy" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.values(OvertimePolicy).map((policy) => (
+                                <SelectItem
+                                  key={policy}
+                                  value={policy}
+                                  className="text-base py-3"
+                                >
+                                  {formatEnumValue(policy)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      <p className="text-base text-gray-600 mt-2">
+                        How your company handles overtime work and compensation
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
