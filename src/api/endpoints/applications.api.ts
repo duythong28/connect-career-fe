@@ -3,6 +3,7 @@ import {
   Application,
   ApplyJobDto,
   GetMyApplicationsParams,
+  MyApplicationsResponse,
   UpdateApplicationStageForRecruiterDto,
 } from "../types/applications.types";
 
@@ -95,7 +96,7 @@ const updateApplicationByIdForRecruiter = async (
 
 const getMyApplications = async (
   params: GetMyApplicationsParams
-): Promise<any> => {
+): Promise<MyApplicationsResponse> => {
   const response = await axios.get(`${BASE}/me`, { params });
   return response.data;
 };

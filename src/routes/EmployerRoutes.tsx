@@ -32,6 +32,7 @@ export const EmployerRoutes = () => {
       <Route path="profile" element={<RecruiterProfilePage />} />
       <Route path="settings" element={<SubscriptionPage />} />
       <Route path="jobs/:jobId" element={<JobDetail />} />
+      <Route path="jobs/:jobId/edit-job" element={<PostJobPage />} />
       <Route
         path="jobs/:jobId/applications/:applicationId"
         element={<ApplicationDetail />}

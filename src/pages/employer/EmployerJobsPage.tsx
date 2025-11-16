@@ -10,15 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Plus,
-  Search,
-  Eye,
-  Users,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-} from "lucide-react";
+import { Plus, Search, Eye, Users, MoreHorizontal, Edit } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,26 +18,55 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Job } from "@/lib/types";
-import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import { getCandidateJobsByOrganization } from "@/api/endpoints/jobs.api";
+import {
+  getCandidateJobsByOrganization,
+  updateRecruiterJob,
+} from "@/api/endpoints/jobs.api";
+import { JobStatus } from "@/api/types/jobs.types";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
 const EmployerJobsPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { user } = useAuth();
   const { companyId } = useParams();
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const {
-    data: organizationJobsData,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: organizationJobsData } = useQuery({
     queryKey: ["organization-jobs", companyId],
     queryFn: () =>
       getCandidateJobsByOrganization({ id: companyId, limit: 20, page: 1 }),
     enabled: !!companyId,
+  });
+
+  const queryClient = useQueryClient();
+
+  const publishJobMutation = useMutation({
+    mutationFn: (jobId: string) =>
+      updateRecruiterJob(jobId, { status: JobStatus.ACTIVE }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["organization-jobs", companyId],
+      });
+      toast({
+        title: "Job published!",
+        description: "The job is now live.",
+      });
+    },
+  });
+
+  const closeJobMutation = useMutation({
+    mutationFn: (jobId: string) =>
+      updateRecruiterJob(jobId, { status: JobStatus.CLOSED }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["organization-jobs", companyId],
+      });
+      toast({
+        title: "Job closed!",
+        description: "The job has been closed.",
+      });
+    },
   });
 
   const getStatusBadge = (status: Job["status"]) => {
@@ -68,7 +89,7 @@ const EmployerJobsPage = () => {
             View and manage all your job postings
           </p>
         </div>
-        <Button onClick={() => navigate("create")}>
+        <Button onClick={() => navigate(`/company/${companyId}/post-job`)}>
           <Plus className="h-4 w-4 mr-2" />
           Create New Job
         </Button>
@@ -100,7 +121,7 @@ const EmployerJobsPage = () => {
                       >
                         {job.title}
                       </CardTitle>
-                      {/* {getStatusBadge(job.status)} */}
+                      {getStatusBadge(job.status)}
                     </div>
                     <CardDescription>
                       {job.location} • {job.type}
@@ -113,20 +134,34 @@ const EmployerJobsPage = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`${job.id}`)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => navigate(`${job.id}/edit`)}
+                        onClick={() => navigate(`${job.id}/edit-job`)}
                       >
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
+                      {job.status === JobStatus.DRAFT && (
+                        <DropdownMenuItem
+                          onClick={() => publishJobMutation.mutate(job.id)}
+                          disabled={publishJobMutation.isPending}
+                        >
+                          <span className="flex items-center">
+                            <span className="h-2 w-2 rounded-full bg-green-500 mr-2" />
+                            Publish
+                          </span>
+                        </DropdownMenuItem>
+                      )}
+                      {job.status === JobStatus.ACTIVE && (
+                        <DropdownMenuItem
+                          onClick={() => closeJobMutation.mutate(job.id)}
+                          disabled={closeJobMutation.isPending}
+                        >
+                          <span className="flex items-center">
+                            <span className="h-2 w-2 rounded-full bg-red-500 mr-2" />
+                            Close Job
+                          </span>
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

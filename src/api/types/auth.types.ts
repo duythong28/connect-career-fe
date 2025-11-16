@@ -24,6 +24,7 @@ export interface User {
 
 export interface ProfileResponse extends User {
   role?: "admin" | "user";
+  candidateProfileId?: string | null;
 }
 
 export interface RegisterCredentials {

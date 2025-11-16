@@ -33,7 +33,7 @@ export const CallManager: React.FC = () => {
   useEffect(() => {
     const handleVideoCall = async (event: CustomEvent<CallData>) => {
       console.log("CallManager: Initiating video call", event.detail);
-      
+
       if (!videoClient || !user) {
         console.log("CallManager: Missing video client or user");
         return;
@@ -42,14 +42,14 @@ export const CallManager: React.FC = () => {
       try {
         // Create Stream Video call
         const callId = event.detail.callId || `video_${Date.now()}`;
-        const call = videoClient.call('default', callId);
-        
+        const call = videoClient.call("default", callId);
+
         // Create the call with members
         await call.getOrCreate({
           data: {
             members: [
               { user_id: user.id },
-              { user_id: event.detail.recipientId }
+              { user_id: event.detail.recipientId },
             ],
           },
         });
@@ -77,7 +77,7 @@ export const CallManager: React.FC = () => {
 
     const handleVoiceCall = async (event: CustomEvent<CallData>) => {
       console.log("CallManager: Initiating voice call", event.detail);
-      
+
       if (!videoClient || !user) {
         console.log("CallManager: Missing video client or user");
         return;
@@ -86,20 +86,20 @@ export const CallManager: React.FC = () => {
       try {
         // Create Stream Video call for voice only
         const callId = event.detail.callId || `voice_${Date.now()}`;
-        const call = videoClient.call('default', callId);
-        
+        const call = videoClient.call("default", callId);
+
         await call.getOrCreate({
           data: {
             members: [
               { user_id: user.id },
-              { user_id: event.detail.recipientId }
+              { user_id: event.detail.recipientId },
             ],
           },
         });
 
         // Join the call automatically for the caller
         await call.join();
-        
+
         // Disable video for voice calls
         await call.camera.disable();
 
@@ -121,12 +121,24 @@ export const CallManager: React.FC = () => {
       }
     };
 
-    window.addEventListener("initiate-video-call", handleVideoCall as EventListener);
-    window.addEventListener("initiate-voice-call", handleVoiceCall as EventListener);
+    window.addEventListener(
+      "initiate-video-call",
+      handleVideoCall as EventListener
+    );
+    window.addEventListener(
+      "initiate-voice-call",
+      handleVoiceCall as EventListener
+    );
 
     return () => {
-      window.removeEventListener("initiate-video-call", handleVideoCall as EventListener);
-      window.removeEventListener("initiate-voice-call", handleVoiceCall as EventListener);
+      window.removeEventListener(
+        "initiate-video-call",
+        handleVideoCall as EventListener
+      );
+      window.removeEventListener(
+        "initiate-voice-call",
+        handleVoiceCall as EventListener
+      );
     };
   }, [videoClient, user, toast]);
 
@@ -137,15 +149,10 @@ export const CallManager: React.FC = () => {
       return;
     }
 
-    console.log("CallManager: Setting up incoming call listener for user:", user.id);
-
     const handleMessage = (event: any) => {
-      console.log("CallManager: Received chat event:", event.type, event);
-      
       if (event.type === "message.new") {
         const message = event.message;
-        console.log("CallManager: Processing message:", message);
-        
+
         // Updated to check for call_notification message type instead of system type
         if (
           message.custom?.message_type === "call_notification" &&
@@ -153,24 +160,22 @@ export const CallManager: React.FC = () => {
           message.custom?.caller_id !== user.id &&
           message.text?.includes("is calling...")
         ) {
-          console.log("CallManager: Incoming call detected!", message.custom);
-          
           // Create call for recipient
           const handleIncomingCall = async () => {
             try {
               const callId = message.custom.call_id || `incoming_${Date.now()}`;
-              const call = videoClient.call('default', callId);
-              
+              const call = videoClient.call("default", callId);
+
               // Get or create the call
               await call.getOrCreate({
                 data: {
                   members: [
                     { user_id: user.id },
-                    { user_id: message.custom.caller_id }
+                    { user_id: message.custom.caller_id },
                   ],
                 },
               });
-              
+
               setCurrentCall({
                 type: message.custom.call_type,
                 data: {
@@ -186,10 +191,11 @@ export const CallManager: React.FC = () => {
                 isIncoming: true,
                 streamCall: call,
               });
-
-              console.log("CallManager: Incoming call set up successfully");
             } catch (error) {
-              console.error("CallManager: Failed to handle incoming call:", error);
+              console.error(
+                "CallManager: Failed to handle incoming call:",
+                error
+              );
             }
           };
 
@@ -200,7 +206,7 @@ export const CallManager: React.FC = () => {
             callStatus: message.custom?.call_status,
             callerId: message.custom?.caller_id,
             currentUserId: user.id,
-            textMatch: message.text?.includes("is calling...")
+            textMatch: message.text?.includes("is calling..."),
           });
         }
       }
@@ -217,7 +223,7 @@ export const CallManager: React.FC = () => {
 
   const handleCallEnd = async () => {
     console.log("CallManager: Ending call");
-    
+
     if (currentCall?.streamCall) {
       try {
         await currentCall.streamCall.leave();
@@ -226,22 +232,22 @@ export const CallManager: React.FC = () => {
         console.error("CallManager: Error leaving call:", error);
       }
     }
-    
+
     setCurrentCall(null);
   };
 
   const handleCallAnswer = async () => {
     console.log("CallManager: Answering call");
-    
+
     if (currentCall?.streamCall) {
       try {
         await currentCall.streamCall.join();
-        
+
         // For voice calls, disable video
         if (currentCall.type === "voice") {
           await currentCall.streamCall.camera.disable();
         }
-        
+
         toast({
           title: "Call Connected",
           description: `Connected to ${
@@ -250,7 +256,7 @@ export const CallManager: React.FC = () => {
               : currentCall.data.recipientName
           }`,
         });
-        
+
         console.log("CallManager: Call answered successfully");
       } catch (error) {
         console.error("CallManager: Error answering call:", error);
@@ -265,7 +271,7 @@ export const CallManager: React.FC = () => {
 
   const handleCallDecline = async () => {
     console.log("CallManager: Declining call");
-    
+
     if (currentCall?.streamCall) {
       try {
         await currentCall.streamCall.leave();
@@ -273,7 +279,7 @@ export const CallManager: React.FC = () => {
         console.error("CallManager: Error declining call:", error);
       }
     }
-    
+
     toast({
       title: "Call Declined",
       description: `Call with ${
@@ -282,7 +288,7 @@ export const CallManager: React.FC = () => {
           : currentCall.data.recipientName
       } was declined`,
     });
-    
+
     setCurrentCall(null);
   };
 
@@ -292,7 +298,6 @@ export const CallManager: React.FC = () => {
   }, [currentCall]);
 
   if (!currentCall) {
-    console.log("CallManager: No current call, not rendering");
     return null;
   }
 

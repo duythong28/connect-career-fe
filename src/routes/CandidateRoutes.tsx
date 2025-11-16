@@ -1,5 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-import CandidateProfilePage from "@/pages/candidate/CandidateProfilePage";
 import SavedJobsPage from "@/pages/candidate/SavedJobsPage";
 import ChatbotPage from "@/pages/shared/ChatbotPage";
 import SubscriptionPage from "@/pages/shared/SubscriptionPage";
@@ -18,7 +17,6 @@ export const CandidateRoutes = () => {
     <Routes>
       <Route index element={<CandidateDashboard />} />
       <Route path="dashboard" element={<CandidateDashboard />} />
-      <Route path="profile" element={<CandidateProfilePage />} />
       <Route path="applications" element={<CandidateApplicationsPage />} />
       <Route
         path="applications/:applicationId"

@@ -1,12 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,1116 +8,454 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import {
-  ArrowLeft,
-  Mail,
-  MapPin,
-  FileText,
-  Clock,
-  ArrowRight,
-  Calendar as CalendarIcon,
-  Video,
-  Edit,
-  Trash2,
-  MessageSquare,
-  RotateCcw,
-  Plus,
-  Phone,
-  MapPinned,
-  DollarSign,
-  ThumbsDown,
-  ThumbsUp,
-  Star,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getApplicationById } from "@/api/endpoints/applications.api";
+import { getOrganizationById } from "@/api/endpoints/organizations.api";
 import {
-  getApplicationById,
-  updateApplicationStageForRecruiter,
-} from "@/api/endpoints/applications.api";
-import { PipelineTransition } from "@/api/types/pipelines.types";
-import { UpdateApplicationStageForRecruiterDto } from "@/api/types/applications.types";
+  Application,
+  ApplicationStatus,
+  ApplicationStatusLabel,
+} from "@/api/types/applications.types";
+import { Organization } from "@/api/types/organizations.types";
 import {
-  InterviewResponse,
-  InterviewUpdateDto,
-  InterviewFeedbackDto,
-  InterviewRescheduleDto,
-  InterviewCreateDto,
-  InterviewType,
-  Recommendation,
-} from "@/api/types/interviews.types";
-import {
-  updateInterview,
-  deleteInterview,
-  addInterviewFeedback,
-  rescheduleInterview,
-  createInterview,
-} from "@/api/endpoints/interviews.api";
-import { Select } from "@radix-ui/react-select";
-import {
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  OfferCreateDto,
   OfferResponse,
   OfferStatus,
-  OfferUpdateDto,
   SalaryPeriod,
 } from "@/api/types/offers.types";
 import {
-  createOffer,
-  deleteOffer,
-  updateOffer,
+  candidateAcceptOffer,
+  candidateRejectOffer,
+  candidateCreateOffer,
 } from "@/api/endpoints/offers.api";
 import { useAuth } from "@/hooks/useAuth";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import JobInfoSection from "@/components/candidate/applications/JobInfoSection";
+import ApplicationInfoSection from "@/components/candidate/applications/ApplicationInfoSection";
+import OffersSection from "@/components/candidate/applications/OffersSection";
+import InterviewsSection from "@/components/candidate/applications/InterviewsSection";
+import StatusLogSection from "@/components/candidate/applications/StatusLogSection";
 
+// --- Highlight Section ---
+function HighlightSection({
+  job,
+  company,
+  status,
+  appliedDate,
+  onBack,
+}: {
+  job: any;
+  company: Organization | null;
+  status: string;
+  appliedDate?: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="w-full rounded-xl mb-4 px-2 py-3 sm:px-4 sm:py-4 md:px-8 md:py-6 bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg text-white flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-blue-700"
+          onClick={onBack}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <span className="text-lg sm:text-xl md:text-2xl font-bold leading-tight truncate">
+          {job?.title}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2 items-center mt-2">
+        <Badge
+          variant="outline"
+          className="capitalize bg-white/20 border-white/30 text-white"
+        >
+          {ApplicationStatusLabel[status as ApplicationStatus] || status}
+        </Badge>
+        {appliedDate && (
+          <span className="text-xs sm:text-sm opacity-80 ml-2">
+            Applied: {new Date(appliedDate).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Main Page ---
 export default function CandidateApplicationDetailPage() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  // Interview form state
-  const [showAddInterviewDialog, setShowAddInterviewDialog] = useState(false);
-  const [interviewDateTime, setInterviewDateTime] = useState("");
-  const [interviewerName, setInterviewerName] = useState("");
-  const [interviewerEmail, setInterviewerEmail] = useState("");
-  const [interviewType, setInterviewType] = useState<InterviewType>("video");
-  const [duration, setDuration] = useState(60);
-  const [location, setLocation] = useState("");
-  const [meetingLink, setMeetingLink] = useState("");
-  const [interviewNotes, setInterviewNotes] = useState("");
-
-  // Interview management state
-  const [selectedInterview, setSelectedInterview] =
-    useState<InterviewResponse | null>(null);
-  const [showEditInterviewDialog, setShowEditInterviewDialog] = useState(false);
-  const [showDeleteInterviewDialog, setShowDeleteInterviewDialog] =
-    useState(false);
-  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
-  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
-
-  // Feedback form state
-  const [feedbackRating, setFeedbackRating] = useState("5");
-  const [feedbackRecommendation, setFeedbackRecommendation] = useState(
-    Recommendation.RECOMMEND
-  );
-  const [feedbackStrengths, setFeedbackStrengths] = useState("");
-  const [feedbackWeaknesses, setFeedbackWeaknesses] = useState("");
-  const [feedbackComments, setFeedbackComments] = useState("");
-
-  // Reschedule form state
-  const [rescheduleDate, setRescheduleDate] = useState("");
-
-  // Offer form state
-  const [showAddOfferDialog, setShowAddOfferDialog] = useState(false);
-  const [showEditOfferDialog, setShowEditOfferDialog] = useState(false);
-  const [showDeleteOfferDialog, setShowDeleteOfferDialog] = useState(false);
+  // Offer dialog state
+  const [showAcceptDialog, setShowAcceptDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showCounterOfferDialog, setShowCounterOfferDialog] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<OfferResponse | null>(
     null
   );
-  const [offerBaseSalary, setOfferBaseSalary] = useState("");
-  const [offerCurrency, setOfferCurrency] = useState("VND");
-  const [offerSalaryPeriod, setOfferSalaryPeriod] = useState<SalaryPeriod>(
-    SalaryPeriod.YEARLY
-  );
-  const [offerSigningBonus, setOfferSigningBonus] = useState("");
-  const [offerNotes, setOfferNotes] = useState("");
-  const [offerIsNegotiable, setOfferIsNegotiable] = useState(false);
 
-  // Application notes
-  const [applicationNotes, setApplicationNotes] = useState("");
-  const { user } = useAuth();
+  // Counter offer form state
+  const [counterOfferBaseSalary, setCounterOfferBaseSalary] = useState("");
+  const [counterOfferCurrency, setCounterOfferCurrency] = useState("VND");
+  const [counterOfferSalaryPeriod, setCounterOfferSalaryPeriod] =
+    useState<SalaryPeriod>(SalaryPeriod.YEARLY);
+  const [counterOfferSigningBonus, setCounterOfferSigningBonus] = useState("");
+  const [counterOfferNotes, setCounterOfferNotes] = useState("");
+  const [counterOfferIsNegotiable, setCounterOfferIsNegotiable] =
+    useState(true);
 
-  const { data: applicationData } = useQuery({
-    queryKey: ["applications", applicationId],
-    queryFn: async () => getApplicationById(applicationId),
+  // Query application
+  const { data: applicationData } = useQuery<Application>({
+    queryKey: ["candidate-applications", applicationId],
+    queryFn: async () => getApplicationById(applicationId!),
     enabled: !!applicationId,
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 
-  const resetOfferForm = () => {
-    setOfferBaseSalary("");
-    setOfferCurrency("VND");
-    setOfferSalaryPeriod(SalaryPeriod.YEARLY);
-    setOfferSigningBonus("");
-    setOfferNotes("");
-    setOfferIsNegotiable(false);
-  };
+  // Query organization
+  const { data: company } = useQuery<Organization | null>({
+    queryKey: ["organization", applicationData?.job?.organizationId],
+    queryFn: () =>
+      applicationData?.job?.organizationId
+        ? getOrganizationById(applicationData.job.organizationId)
+        : Promise.resolve(null),
+    enabled: !!applicationData?.job?.organizationId,
+  });
 
-  const resetInterviewForm = () => {
-    setInterviewDateTime("");
-    setInterviewerName("");
-    setInterviewerEmail("");
-    setInterviewType("video");
-    setDuration(60);
-    setLocation("");
-    setMeetingLink("");
-    setInterviewNotes("");
-  };
-
-  const resetFeedbackForm = () => {
-    setFeedbackRating("5");
-    setFeedbackRecommendation(Recommendation.RECOMMEND);
-    setFeedbackStrengths("");
-    setFeedbackWeaknesses("");
-    setFeedbackComments("");
-  };
-
-  // Stage transition mutation
-  const { mutate: updateApplicationStageMutate } = useMutation({
-    mutationFn: async ({
+  // Accept offer mutation
+  const { mutate: acceptOfferMutate } = useMutation({
+    mutationFn: ({
       applicationId,
-      data,
+      notes,
     }: {
       applicationId: string;
-      data: UpdateApplicationStageForRecruiterDto;
-    }) => updateApplicationStageForRecruiter(applicationId, data),
+      notes?: string;
+    }) => candidateAcceptOffer(applicationId, notes),
     onSuccess: () => {
-      toast.success("Application stage updated");
+      toast.success("Offer accepted successfully");
+      setShowAcceptDialog(false);
       queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
+        queryKey: ["candidate-applications", applicationId],
       });
     },
     onError: () => {
-      toast.error("Failed to update application stage");
+      toast.error("Failed to accept offer");
     },
   });
 
-  // Interview mutations
-  const { mutate: createInterviewMutate } = useMutation({
+  // Reject offer mutation
+  const { mutate: rejectOfferMutate } = useMutation({
+    mutationFn: ({
+      applicationId,
+      reason,
+    }: {
+      applicationId: string;
+      reason?: string;
+    }) => candidateRejectOffer(applicationId, reason),
+    onSuccess: () => {
+      toast.success("Offer rejected");
+      setShowRejectDialog(false);
+      queryClient.invalidateQueries({
+        queryKey: ["candidate-applications", applicationId],
+      });
+    },
+    onError: () => {
+      toast.error("Failed to reject offer");
+    },
+  });
+
+  // Create counter offer mutation
+  const { mutate: createCounterOfferMutate } = useMutation({
     mutationFn: ({
       applicationId,
       data,
     }: {
       applicationId: string;
-      data: InterviewCreateDto;
-    }) => createInterview(applicationId, data),
+      data: any;
+    }) => candidateCreateOffer(applicationId, data),
     onSuccess: () => {
-      toast.success("Interview scheduled successfully");
-      setShowAddInterviewDialog(false);
-      resetInterviewForm();
+      toast.success("Counter offer submitted successfully");
+      setShowCounterOfferDialog(false);
+      resetCounterOfferForm();
       queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
+        queryKey: ["candidate-applications", applicationId],
       });
     },
     onError: () => {
-      toast.error("Failed to schedule interview");
+      toast.error("Failed to submit counter offer");
     },
   });
 
-  // Offer mutations
-  const { mutate: createOfferMutate } = useMutation({
-    mutationFn: ({
-      applicationId,
-      data,
-    }: {
-      applicationId: string;
-      data: OfferCreateDto;
-    }) => createOffer(applicationId, data),
-    onSuccess: () => {
-      toast.success("Offer created successfully");
-      setShowAddOfferDialog(false);
-      resetOfferForm();
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
+  const resetCounterOfferForm = () => {
+    setCounterOfferBaseSalary("");
+    setCounterOfferCurrency("VND");
+    setCounterOfferSalaryPeriod(SalaryPeriod.YEARLY);
+    setCounterOfferSigningBonus("");
+    setCounterOfferNotes("");
+    setCounterOfferIsNegotiable(true);
+  };
+
+  const handleAcceptOffer = (offer: OfferResponse) => {
+    setSelectedOffer(offer);
+    setShowAcceptDialog(true);
+  };
+
+  const handleRejectOffer = (offer: OfferResponse) => {
+    setSelectedOffer(offer);
+    setShowRejectDialog(true);
+  };
+
+  const handleCounterOffer = (offer: OfferResponse) => {
+    setSelectedOffer(offer);
+    setCounterOfferBaseSalary(offer.baseSalary?.toString() || "");
+    setCounterOfferCurrency(offer.currency || "VND");
+    setCounterOfferSalaryPeriod(
+      (offer.salaryPeriod as SalaryPeriod) || SalaryPeriod.YEARLY
+    );
+    setCounterOfferSigningBonus(offer.signingBonus?.toString() || "");
+    setShowCounterOfferDialog(true);
+  };
+
+  const confirmAcceptOffer = () => {
+    if (selectedOffer && applicationId) {
+      acceptOfferMutate({
+        applicationId,
+        notes: "Candidate accepted the offer",
       });
-    },
-    onError: () => {
-      toast.error("Failed to create offer");
-    },
-  });
+    }
+  };
 
-  const { mutate: updateOfferMutate } = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: OfferUpdateDto }) =>
-      updateOffer(id, data),
-    onSuccess: () => {
-      toast.success("Offer updated successfully");
-      setShowEditOfferDialog(false);
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
+  const confirmRejectOffer = () => {
+    if (selectedOffer && applicationId) {
+      rejectOfferMutate({
+        applicationId,
+        reason: "Candidate rejected the offer",
       });
-    },
-    onError: () => {
-      toast.error("Failed to update offer");
-    },
-  });
+    }
+  };
 
-  const { mutate: deleteOfferMutate } = useMutation({
-    mutationFn: (id: string) => deleteOffer(id),
-    onSuccess: () => {
-      toast.success("Offer deleted");
-      setShowDeleteOfferDialog(false);
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
-      });
-    },
-    onError: () => {
-      toast.error("Failed to delete offer");
-    },
-  });
-
-  // Mutations
-  const { mutate: updateInterviewMutate } = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: InterviewUpdateDto }) =>
-      updateInterview(id, data),
-    onSuccess: () => {
-      toast.success("Interview updated successfully");
-      setShowEditInterviewDialog(false);
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
-      });
-    },
-    onError: () => {
-      toast.error("Failed to update interview");
-    },
-  });
-
-  const { mutate: deleteInterviewMutate } = useMutation({
-    mutationFn: (id: string) => deleteInterview(id),
-    onSuccess: () => {
-      toast.success("Interview deleted");
-      setShowDeleteInterviewDialog(false);
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
-      });
-    },
-    onError: () => {
-      toast.error("Failed to delete interview");
-    },
-  });
-
-  const { mutate: rescheduleMutate } = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: InterviewRescheduleDto }) =>
-      rescheduleInterview(id, data),
-    onSuccess: () => {
-      toast.success("Interview rescheduled");
-      setShowRescheduleDialog(false);
-      setRescheduleDate("");
-      queryClient.invalidateQueries({
-        queryKey: ["applications", applicationId],
-      });
-    },
-    onError: () => {
-      toast.error("Failed to reschedule interview");
-    },
-  });
-
-  if (!applicationData) {
-    return <div>Loading...</div>;
-  }
-
-  // Get pending offer (if any)
-  const pendingOffer = applicationData.offers?.find(
-    (o: OfferResponse) => o.status === OfferStatus.PENDING
-  );
-  const acceptedOffer = applicationData.offers?.find(
-    (o: OfferResponse) => o.status === OfferStatus.ACCEPTED
-  );
-
-  const submitReschedule = () => {
-    if (!selectedInterview || !rescheduleDate) {
-      toast.error("Please select new date and time");
+  const submitCounterOffer = () => {
+    if (!counterOfferBaseSalary || !applicationId) {
+      toast.error("Please fill in required fields");
       return;
     }
-
-    rescheduleMutate(
+    rejectOfferMutate(
       {
-        id: selectedInterview.id,
-        data: {
-          newScheduledDate: rescheduleDate,
-          rescheduledBy: user.id,
-        },
+        applicationId,
+        reason: "Candidate submitted counter offer",
       },
       {
         onSuccess: () => {
-          // Reset reschedule form
-          setRescheduleDate("");
+          const data = {
+            baseSalary: parseFloat(counterOfferBaseSalary),
+            currency: counterOfferCurrency,
+            salaryPeriod: counterOfferSalaryPeriod,
+            signingBonus: counterOfferSigningBonus
+              ? parseFloat(counterOfferSigningBonus)
+              : null,
+            notes: counterOfferNotes || null,
+            offeredBy: user.id,
+            isNegotiable: counterOfferIsNegotiable,
+            isOfferedByCandidate: true,
+          };
+          createCounterOfferMutate({ applicationId, data });
         },
       }
     );
   };
 
-  const handleAddOffer = () => {
-    if (!offerBaseSalary || !offerCurrency) {
-      toast.error("Please fill in required fields");
-      return;
-    }
-
-    const data: OfferCreateDto = {
-      baseSalary: parseFloat(offerBaseSalary),
-      currency: offerCurrency,
-      salaryPeriod: offerSalaryPeriod,
-      signingBonus: offerSigningBonus ? parseFloat(offerSigningBonus) : null,
-      notes: offerNotes || null,
-      offeredBy: user.id,
-      isNegotiable: offerIsNegotiable,
-    };
-
-    createOfferMutate({ applicationId: applicationId!, data });
-  };
-
-  const handleEditOffer = (offer: OfferResponse) => {
-    setSelectedOffer(offer);
-    setOfferBaseSalary(offer.baseSalary.toString());
-    setOfferCurrency(offer.currency);
-    setOfferSalaryPeriod(
-      (offer.salaryPeriod as SalaryPeriod) || SalaryPeriod.YEARLY
+  if (!applicationData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-lg text-gray-600">Loading...</div>
+      </div>
     );
-    setOfferSigningBonus(offer.signingBonus?.toString() || "");
-    setOfferNotes(offer.notes || "");
-    setOfferIsNegotiable(offer.isNegotiable || false);
-    setShowEditOfferDialog(true);
-  };
+  }
 
-  const handleUpdateOffer = () => {
-    if (!selectedOffer || !offerBaseSalary || !offerCurrency) {
-      toast.error("Please fill in required fields");
-      return;
-    }
+  const offers = applicationData.offers || [];
+  const interviews = applicationData.interviews || [];
+  const statusHistory = applicationData.statusHistory || [];
+  const canRespondToOffer =
+    offers.length > 0 &&
+    offers[0].status === OfferStatus.PENDING &&
+    offers[0].isOfferedByCandidate === false;
 
-    const data: OfferUpdateDto = {
-      baseSalary: parseFloat(offerBaseSalary),
-      currency: offerCurrency,
-      salaryPeriod: offerSalaryPeriod,
-      signingBonus: offerSigningBonus ? parseFloat(offerSigningBonus) : null,
-      notes: offerNotes || null,
-      isNegotiable: offerIsNegotiable,
-    };
-
-    updateOfferMutate({ id: selectedOffer.id, data });
-  };
-
-  const handleDeleteOffer = (offer: OfferResponse) => {
-    setSelectedOffer(offer);
-    setShowDeleteOfferDialog(true);
-  };
-
-  const confirmDeleteOffer = () => {
-    if (selectedOffer) {
-      deleteOfferMutate(selectedOffer.id);
-    }
-  };
-
-  const getOfferStatusBadge = (status: OfferStatus) => {
-    const variants: Record<OfferStatus, "default" | "outline" | "secondary"> = {
-      [OfferStatus.PENDING]: "secondary",
-      [OfferStatus.ACCEPTED]: "default",
-      [OfferStatus.REJECTED]: "outline",
-    };
-    return <Badge variant={variants[status]}>{status}</Badge>;
-  };
-
+  // Responsive 2-column layout
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gray-50 px-2 py-4 sm:px-6 md:px-10">
+      <div className="max-w-6xl mx-auto">
+        {/* Highlight */}
+        <HighlightSection
+          job={applicationData.job}
+          company={company}
+          status={applicationData.status}
+          appliedDate={applicationData.appliedDate}
+          onBack={() => navigate(-1)}
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Application Info Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Application for {applicationData?.job?.title}
-              </CardTitle>
-              <CardDescription>
-                Applied on{" "}
-                {new Date(applicationData.appliedDate).toLocaleDateString()}
-              </CardDescription>
-            </CardHeader>
-            {/* <CardContent className="space-y-4">
-              <div>
-                <Label>Notes</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {applicationData.notes || "No notes added yet"}
-                </p>
-              </div>
-              {applicationData.matchingScore && (
-                <div>
-                  <Label>Matching Score</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${applicationData.matchingScore}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {applicationData.matchingScore}%
-                    </span>
-                  </div>
-                </div>
-              )}
-            </CardContent> */}
-          </Card>
-          {/* Candidate Info Card */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-2xl">
-                    {applicationData?.candidateSnapshot?.name ||
-                      `${applicationData?.candidate?.firstName} ${applicationData?.candidate?.lastName}`}
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    {applicationData?.candidateSnapshot?.currentTitle}
-                  </CardDescription>
-                </div>
-                <Badge className="bg-purple-500">
-                  {applicationData?.currentStageName}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{applicationData?.candidateSnapshot?.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{applicationData?.candidateSnapshot?.location}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span>
-                  {applicationData?.candidateSnapshot?.yearsOfExperience} years
-                  of experience
-                </span>
-              </div>
-              <div className="space-y-2">
-                <Label>Skills</Label>
-                <div className="flex flex-wrap gap-2">
-                  {applicationData?.parsedResumeData?.skills?.map(
-                    (skill: string) => (
-                      <Badge key={skill} variant="outline">
-                        {skill}
-                      </Badge>
-                    )
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Offers Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Offers</CardTitle>
-                {!pendingOffer && (
-                  <Button size="sm" onClick={() => setShowAddOfferDialog(true)}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Make Offer
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {applicationData.offers && applicationData.offers.length > 0 ? (
-                applicationData.offers.map((offer: OfferResponse) => (
-                  <div
-                    key={offer.id}
-                    className="border rounded-lg p-4 space-y-3"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-primary" />
-                          <h4 className="font-semibold">
-                            {offer.baseSalary.toLocaleString()} {offer.currency}
-                          </h4>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {offer.salaryPeriod || "YEARLY"}
-                        </p>
-                      </div>
-                      {getOfferStatusBadge(offer.status)}
-                    </div>
-
-                    {offer.signingBonus && (
-                      <div className="text-sm">
-                        <Label>Signing Bonus</Label>
-                        <p className="text-muted-foreground mt-1">
-                          {offer.signingBonus.toLocaleString()} {offer.currency}
-                        </p>
-                      </div>
-                    )}
-
-                    {offer.notes && (
-                      <div className="text-sm">
-                        <Label>Notes</Label>
-                        <p className="text-muted-foreground mt-1">
-                          {offer.notes}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2 text-sm">
-                      {offer.isNegotiable && (
-                        <Badge variant="outline">Negotiable</Badge>
-                      )}
-                    </div>
-
-                    {offer.status === OfferStatus.PENDING && (
-                      <div className="flex gap-2 pt-2">
-                        {/* <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditOffer(offer)}
-                        >
-                          <Edit className="h-3 w-3 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteOffer(offer)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Delete
-                        </Button> */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteOffer(offer)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteOffer(offer)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Re Counter
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteOffer(offer)}
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No offers created yet
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Interviews Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Interviews</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {applicationData.interviews &&
-              applicationData.interviews.length > 0 ? (
-                applicationData.interviews.map(
-                  (interview: InterviewResponse) => (
-                    <div
-                      key={interview.id}
-                      className="border rounded-lg p-4 space-y-3"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            {interview.type === "video" && (
-                              <Video className="h-4 w-4 text-primary" />
-                            )}
-                            {interview.type === "phone" && (
-                              <Phone className="h-4 w-4 text-primary" />
-                            )}
-                            {interview.type === "in-person" && (
-                              <MapPinned className="h-4 w-4 text-primary" />
-                            )}
-                            <h4 className="font-semibold">
-                              {interview.interviewRound}
-                            </h4>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            with {interview.interviewerName}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            interview.status === "scheduled"
-                              ? "default"
-                              : interview.status === "completed"
-                              ? "outline"
-                              : "secondary"
-                          }
-                        >
-                          {interview.status}
-                        </Badge>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {format(new Date(interview.scheduledDate), "PPP p")}
-                          </span>
-                        </div>
-                        {interview.duration && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{interview.duration} minutes</span>
-                          </div>
-                        )}
-                        {interview.location && (
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span>{interview.location}</span>
-                          </div>
-                        )}
-                        {interview.meetingLink && (
-                          <div className="flex items-center gap-2 col-span-2">
-                            <Video className="h-4 w-4 text-muted-foreground" />
-                            <a
-                              href={interview.meetingLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline truncate"
-                            >
-                              {interview.meetingLink}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-
-                      {interview.notes && (
-                        <div className="text-sm">
-                          <Label>Notes</Label>
-                          <p className="text-muted-foreground mt-1">
-                            {interview.notes}
-                          </p>
-                        </div>
-                      )}
-
-                      {interview.feedback && (
-                        <div className="border-t pt-4 mt-3">
-                          <div className="flex items-center justify-between mb-4">
-                            <Label className="text-base font-semibold">
-                              Interview Feedback
-                            </Label>
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full">
-                                <Star className="h-4 w-4 fill-primary text-primary" />
-                                <span className="text-sm font-semibold">
-                                  {interview.feedback.rating}/10
-                                </span>
-                              </div>
-                              <Badge
-                                variant={
-                                  interview.feedback.recommendation ===
-                                  Recommendation.STRONGLY_RECOMMEND
-                                    ? "default"
-                                    : interview.feedback.recommendation ===
-                                      Recommendation.DO_NOT_RECOMMEND
-                                    ? "destructive"
-                                    : "secondary"
-                                }
-                                className="capitalize"
-                              >
-                                {interview.feedback.recommendation}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <div className="grid gap-3">
-                            {interview.feedback.strengths &&
-                              interview.feedback.strengths.length > 0 && (
-                                <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 border border-green-200 dark:border-green-900">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <ThumbsUp className="h-4 w-4 text-green-700 dark:text-green-400" />
-                                    <Label className="text-sm font-medium text-green-900 dark:text-green-100">
-                                      Strengths
-                                    </Label>
-                                  </div>
-                                  <ul className="space-y-1">
-                                    {interview.feedback.strengths.map(
-                                      (strength, idx) => (
-                                        <li
-                                          key={idx}
-                                          className="flex items-start gap-2 text-sm text-green-800 dark:text-green-200"
-                                        >
-                                          <span className="text-green-600 dark:text-green-400 mt-0.5">
-                                            •
-                                          </span>
-                                          <span>{strength}</span>
-                                        </li>
-                                      )
-                                    )}
-                                  </ul>
-                                </div>
-                              )}
-                            {interview.feedback.weaknesses &&
-                              interview.feedback.weaknesses.length > 0 && (
-                                <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-3 border border-red-200 dark:border-red-900">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <ThumbsDown className="h-4 w-4 text-red-700 dark:text-red-400" />
-                                    <Label className="text-sm font-medium text-red-900 dark:text-red-100">
-                                      Areas for Improvement
-                                    </Label>
-                                  </div>
-                                  <ul className="space-y-1">
-                                    {interview.feedback.weaknesses.map(
-                                      (weakness, idx) => (
-                                        <li
-                                          key={idx}
-                                          className="flex items-start gap-2 text-sm text-red-800 dark:text-red-200"
-                                        >
-                                          <span className="text-red-600 dark:text-red-400 mt-0.5">
-                                            •
-                                          </span>
-                                          <span>{weakness}</span>
-                                        </li>
-                                      )
-                                    )}
-                                  </ul>
-                                </div>
-                              )}
-                            {interview.feedback.comments && (
-                              <div className="bg-secondary/30 rounded-lg p-3 border">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                                  <Label className="text-sm font-medium">
-                                    Additional Comments
-                                  </Label>
-                                </div>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {interview.feedback.comments}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )
-                )
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No interviews scheduled yet
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Status Log Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Status Log</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {applicationData?.pipelineStageHistory?.map(
-                  (activity: any, idx: number) => (
-                    <div key={idx} className="flex items-start gap-3 text-sm">
-                      <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div className="flex-1">
-                        <p className="font-medium">{activity.reason}</p>
-                        <p className="text-muted-foreground">
-                          {activity.changedBy} •{" "}
-                          {new Date(activity.changedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left/Main Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <JobInfoSection
+              job={applicationData.job}
+              company={company}
+              onViewJob={() => navigate(`/jobs/${applicationData.job?.id}`)}
+              onViewCompany={() =>
+                company?.id && navigate(`/company/${company.id}/profile`)
+              }
+            />
+            <ApplicationInfoSection application={applicationData} />
+            <OffersSection
+              offers={offers}
+              onAccept={handleAcceptOffer}
+              onReject={handleRejectOffer}
+              onCounter={handleCounterOffer}
+              canRespond={canRespondToOffer}
+            />
+            <InterviewsSection interviews={interviews} />
+          </div>
+          {/* Right/Sidebar */}
+          <div className="space-y-6">
+            <StatusLogSection statusHistory={statusHistory} />
+          </div>
         </div>
       </div>
 
-      {/* Add Interview Dialog */}
-      <Dialog
-        open={showAddInterviewDialog}
-        onOpenChange={setShowAddInterviewDialog}
-      >
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      {/* Accept Offer Dialog */}
+      <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
+        <DialogContent className="max-w-md w-full rounded-2xl p-6">
           <DialogHeader>
-            <DialogTitle>Schedule Interview</DialogTitle>
+            <DialogTitle>Accept Offer</DialogTitle>
             <DialogDescription>
-              Add a new interview for this candidate
+              Are you sure you want to accept this offer?
             </DialogDescription>
           </DialogHeader>
+          <div className="flex gap-2 pt-4">
+            <Button className="flex-1" onClick={confirmAcceptOffer}>
+              Accept Offer
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowAcceptDialog(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
+      {/* Reject Offer Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="max-w-md w-full rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle>Reject Offer</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reject this offer?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 pt-4">
+            <Button
+              className="flex-1"
+              variant="destructive"
+              onClick={confirmRejectOffer}
+            >
+              Reject Offer
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowRejectDialog(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Counter Offer Dialog */}
+      <Dialog
+        open={showCounterOfferDialog}
+        onOpenChange={setShowCounterOfferDialog}
+      >
+        <DialogContent className="max-w-md w-full rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Submit Counter Offer</DialogTitle>
+            <DialogDescription>Propose your preferred terms</DialogDescription>
+          </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label>Interviewer Name *</Label>
-              <Input
-                placeholder="John Doe"
-                value={interviewerName}
-                onChange={(e) => setInterviewerName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Interviewer Email</Label>
-              <Input
-                type="email"
-                placeholder="interviewer@company.com"
-                value={interviewerEmail}
-                onChange={(e) => setInterviewerEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Date & Time *</Label>
-              <Input
-                type="datetime-local"
-                value={interviewDateTime}
-                onChange={(e) => setInterviewDateTime(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Interview Type</Label>
-              <Select
-                value={interviewType}
-                onValueChange={(value) =>
-                  setInterviewType(value as InterviewType)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="phone">Phone</SelectItem>
-                  <SelectItem value="in-person">In Person</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {interviewType === "video" && (
-              <div className="space-y-2">
-                <Label>Meeting Link</Label>
-                <Input
-                  placeholder="https://meet.google.com/..."
-                  value={meetingLink}
-                  onChange={(e) => setMeetingLink(e.target.value)}
-                />
-              </div>
-            )}
-
-            {interviewType === "in-person" && (
-              <div className="space-y-2">
-                <Label>Location</Label>
-                <Input
-                  placeholder="Office Room 301"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Duration (minutes)</Label>
+              <Label>Base Salary *</Label>
               <Input
                 type="number"
-                placeholder="60"
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
+                placeholder="70000000"
+                value={counterOfferBaseSalary}
+                onChange={(e) => setCounterOfferBaseSalary(e.target.value)}
               />
             </div>
-
+            <div className="space-y-2">
+              <Label>Currency *</Label>
+              <Input
+                value={counterOfferCurrency}
+                onChange={(e) => setCounterOfferCurrency(e.target.value)}
+                placeholder="Currency"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Salary Period</Label>
+              <Input
+                value={counterOfferSalaryPeriod}
+                onChange={(e) =>
+                  setCounterOfferSalaryPeriod(e.target.value as SalaryPeriod)
+                }
+                placeholder="Salary Period"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Signing Bonus</Label>
+              <Input
+                type="number"
+                placeholder="10000000"
+                value={counterOfferSigningBonus}
+                onChange={(e) => setCounterOfferSigningBonus(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label>Notes</Label>
               <Textarea
-                placeholder="Additional notes..."
-                value={interviewNotes}
-                onChange={(e) => setInterviewNotes(e.target.value)}
+                placeholder="I would like to negotiate the salary based on my experience..."
+                value={counterOfferNotes}
+                onChange={(e) => setCounterOfferNotes(e.target.value)}
                 rows={3}
               />
             </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button className="flex-1">Schedule Interview</Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowAddInterviewDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reschedule Dialog */}
-      <Dialog
-        open={showRescheduleDialog}
-        onOpenChange={setShowRescheduleDialog}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reschedule Interview</DialogTitle>
-            <DialogDescription>Select a new date and time</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>New Date & Time *</Label>
-              <Input
-                type="datetime-local"
-                value={rescheduleDate}
-                onChange={(e) => setRescheduleDate(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={submitReschedule}>
-                Reschedule
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowRescheduleDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Offer Dialog */}
-      <Dialog open={showAddOfferDialog} onOpenChange={setShowAddOfferDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Make Offer</DialogTitle>
-            <DialogDescription>
-              Create an offer for this candidate
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Base Salary *</Label>
-              <Input
-                type="number"
-                placeholder="70000000"
-                value={offerBaseSalary}
-                onChange={(e) => setOfferBaseSalary(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Currency *</Label>
-              <Select value={offerCurrency} onValueChange={setOfferCurrency}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="VND">VND</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Salary Period</Label>
-              <Select
-                value={offerSalaryPeriod}
-                onValueChange={(value) =>
-                  setOfferSalaryPeriod(value as SalaryPeriod)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SalaryPeriod.YEARLY}>Yearly</SelectItem>
-                  <SelectItem value={SalaryPeriod.MONTHLY}>Monthly</SelectItem>
-                  <SelectItem value={SalaryPeriod.WEEKLY}>Weekly</SelectItem>
-                  <SelectItem value={SalaryPeriod.DAILY}>Daily</SelectItem>
-                  <SelectItem value={SalaryPeriod.HOURLY}>Hourly</SelectItem>
-                  <SelectItem value={SalaryPeriod.PROJECT}>Project</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Signing Bonus</Label>
-              <Input
-                type="number"
-                placeholder="10000000"
-                value={offerSigningBonus}
-                onChange={(e) => setOfferSigningBonus(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                placeholder="Additional offer details..."
-                value={offerNotes}
-                onChange={(e) => setOfferNotes(e.target.value)}
-                rows={2}
-              />
-            </div>
-
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                id="negotiable"
-                checked={offerIsNegotiable}
-                onChange={(e) => setOfferIsNegotiable(e.target.checked)}
+                id="counter-negotiable"
+                checked={counterOfferIsNegotiable}
+                onChange={(e) => setCounterOfferIsNegotiable(e.target.checked)}
                 className="h-4 w-4"
               />
-              <Label htmlFor="negotiable">Negotiable</Label>
+              <Label htmlFor="counter-negotiable">
+                Open to further negotiation
+              </Label>
             </div>
-
             <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={handleAddOffer}>
-                Create Offer
+              <Button className="flex-1" onClick={submitCounterOffer}>
+                Submit Counter Offer
               </Button>
               <Button
                 variant="outline"
-                onClick={() => setShowAddOfferDialog(false)}
+                onClick={() => setShowCounterOfferDialog(false)}
               >
                 Cancel
               </Button>
@@ -1131,129 +463,6 @@ export default function CandidateApplicationDetailPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Edit Offer Dialog */}
-      <Dialog open={showEditOfferDialog} onOpenChange={setShowEditOfferDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Offer</DialogTitle>
-            <DialogDescription>Update offer details</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Base Salary *</Label>
-              <Input
-                type="number"
-                placeholder="70000000"
-                value={offerBaseSalary}
-                onChange={(e) => setOfferBaseSalary(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Currency *</Label>
-              <Select value={offerCurrency} onValueChange={setOfferCurrency}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="VND">VND</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="EUR">EUR</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Salary Period</Label>
-              <Select
-                value={offerSalaryPeriod}
-                onValueChange={(value) =>
-                  setOfferSalaryPeriod(value as SalaryPeriod)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SalaryPeriod.YEARLY}>Yearly</SelectItem>
-                  <SelectItem value={SalaryPeriod.MONTHLY}>Monthly</SelectItem>
-                  <SelectItem value={SalaryPeriod.WEEKLY}>Weekly</SelectItem>
-                  <SelectItem value={SalaryPeriod.DAILY}>Daily</SelectItem>
-                  <SelectItem value={SalaryPeriod.HOURLY}>Hourly</SelectItem>
-                  <SelectItem value={SalaryPeriod.PROJECT}>Project</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Signing Bonus</Label>
-              <Input
-                type="number"
-                placeholder="10000000"
-                value={offerSigningBonus}
-                onChange={(e) => setOfferSigningBonus(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                placeholder="Additional offer details..."
-                value={offerNotes}
-                onChange={(e) => setOfferNotes(e.target.value)}
-                rows={2}
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="negotiable-edit"
-                checked={offerIsNegotiable}
-                onChange={(e) => setOfferIsNegotiable(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <Label htmlFor="negotiable-edit">Negotiable</Label>
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={handleUpdateOffer}>
-                Update Offer
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowEditOfferDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Offer Dialog */}
-      <AlertDialog
-        open={showDeleteOfferDialog}
-        onOpenChange={setShowDeleteOfferDialog}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Offer</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this offer? This action cannot be
-              undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteOffer}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

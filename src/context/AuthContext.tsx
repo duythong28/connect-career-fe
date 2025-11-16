@@ -1,17 +1,11 @@
-import {
-  useState,
-  useEffect,
-  createContext,
-  useContext,
-  ReactNode,
-} from "react";
+import { createContext, ReactNode } from "react";
 import { getCookie } from "@/api/client/axios";
 import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "@/api/endpoints/auth.api";
 
 import { ProfileResponse } from "@/api/types/auth.types";
 
-interface AuthContextType {
+export interface AuthContextType {
   user: ProfileResponse | null;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -23,12 +17,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const hasAccessToken = !!getCookie("accessToken");
-  const {
-    data: user,
-    isLoading,
-    isSuccess,
-    error,
-  } = useQuery({
+  const { data: user, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: getProfile,
     enabled: hasAccessToken,

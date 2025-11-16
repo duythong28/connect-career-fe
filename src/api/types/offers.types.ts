@@ -37,6 +37,12 @@ export enum OfferStatus {
   REJECTED = "rejected",
 }
 
+export const OfferStatusLabel: Record<string, string> = {
+  [OfferStatus.PENDING]: "Pending",
+  [OfferStatus.ACCEPTED]: "Accepted",
+  [OfferStatus.REJECTED]: "Rejected",
+};
+
 export interface OfferCandidateResponseDto {
   response: OfferStatus;
   candidateNotes?: string;
@@ -58,4 +64,18 @@ export interface OfferResponse {
   createdAt?: string;
   updatedAt?: string;
   status: OfferStatus;
+  isOfferedByCandidate?: boolean;
+}
+
+export interface CandidateCreateOfferDto {
+  baseSalary: number;
+  currency: string;
+  salaryPeriod?: SalaryPeriod | string;
+  signingBonus?: number;
+  equity?: string;
+  benefits?: string[];
+  notes?: string;
+  offeredBy?: string;
+  isNegotiable?: boolean;
+  isOfferedByCandidate?: boolean;
 }

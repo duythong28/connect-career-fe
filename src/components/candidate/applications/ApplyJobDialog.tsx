@@ -18,8 +18,10 @@ import { getMyCvs } from "@/api/endpoints/cvs.api";
 import { applyJob } from "@/api/endpoints/applications.api";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Eye, Download } from "lucide-react";
+import { Eye, Download, CheckCircle } from "lucide-react";
 import { increaseApplyCount } from "@/api/endpoints/jobs.api";
+import type { CV } from "@/api/types/cvs.types";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   jobId: string;
@@ -36,8 +38,10 @@ export default function ApplyJobDialog({ jobId }: Props) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-
-  const { data: cvsData, isLoading: cvsLoading } = useQuery({
+  const navigate = useNavigate();
+  const isApplied = false;
+  
+  const { data: cvsData, isLoading: cvsLoading } = useQuery<{ data: CV[] }>({
     queryKey: ["candidateCvs"],
     queryFn: () => getMyCvs(),
     enabled: open,
@@ -119,6 +123,23 @@ export default function ApplyJobDialog({ jobId }: Props) {
     }
   };
 
+  if (!user) {
+    return (
+      <Button className="w-full" onClick={() => navigate("/login")}>
+        Login to Apply
+      </Button>
+    );
+  }
+
+  if (isApplied) {
+    return (
+      <Button disabled className="w-full" size="lg">
+        <CheckCircle className="h-4 w-4 mr-2" />
+        Application Submitted
+      </Button>
+    );
+  }
+
   return (
     <>
       <Button className="w-full" onClick={() => setOpen(true)}>
@@ -139,11 +160,11 @@ export default function ApplyJobDialog({ jobId }: Props) {
                 Select CV
               </Label>
 
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-64 overflow-y-auto border rounded-md p-2 bg-gray-50">
                 {cvsLoading && <p>Loading CVs...</p>}
 
                 {!cvsLoading &&
-                  (cvsData?.data ?? []).map((cv: any) => (
+                  (cvsData?.data ?? []).map((cv) => (
                     <div
                       key={cv.id}
                       className="flex items-center space-x-3 p-3 border rounded-lg"
@@ -167,6 +188,7 @@ export default function ApplyJobDialog({ jobId }: Props) {
                             <Button
                               size="sm"
                               variant="outline"
+                              type="button"
                               onClick={() => window.open(cv.file.url, "_blank")}
                             >
                               <Eye className="w-4 h-4" />
@@ -174,6 +196,7 @@ export default function ApplyJobDialog({ jobId }: Props) {
                             <Button
                               size="sm"
                               variant="outline"
+                              type="button"
                               onClick={() =>
                                 downloadFile(cv.file.url, cv.title)
                               }
@@ -207,7 +230,11 @@ export default function ApplyJobDialog({ jobId }: Props) {
             </div>
 
             <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={applyMutation.isPending}>
