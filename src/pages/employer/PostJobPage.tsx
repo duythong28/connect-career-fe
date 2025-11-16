@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { MapPin, DollarSign, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,19 +17,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { useOrganization } from "@/context/OrganizationContext";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   createRecruiterJob,
   generateJobDescription,
+  getCandidateJobById,
+  updateRecruiterJob,
 } from "@/api/endpoints/jobs.api";
-import { GenerateJobDto, JobSeniorityLevel } from "@/api/types/jobs.types";
+import {
+  GenerateJobDto,
+  JobSeniorityLevel,
+  JobStatus,
+} from "@/api/types/jobs.types";
 import { getActivePipelines } from "@/api/endpoints/pipelines.api";
 import { getOrganizationById } from "@/api/endpoints/organizations.api";
 
 const PostJobPage = () => {
-  const { companyId } = useParams();
+  const { companyId, jobId } = useParams();
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
 
@@ -37,6 +41,12 @@ const PostJobPage = () => {
     queryKey: ["company", companyId],
     queryFn: () => getOrganizationById(companyId!),
     enabled: !!companyId,
+  });
+
+  const { data: editingJob } = useQuery({
+    queryKey: ["job", jobId],
+    queryFn: () => getCandidateJobById(jobId!),
+    enabled: !!jobId,
   });
 
   const { data: pipelines } = useQuery({
@@ -62,6 +72,25 @@ const PostJobPage = () => {
 
   const [keywordsInput, setKeywordsInput] = useState("");
   const [conditionsInput, setConditionsInput] = useState("");
+
+  useEffect(() => {
+    if (editingJob) {
+      setJobForm({
+        title: editingJob.title,
+        location: editingJob.location,
+        salary: editingJob.salary,
+        type: editingJob.type,
+        seniorityLevel: editingJob.seniorityLevel,
+        description: editingJob.description,
+        organizationId: editingJob.organizationId,
+        hiringPipelineId: editingJob.hiringPipelineId,
+        keywords: editingJob.keywords || [],
+        conditions: editingJob.requirements || [],
+      });
+      setKeywordsInput((editingJob.keywords || []).join(", "));
+      setConditionsInput((editingJob.requirements || []).join(", "));
+    }
+  }, [editingJob]);
 
   const { mutate: generateDescriptionMutate, isPending } = useMutation({
     mutationFn: (data: GenerateJobDto) => generateJobDescription(data),
@@ -101,7 +130,26 @@ const PostJobPage = () => {
     },
   });
 
-  const postJob = () => {
+  const updateJobMutation = useMutation({
+    mutationFn: ({ jobId, jobData }: { jobId: string; jobData: any }) =>
+      updateRecruiterJob(jobId, jobData),
+    onSuccess: (response) => {
+      toast({
+        title: "Job updated successfully!",
+        description: "Your job has been updated.",
+      });
+      navigate(`/jobs/${response.id}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating job",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const postJob = (status: JobStatus) => {
     if (
       !jobForm.title ||
       !jobForm.description ||
@@ -129,9 +177,14 @@ const PostJobPage = () => {
       hiringPipelineId: jobForm.hiringPipelineId,
       keywords: jobForm.keywords,
       requirements: jobForm.conditions,
+      status,
     };
 
-    postJobMutation.mutate(jobData);
+    if (jobId) {
+      updateJobMutation.mutate({ jobId, jobData });
+    } else {
+      postJobMutation.mutate(jobData);
+    }
   };
 
   const handleKeywordsChange = (value: string) => {
@@ -257,9 +310,6 @@ const PostJobPage = () => {
                       </SelectItem>
                       <SelectItem value={JobSeniorityLevel.INTERNSHIP}>
                         {JobSeniorityLevel.INTERNSHIP}
-                      </SelectItem>
-                      <SelectItem value={JobSeniorityLevel.NOT_APPLICABLE}>
-                        {JobSeniorityLevel.NOT_APPLICABLE}
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -395,11 +445,19 @@ const PostJobPage = () => {
 
               <div className="flex items-center space-x-3">
                 <Button
-                  onClick={postJob}
+                  onClick={() => postJob(JobStatus.ACTIVE)}
                   className="flex-1"
                   disabled={postJobMutation.isPending}
                 >
-                  {postJobMutation.isPending ? "Posting..." : "Post Job"}
+                  {postJobMutation.isPending ? "Posting..." : "Publish Job"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => postJob(JobStatus.DRAFT)}
+                  className="flex-1"
+                  disabled={postJobMutation.isPending}
+                >
+                  Save as Draft
                 </Button>
                 <Button
                   variant="outline"

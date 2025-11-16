@@ -1,6 +1,7 @@
 import axios from "../client/axios";
 
 import {
+  CreateJobDto,
   GenerateJobDto,
   GenerateJobResponse,
   Job,
@@ -8,7 +9,6 @@ import {
   JobsResponse,
   SavedJobsResponse,
 } from "../types/jobs.types";
-
 
 const API_URL = "/jobs";
 
@@ -121,6 +121,9 @@ const saveCandidateJobById = async (id: string) => {
 const getCandidateSavedJobs = async ({
   limit,
   page,
+}: {
+  limit: number;
+  page: number;
 }): Promise<SavedJobsResponse> => {
   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/saved`, {
     params: { folder: "saved_jobs", limit, page },
@@ -138,8 +141,13 @@ const deleteCandidateSavedJobById = async (id: string) => {
   return response.data;
 };
 
-const createRecruiterJob = async (data) => {
+const createRecruiterJob = async (data: CreateJobDto) => {
   const response = await axios.post(`${API_RECRUITER_JOB_URL}`, data);
+  return response.data;
+};
+
+const updateRecruiterJob = async (id: string, data: Partial<CreateJobDto>) => {
+  const response = await axios.put(`${API_RECRUITER_JOB_URL}/${id}`, data);
   return response.data;
 };
 
@@ -174,4 +182,5 @@ export {
   deleteCandidateSavedJobById,
   createRecruiterJob,
   generateJobDescription,
+  updateRecruiterJob,
 };

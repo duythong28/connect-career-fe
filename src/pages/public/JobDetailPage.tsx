@@ -194,7 +194,7 @@ const JobDetailPage = () => {
                     <h4 className="text-lg font-medium w-full mb-2">
                       Required Skills
                     </h4>
-                    {jobData.keywords.map((keyword) => (
+                    {jobData.keywords.map((keyword: string) => (
                       <Badge key={keyword} variant="outline">
                         {keyword}
                       </Badge>
@@ -276,7 +276,7 @@ const JobDetailPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        navigate(`/companies/${jobData.organizationId}`)
+                        navigate(`/company/${jobData.organizationId}/profile`)
                       }
                       className="flex-1"
                     >

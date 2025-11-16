@@ -48,9 +48,9 @@ export default function JobCard({
           <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border border-gray-200">
             <AvatarImage
               src={job?.organization?.logoFile?.url || job.companyLogo}
-              alt={job.companyName}
+              alt={job?.organization?.name || job.companyName}
             />
-            <AvatarFallback>{job?.companyName?.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{job?.name?.charAt(0)}</AvatarFallback>
           </Avatar>
           {/* Add min-w-0 here */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-1 min-w-0">
@@ -59,7 +59,7 @@ export default function JobCard({
                 {job.title}
               </h3>
               <p className="text-sm sm:text-base text-gray-700 truncate">
-                {job.companyName}
+                {job?.organization?.name || job.companyName}
               </p>
             </div>
             <div className="flex items-center gap-2 mt-2 sm:mt-0">

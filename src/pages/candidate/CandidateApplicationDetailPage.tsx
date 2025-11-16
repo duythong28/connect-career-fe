@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,73 +13,33 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  ArrowLeft,
-  MapPin,
-  FileText,
-  Clock,
-  Calendar as CalendarIcon,
-  Video,
-  Phone,
-  MapPinned,
-  DollarSign,
-  MessageSquare,
-  Check,
-  X,
-  Users,
-  Eye,
-  Download,
-  Globe,
-} from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { getApplicationById } from "@/api/endpoints/applications.api";
 import { getOrganizationById } from "@/api/endpoints/organizations.api";
 import {
   Application,
-  StatusHistoryEntry,
   ApplicationStatus,
   ApplicationStatusLabel,
 } from "@/api/types/applications.types";
 import { Organization } from "@/api/types/organizations.types";
-import { OfferResponse, SalaryPeriod } from "@/api/types/offers.types";
 import {
-  InterviewResponse,
-  Recommendation,
-} from "@/api/types/interviews.types";
+  OfferResponse,
+  OfferStatus,
+  SalaryPeriod,
+} from "@/api/types/offers.types";
 import {
   candidateAcceptOffer,
   candidateRejectOffer,
   candidateCreateOffer,
 } from "@/api/endpoints/offers.api";
 import { useAuth } from "@/hooks/useAuth";
-import { PDFViewer } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
-
-
-// --- ENUMS & LABELS for OfferStatus and InterviewType ---
-export enum OfferStatusEnum {
-  PENDING = "pending",
-  ACCEPTED = "accepted",
-  REJECTED = "rejected",
-}
-export const OfferStatusLabel: Record<string, string> = {
-  [OfferStatusEnum.PENDING]: "Pending",
-  [OfferStatusEnum.ACCEPTED]: "Accepted",
-  [OfferStatusEnum.REJECTED]: "Rejected",
-};
-
-export enum InterviewTypeEnum {
-  VIDEO = "video",
-  PHONE = "phone",
-  IN_PERSON = "in-person",
-}
-export const InterviewTypeLabel: Record<string, string> = {
-  [InterviewTypeEnum.VIDEO]: "Video",
-  [InterviewTypeEnum.PHONE]: "Phone",
-  [InterviewTypeEnum.IN_PERSON]: "In-person",
-};
+import JobInfoSection from "@/components/candidate/applications/JobInfoSection";
+import ApplicationInfoSection from "@/components/candidate/applications/ApplicationInfoSection";
+import OffersSection from "@/components/candidate/applications/OffersSection";
+import InterviewsSection from "@/components/candidate/applications/InterviewsSection";
+import StatusLogSection from "@/components/candidate/applications/StatusLogSection";
 
 // --- Highlight Section ---
 function HighlightSection({
@@ -125,407 +84,6 @@ function HighlightSection({
         )}
       </div>
     </div>
-  );
-}
-
-
-
-// --- Application Info Section (includes Applicant Info) ---
-
-
-// --- Offers Section ---
-function OffersSection({
-  offers,
-  onAccept,
-  onReject,
-  onCounter,
-  canRespond,
-}: {
-  offers: OfferResponse[];
-  onAccept: (offer: OfferResponse) => void;
-  onReject: (offer: OfferResponse) => void;
-  onCounter: (offer: OfferResponse) => void;
-  canRespond: boolean;
-}) {
-  if (!offers || offers.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Offers
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col gap-4">
-          {offers
-            .sort(
-              (a, b) =>
-                new Date(b.updatedAt || b.createdAt).getTime() -
-                new Date(a.updatedAt || a.createdAt).getTime()
-            )
-            .map((offer, idx) => (
-              <div
-                key={offer.id}
-                className={`border rounded-lg p-4 space-y-3 ${
-                  idx === 0 ? "border-primary bg-primary/5" : ""
-                }`}
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <DollarSign className="h-4 w-4 text-primary" />
-                      <h4 className="font-semibold">
-                        {Number(offer.baseSalary).toLocaleString()}{" "}
-                        {offer.currency}
-                      </h4>
-                      {idx === 0 && (
-                        <Badge variant="outline" className="text-xs">
-                          Latest
-                        </Badge>
-                      )}
-                      {offer.isOfferedByCandidate ? (
-                        <Badge variant="secondary" className="text-xs">
-                          Your Offer
-                        </Badge>
-                      ) : (
-                        <Badge variant="default" className="text-xs">
-                          Company Offer
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {offer.salaryPeriod}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(
-                        new Date(offer.updatedAt || offer.createdAt),
-                        "PPP p"
-                      )}
-                      {offer.isOfferedByCandidate
-                        ? " • Your counter offer"
-                        : " • Offer from company"}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      offer.status === "accepted"
-                        ? "default"
-                        : offer.status === "pending"
-                        ? "secondary"
-                        : "outline"
-                    }
-                  >
-                    {OfferStatusLabel[offer.status] || offer.status}
-                  </Badge>
-                </div>
-                {offer.signingBonus && (
-                  <div className="text-sm">
-                    <Label>Signing Bonus</Label>
-                    <p className="text-muted-foreground mt-1">
-                      {Number(offer.signingBonus).toLocaleString()}{" "}
-                      {offer.currency}
-                    </p>
-                  </div>
-                )}
-                {offer.notes && (
-                  <div className="text-sm">
-                    <Label>Notes</Label>
-                    <p className="text-muted-foreground mt-1">{offer.notes}</p>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-sm flex-wrap">
-                  {offer.isNegotiable && (
-                    <Badge variant="outline">Negotiable</Badge>
-                  )}
-                  {offer.isOfferedByCandidate ? (
-                    <Badge
-                      variant="secondary"
-                      className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-                    >
-                      🙋‍♂️ Your Counter Offer
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="default"
-                      className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
-                    >
-                      🏢 Company's Offer
-                    </Badge>
-                  )}
-                </div>
-                {canRespond && idx === 0 && (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      className="w-full sm:w-auto"
-                      onClick={() => onAccept(offer)}
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Accept
-                    </Button>
-                    {offer.isNegotiable && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                        onClick={() => onCounter(offer)}
-                      >
-                        <MessageSquare className="h-4 w-4 mr-1" />
-                        Counter
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="w-full sm:w-auto"
-                      onClick={() => onReject(offer)}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// --- Interviews Section ---
-function InterviewsSection({
-  interviews,
-}: {
-  interviews: InterviewResponse[];
-}) {
-  if (!interviews || interviews.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5" />
-          Interviews
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col gap-4">
-          {interviews.map((interview) => (
-            <div key={interview.id} className="border rounded-lg p-4 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {interview.type === "video" && (
-                      <Video className="h-4 w-4 text-primary" />
-                    )}
-                    {interview.type === "phone" && (
-                      <Phone className="h-4 w-4 text-primary" />
-                    )}
-                    {interview.type === "in-person" && (
-                      <MapPinned className="h-4 w-4 text-primary" />
-                    )}
-                    <h4 className="font-semibold">
-                      {interview.interviewRound}
-                    </h4>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    with {interview.interviewerName}
-                  </p>
-                </div>
-                <Badge
-                  variant={
-                    interview.status === "scheduled"
-                      ? "default"
-                      : interview.status === "completed"
-                      ? "outline"
-                      : "secondary"
-                  }
-                >
-                  {interview.status}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    {format(new Date(interview.scheduledDate), "PPP p")}
-                  </span>
-                </div>
-                {interview.duration && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{interview.duration} minutes</span>
-                  </div>
-                )}
-                {interview.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{interview.location}</span>
-                  </div>
-                )}
-                {interview.meetingLink && (
-                  <div className="flex items-center gap-2 col-span-1 sm:col-span-2">
-                    <Video className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={interview.meetingLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline truncate"
-                    >
-                      {interview.meetingLink}
-                    </a>
-                  </div>
-                )}
-              </div>
-              {interview.notes && (
-                <div className="text-sm">
-                  <Label>Notes</Label>
-                  <p className="text-muted-foreground mt-1">
-                    {interview.notes}
-                  </p>
-                </div>
-              )}
-              {interview.feedback && (
-                <div className="border-t pt-4 mt-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                    <Label className="text-base font-semibold">
-                      Interview Feedback
-                    </Label>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full">
-                        <span className="text-sm font-semibold">
-                          {interview.feedback.rating}/10
-                        </span>
-                      </div>
-                      <Badge
-                        variant={
-                          interview.feedback.recommendation ===
-                          Recommendation.STRONGLY_RECOMMEND
-                            ? "default"
-                            : interview.feedback.recommendation ===
-                              Recommendation.DO_NOT_RECOMMEND
-                            ? "destructive"
-                            : "secondary"
-                        }
-                        className="capitalize"
-                      >
-                        {interview.feedback.recommendation.replace("_", " ")}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="grid gap-3">
-                    {interview.feedback.strengths &&
-                      interview.feedback.strengths.length > 0 && (
-                        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Label className="text-sm font-medium text-green-900">
-                              Strengths
-                            </Label>
-                          </div>
-                          <ul className="space-y-1">
-                            {interview.feedback.strengths.map(
-                              (strength, idx) => (
-                                <li
-                                  key={idx}
-                                  className="flex items-start gap-2 text-sm text-green-800"
-                                >
-                                  <span className="text-green-600 mt-0.5">
-                                    •
-                                  </span>
-                                  <span>{strength}</span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                    {interview.feedback.weaknesses &&
-                      interview.feedback.weaknesses.length > 0 && (
-                        <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Label className="text-sm font-medium text-red-900">
-                              Areas for Improvement
-                            </Label>
-                          </div>
-                          <ul className="space-y-1">
-                            {interview.feedback.weaknesses.map(
-                              (weakness, idx) => (
-                                <li
-                                  key={idx}
-                                  className="flex items-start gap-2 text-sm text-red-800"
-                                >
-                                  <span className="text-red-600 mt-0.5">•</span>
-                                  <span>{weakness}</span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                    {interview.feedback.comments && (
-                      <div className="bg-secondary/30 rounded-lg p-3 border">
-                        <div className="flex items-center gap-2 mb-2">
-                          <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                          <Label className="text-sm font-medium">
-                            Additional Comments
-                          </Label>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {interview.feedback.comments}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// --- Status Log Section ---
-function StatusLogSection({
-  statusHistory,
-}: {
-  statusHistory: StatusHistoryEntry[];
-}) {
-  if (!statusHistory || statusHistory.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Status Log
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {statusHistory
-            .sort(
-              (a, b) =>
-                new Date(b.changedAt ?? 0).getTime() -
-                new Date(a.changedAt ?? 0).getTime()
-            )
-            .map((activity, idx) => (
-              <div key={idx} className="flex items-start gap-3 text-sm">
-                <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-medium">{activity.reason}</p>
-                  <p className="text-muted-foreground">
-                    {activity.changedAt
-                      ? format(new Date(activity.changedAt), "PPP p")
-                      : ""}
-                  </p>
-                </div>
-              </div>
-            ))}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -728,7 +286,9 @@ export default function CandidateApplicationDetailPage() {
   const interviews = applicationData.interviews || [];
   const statusHistory = applicationData.statusHistory || [];
   const canRespondToOffer =
-    offers.length > 0 && offers[0].status === OfferStatusEnum.PENDING;
+    offers.length > 0 &&
+    offers[0].status === OfferStatus.PENDING &&
+    offers[0].isOfferedByCandidate === false;
 
   // Responsive 2-column layout
   return (
@@ -751,7 +311,7 @@ export default function CandidateApplicationDetailPage() {
               company={company}
               onViewJob={() => navigate(`/jobs/${applicationData.job?.id}`)}
               onViewCompany={() =>
-                company?.id && navigate(`/companies/${company.id}`)
+                company?.id && navigate(`/company/${company.id}/profile`)
               }
             />
             <ApplicationInfoSection application={applicationData} />

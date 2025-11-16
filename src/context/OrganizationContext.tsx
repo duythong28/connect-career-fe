@@ -5,10 +5,10 @@ import {
   ReactNode,
   useContext,
 } from "react";
-import { getCookie } from "@/api/client/axios";
 import { useQuery } from "@tanstack/react-query";
 import { getMyOrganizations } from "@/api/endpoints/organizations.api";
 import { Organization } from "@/api/types/organizations.types";
+import { useAuth } from "@/hooks/useAuth";
 
 interface OrganizationContextType {
   myOrganizations: Organization[] | null;
@@ -22,13 +22,12 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const [myOrganizations, setMyOrganizations] = useState<Organization[] | null>(
     null
   );
-
-  const hasAccessToken = !!getCookie("accessToken");
+  const { user } = useAuth();
 
   const { data: organizationsData, error } = useQuery({
     queryKey: ["my-organizations"],
     queryFn: getMyOrganizations,
-    enabled: hasAccessToken,
+    enabled: !!user,
     retry: false,
     refetchOnWindowFocus: false,
   });

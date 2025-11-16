@@ -57,22 +57,23 @@ import {
   OvertimePolicy,
   WorkScheduleType,
 } from "@/api/types/organizations.types";
+import { useOrganization } from "@/context/OrganizationContext";
 
 type CompanyFormValues = {
   name: string;
-  shortDescription: string;
-  longDescription: string;
-  website: string;
-  headquartersAddress: string;
-  organizationType: OrganizationType;
-  organizationSize: OrganizationSize;
-  industryId: string;
+  shortDescription?: string | null;
+  longDescription?: string | null;
+  website?: string;
+  headquartersAddress?: string;
+  organizationType?: OrganizationType;
+  organizationSize?: OrganizationSize;
+  industryId?: string;
   employeeCount?: number | "";
-  country: string;
-  city: string;
-  workingDays: WorkingDay[];
-  overtimePolicy: OvertimePolicy;
-  workScheduleTypes: WorkScheduleType[];
+  country?: string;
+  city?: string;
+  workingDays?: WorkingDay[];
+  overtimePolicy?: OvertimePolicy;
+  workScheduleTypes?: WorkScheduleType[];
 };
 
 const schema = z.object({
@@ -107,6 +108,7 @@ const formatEnumValue = (value: string) => {
 
 const CompanyProfilePage = () => {
   const { companyId } = useParams();
+  const { myOrganizations } = useOrganization();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [avatar, setAvatar] = useState<{ id: string; url: string } | null>(
@@ -489,16 +491,17 @@ const CompanyProfilePage = () => {
                       </Button>
                     )}
 
-                    {!editMode && (
-                      <Button
-                        variant="outline"
-                        className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:border-white/40"
-                        onClick={() => setEditMode(true)}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                    )}
+                    {!editMode &&
+                      myOrganizations?.some((org) => org.id === companyId) && (
+                        <Button
+                          variant="outline"
+                          className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:border-white/40"
+                          onClick={() => setEditMode(true)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      )}
 
                     {editMode && previewMode && (
                       <>

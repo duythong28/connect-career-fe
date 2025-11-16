@@ -37,6 +37,12 @@ export enum OfferStatus {
   REJECTED = "rejected",
 }
 
+export const OfferStatusLabel: Record<string, string> = {
+  [OfferStatus.PENDING]: "Pending",
+  [OfferStatus.ACCEPTED]: "Accepted",
+  [OfferStatus.REJECTED]: "Rejected",
+};
+
 export interface OfferCandidateResponseDto {
   response: OfferStatus;
   candidateNotes?: string;

@@ -273,7 +273,7 @@ const HomePage = () => {
                     {company.jobs} open positions
                   </div>
                   <Button
-                    onClick={() => navigate(`/companies/${company.slug}`)}
+                    onClick={() => navigate(`/company/${company.slug}/profile`)}
                     className="mt-4"
                     variant="outline"
                     size="sm"

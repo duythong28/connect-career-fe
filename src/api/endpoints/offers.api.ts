@@ -92,11 +92,11 @@ const recruiterRejectOffer = async (
 
 const recruiterAcceptOffer = async (
   applicationId: string,
-  reason?: string
+  notes?: string
 ): Promise<any> => {
   const response = await axios.post(
     `${APPLICATIONS_URL}/${applicationId}/offers/accept`,
-    { reason }
+    { notes }
   );
   return response.data;
 };

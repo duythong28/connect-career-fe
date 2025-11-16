@@ -4,11 +4,21 @@ import { CandidateRoutes } from "./CandidateRoutes";
 import { EmployerRoutes } from "./EmployerRoutes";
 import { AdminRoutes } from "./AdminRoutes";
 import ProtectedRoute from "./ProtectedRoute";
+import { CandidateProfilePage } from "@/pages/public/CandidateProfilePage";
+import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
 
 export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/*" element={<PublicRoutes />} />
+      <Route
+        path="/candidate/profile/:candidateId"
+        element={<CandidateProfilePage />}
+      />
+      <Route
+        path="company/:companyId/profile"
+        element={<CompanyProfilePage />}
+      />
 
       <Route
         path="/candidate/*"

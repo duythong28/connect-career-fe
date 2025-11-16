@@ -1,3 +1,4 @@
+import { CandidateProfile } from "./candidates.types";
 import { CV } from "./cvs.types";
 import { InterviewResponse, InterviewType } from "./interviews.types";
 import { Job } from "./jobs.types";
@@ -79,7 +80,7 @@ export interface Application {
   feedback?: any | null;
   job?: Job | null;
   candidate?: CandidateSummary | null;
-  candidateProfile?: any | null;
+  candidateProfile?: CandidateProfile | null;
   candidateProfileId?: string | null;
   cv?: CV | null;
   reviewer?: any | null;
@@ -189,7 +190,6 @@ export interface UpdateApplicationStageForRecruiterDto {
   reason: string;
   notes: string;
 }
-
 
 export interface MyApplicationsResponse {
   data: Application[];

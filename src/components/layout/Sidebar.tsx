@@ -45,9 +45,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
   const companyId = match ? match[1] : undefined;
   const isMobile = useIsMobile();
 
-  const getCandidateMenuItems = (): MenuItem[] => [
+  const getCandidateMenuItems = (id: string): MenuItem[] => [
     { title: "Job Search", url: ROUTES.JOBS, icon: Search },
-    { title: "My Profile", url: ROUTES.CANDIDATE.PROFILE, icon: User },
+    { title: "My Profile", url: `/candidate/profile/${id}`, icon: User },
     {
       title: "Applications",
       url: ROUTES.CANDIDATE.APPLICATIONS,
@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     },
     {
       title: "Company Profile",
-      url: `/company/${id}${ROUTES.COMPANY.PROFILE}`,
+      url: `/company/${id}/profile`,
       icon: Building2,
     },
     {
@@ -140,18 +140,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     ) {
       return getCompanyMenuItems(companyId);
     }
-    return getCandidateMenuItems();
+    return getCandidateMenuItems(user.candidateProfileId);
   };
 
-  const getMenuTitle = (): string => {
+  const getMenuTitle = (isMyCompanyPage: boolean): string => {
     if (!user) return "";
     if (user.username === "admin") return "Admin Panel";
-    if (currentPath.startsWith("/company")) return "Company Management";
+    if (isMyCompanyPage) return "Company Management";
     return "Candidate Dashboard";
   };
 
   const menuItems = getMenuItems();
-  const menuTitle = getMenuTitle();
+  const isMyCompanyPage =
+    currentPath.startsWith("/company") &&
+    companyId &&
+    myOrganizations?.some((org) => String(org.id) === String(companyId));
+  const menuTitle = getMenuTitle(isMyCompanyPage);
 
   if (!user) return null;
 
@@ -164,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
         </h2>
         {user.role !== "admin" && (
           <p className="text-sm md:text-base text-gray-500 mt-1">
-            {currentPath.startsWith("/company")
+            {isMyCompanyPage
               ? "Manage your company and jobs"
               : "Manage your profile and applications"}
           </p>
