@@ -1,5 +1,6 @@
 import axios from "../client/axios";
 import { CandidateProfile } from "../types/candidates.types";
+import { InterviewResponse } from "../types/interviews.types";
 const API_URL = "/candidates";
 
 const getMyProfile = async (): Promise<CandidateProfile> => {
@@ -8,7 +9,7 @@ const getMyProfile = async (): Promise<CandidateProfile> => {
 };
 
 const getCandidateProfile = async (id: string): Promise<CandidateProfile> => {
-  const response = await axios.get(`${API_URL}/${id}`);
+  const response = await axios.get(`${API_URL}/profiles/${id}`);
   return response.data;
 };
 
@@ -27,8 +28,20 @@ const getCandidateJobsRelated = async () => {
   return response.data;
 };
 
-const updateMyProfile = async (data): Promise<CandidateProfile> => {
+const updateMyProfile = async (data: any): Promise<CandidateProfile> => {
   const response = await axios.patch(`${API_URL}/profiles/me`, data);
+  return response.data;
+};
+
+const createMyProfile = async (data: any): Promise<CandidateProfile> => {
+  const response = await axios.post(`${API_URL}/profiles`, data);
+  return response.data;
+};
+
+const getMyInterviews = async (): Promise<{
+  data: InterviewResponse[];
+}> => {
+  const response = await axios.get(`${API_URL}/profiles/me/interviews`);
   return response.data;
 };
 
@@ -39,4 +52,6 @@ export {
   getCandidateJobsRecommendations,
   getCandidateJobsRelated,
   updateMyProfile,
+  createMyProfile,
+  getMyInterviews,
 };

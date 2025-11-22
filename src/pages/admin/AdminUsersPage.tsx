@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Edit } from "lucide-react";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
 import { Button } from "@/components/ui/button";
@@ -23,20 +23,38 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { User } from "@/lib/types";
 import { mockUsers } from "@/lib/mock-data";
+import { useQuery } from "@tanstack/react-query";
+import { getAllUsers } from "@/api/endpoints/back-office.api";
 
 const AdminUsersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    return matchesSearch && matchesRole;
+  const { data } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      // Replace with actual API call
+      return getAllUsers();
+    },
   });
+
+  useEffect(() => {
+    if (data) {
+      setUsers(data.users);
+    }
+  }, [data]);
+
+  console.log("Fetched users:", users);
+
+  // const filteredUsers = users.filter((user) => {
+  //   const matchesSearch =
+  //     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     user.email.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesRole = roleFilter === "all" || user.role === roleFilter;
+  //   return matchesSearch && matchesRole;
+  // });
 
   const handleSaveUser = (updatedUser: User) => {
     const updatedUsers = users.map((u) =>
@@ -62,7 +80,7 @@ const AdminUsersPage = () => {
               Manage user accounts and permissions
             </p>
           </div>
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue />
@@ -74,10 +92,10 @@ const AdminUsersPage = () => {
                 <SelectItem value="admin">Admins</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
         </div>
 
-        <Card>
+        {/* <Card>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -90,7 +108,7 @@ const AdminUsersPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
+                {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -157,6 +175,111 @@ const AdminUsersPage = () => {
                         >
                           {user.status === "active" ? "Ban" : "Unban"}
                         </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card> */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  {/* <TableHead>Role</TableHead> */}
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={user.avatarUrl || user.avatar} />
+                          <AvatarFallback>
+                            {user.fullName?.charAt(0) ||
+                              user.firstName?.charAt(0) ||
+                              user.username?.charAt(0) ||
+                              "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {user.fullName ||
+                              `${user.firstName} ${user.lastName}` ||
+                              user.username}
+                          </p>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    {/* <TableCell>
+                      <Badge variant="outline">
+                        {user.roles && user.roles.length > 0
+                          ? user.roles.map((r) => r.name).join(", ")
+                          : "No Role"}
+                      </Badge>
+                    </TableCell> */}
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.status === "active" ? "default" : "destructive"
+                        }
+                      >
+                        {user.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {/* <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingUser(user as any)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            const updatedUsers = users.map((u) =>
+                              u.id === user.id
+                                ? ({
+                                    ...u,
+                                    status: (u.status === "active"
+                                      ? "banned"
+                                      : "active") as "active" | "banned",
+                                  } as User)
+                                : u
+                            );
+                            setUsers(updatedUsers);
+                            toast({
+                              title: `User ${
+                                user.status === "active"
+                                  ? "banned"
+                                  : "activated"
+                              }`,
+                              description: `${
+                                user.fullName || user.username
+                              } has been ${
+                                user.status === "active"
+                                  ? "banned"
+                                  : "activated"
+                              }.`,
+                            });
+                          }}
+                        >
+                          {user.status === "active" ? "Ban" : "Unban"}
+                        </Button> */}
                       </div>
                     </TableCell>
                   </TableRow>

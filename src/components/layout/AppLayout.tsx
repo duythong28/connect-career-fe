@@ -1,13 +1,6 @@
-import { useState } from "react";
-import { UserRole } from "@/lib/types";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { RoleSwitcher } from "./RoleSwitcher";
-import { Bell, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import * as React from "react";
 import Header from "./Header";
-import Sidebar from "./Sidebar";
+import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 
 interface AppLayoutProps {
@@ -16,28 +9,32 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
-  const getSidebarOpen = () => {
-    const stored = localStorage.getItem("sidebarOpen");
-    return stored ? JSON.parse(stored) : true;
-  };
+  const [sidebarOpen, setSidebarOpen] = React.useState(
+    () => !!user && window.innerWidth >= 640
+  );
 
-  const sidebarOpen = getSidebarOpen();
+  React.useEffect(() => {
+    if (!user) setSidebarOpen(false);
+  }, [user]);
+
   return (
-    <div className="App">
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-
-        <div className="flex pt-16">
-          {user && <Sidebar />}
-
-          <main
-            className={`flex-1 ${
-              user ? (sidebarOpen ? "ml-64" : "ml-0") : ""
-            } transition-all duration-200`}
-          >
-            {children}
-          </main>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header
+        onSidebarToggle={() => setSidebarOpen((open) => !open)}
+        sidebarOpen={sidebarOpen}
+        user={user}
+      />
+      {user && <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />}
+      <div className="flex min-h-screen flex-row pt-[4.5rem] w-full">
+        <main
+          className={`flex-1 min-w-0 transition-all duration-200
+    ${user && sidebarOpen ? "sm:ml-64" : ""}
+    text-base
+  `}
+          tabIndex={-1}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -7,8 +7,9 @@ import {
   InterviewResponse,
 } from "../types/interviews.types";
 
-const API_URL = "/recruiters/interviews";
+const API_URL = "/recruiters/applications/interviews";
 const APPLICATIONS_URL = "/recruiters/applications";
+const CANDIDATE_APPLICATIONS_URL = "/candidates/applications";
 
 const createInterview = async (
   applicationId: string,
@@ -21,7 +22,9 @@ const createInterview = async (
   return response.data;
 };
 
-const getInterviewById = async (interviewId: string): Promise<InterviewResponse> => {
+const getInterviewById = async (
+  interviewId: string
+): Promise<InterviewResponse> => {
   const response = await axios.get(`${API_URL}/${interviewId}`);
   return response.data;
 };
@@ -51,7 +54,19 @@ const rescheduleInterview = async (
   interviewId: string,
   data: InterviewRescheduleDto
 ): Promise<any> => {
-  const response = await axios.post(`${API_URL}/${interviewId}/reschedule`, data);
+  const response = await axios.post(
+    `${API_URL}/${interviewId}/reschedule`,
+    data
+  );
+  return response.data;
+};
+
+const getInterviewsByApplicationId = async (
+  applicationId: string
+): Promise<InterviewResponse[]> => {
+  const response = await axios.get(
+    `${CANDIDATE_APPLICATIONS_URL}/me/${applicationId}/interviews`
+  );
   return response.data;
 };
 
@@ -62,4 +77,5 @@ export {
   deleteInterview,
   addInterviewFeedback,
   rescheduleInterview,
+  getInterviewsByApplicationId,
 };

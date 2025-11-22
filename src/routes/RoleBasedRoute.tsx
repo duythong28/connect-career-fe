@@ -22,9 +22,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
 
   if (user.role !== requiredRole) {
     const defaultFallback =
-      user.role === "admin"
-        ? ROUTES.ADMIN.DASHBOARD
-        : ROUTES.CANDIDATE.DASHBOARD;
+      user.role === "admin" ? ROUTES.ADMIN.DASHBOARD : ROUTES.JOBS;
 
     return <Navigate to={fallbackPath || defaultFallback} replace />;
   }

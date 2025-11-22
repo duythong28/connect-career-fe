@@ -18,7 +18,10 @@ import {
 } from "@hello-pangea/dnd";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getCandidateJobById } from "@/api/endpoints/jobs.api";
+import {
+  getCandidateJobById,
+  updateRecruiterJob,
+} from "@/api/endpoints/jobs.api";
 import { getPipelineByJobId } from "@/api/endpoints/pipelines.api";
 import {
   getApplicationsByJob,
@@ -28,6 +31,7 @@ import {
   Application,
   UpdateApplicationStageForRecruiterDto,
 } from "@/api/types/applications.types";
+import { JobStatus } from "@/api/types/jobs.types";
 
 export default function JobDetail() {
   const { jobId, companyId } = useParams();
@@ -66,6 +70,28 @@ export default function JobDetail() {
       applicationId: string;
       data: UpdateApplicationStageForRecruiterDto;
     }) => updateApplicationStageForRecruiter(applicationId, data),
+  });
+
+  const closeJobMutation = useMutation({
+    mutationFn: () => updateRecruiterJob(job.id, { status: JobStatus.CLOSED }),
+    onSuccess: () => {
+      toast.success("Job closed successfully!");
+      queryClient.invalidateQueries({ queryKey: ["job", jobId] });
+    },
+    onError: () => {
+      toast.error("Failed to close job");
+    },
+  });
+
+  const publishJobMutation = useMutation({
+    mutationFn: () => updateRecruiterJob(job.id, { status: JobStatus.ACTIVE }),
+    onSuccess: () => {
+      toast.success("Job published!");
+      queryClient.invalidateQueries({ queryKey: ["job", jobId] });
+    },
+    onError: () => {
+      toast.error("Failed to publish job");
+    },
   });
 
   useEffect(() => {
@@ -186,11 +212,45 @@ export default function JobDetail() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Badge className="bg-green-500">Active</Badge>
-              <Button variant="outline" size="sm">
+              {job.status === JobStatus.ACTIVE && (
+                <Badge className="bg-green-500">Active</Badge>
+              )}
+              {job.status === JobStatus.DRAFT && (
+                <Badge className="bg-yellow-500">Draft</Badge>
+              )}
+              {job.status === JobStatus.CLOSED && (
+                <Badge className="bg-red-500">Closed</Badge>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  navigate(`/company/${companyId}/jobs/${jobId}/edit-job`)
+                }
+              >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Job
               </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => closeJobMutation.mutate()}
+                disabled={
+                  closeJobMutation.isPending || job.status === JobStatus.CLOSED
+                }
+              >
+                Close Job
+              </Button>
+              {job.status === JobStatus.DRAFT && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => publishJobMutation.mutate()}
+                  disabled={publishJobMutation.isPending}
+                >
+                  Publish Job
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -202,9 +262,7 @@ export default function JobDetail() {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>
-                Posted {new Date(job.postedDate).toLocaleDateString()}
-              </span>
+              <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         </CardContent>

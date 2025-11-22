@@ -5,13 +5,12 @@ export const ROUTES = {
   SIGNUP: "/signup",
   JOBS: "/jobs",
   JOB_DETAIL: "/jobs/:id",
-  COMPANY_PROFILE: "/companies/:slug",
-  CANDIDATE_PUBLIC_PROFILE: "/candidates/:candidateId",
+  COMPANY_PROFILE: "/company/:companyId/profile",
+  CANDIDATE_PROFILE: "/candidate/profile/:candidateId",
 
   // Candidate routes
   CANDIDATE: {
     DASHBOARD: "/candidate/dashboard",
-    PROFILE: "/candidate/profile",
     APPLICATIONS: "/candidate/applications",
     INTERVIEWS: "/candidate/interviews",
     SAVED_JOBS: "/candidate/saved",
@@ -19,12 +18,12 @@ export const ROUTES = {
     CHATBOT: "/candidate/chatbot",
     SETTINGS: "/candidate/settings",
     CREATE_ORGANIZATION: "/candidate/create-organization",
+    RESUME_IMPROVEMENT: "/candidate/resume-improvement",
   },
 
   // Company routes (accessed by candidates)
   COMPANY: {
     DASHBOARD: "/dashboard",
-    PROFILE: "/company",
     POST_JOB: "/post-job",
     JOBS: "/jobs",
     PIPELINE: "/pipeline",

@@ -12,8 +12,9 @@ import type {
   SignedUploadResponse,
 } from "@/api/types/files.types";
 import { useMutation } from "@tanstack/react-query";
-import { uploadCv } from "@/api/endpoints/cvs.api";
+import { parseCvFromPdf, updateCv, uploadCv } from "@/api/endpoints/cvs.api";
 import { queryClient } from "@/lib/queryClient";
+import { ExtractedCvData } from "@/api/types/cv.types";
 
 interface Props {
   disabled?: boolean;
@@ -24,6 +25,11 @@ export function UploadCVButton({ disabled }: Props) {
   const [isUploading, setIsUploading] = useState(false);
   const { mutate: uploadCvMutate } = useMutation({
     mutationFn: uploadCv,
+  });
+
+  const { mutate: updateCvMutate } = useMutation({
+    mutationFn: ({ id, content }: { id: string; content: ExtractedCvData }) =>
+      updateCv(id, content),
   });
 
   const handleClick = () => {
@@ -58,6 +64,10 @@ export function UploadCVButton({ disabled }: Props) {
         data: result,
       });
 
+      const url = uploadFileResonse?.url;
+
+      const parseResult = await parseCvFromPdf(url!);
+
       uploadCvMutate(
         {
           fileId: uploadFileResonse?.id,
@@ -65,9 +75,14 @@ export function UploadCVButton({ disabled }: Props) {
           description: file.name,
           type: "pdf",
           isPublic: true,
+          status: "published",
         },
         {
           onSuccess: (cv) => {
+            updateCvMutate({
+              id: cv.id,
+              content: parseResult.data.extractedText,
+            });
             queryClient.invalidateQueries({ queryKey: ["candidateCvs"] });
             toast({
               title: "CV uploaded",

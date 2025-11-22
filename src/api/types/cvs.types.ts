@@ -1,3 +1,5 @@
+import { ExtractedCvData } from "./cv.types";
+
 export interface User {
   id: string;
   email: string;
@@ -117,4 +119,36 @@ export interface UploadCvDto {
   description: string;
   type: string;
   isPublic: boolean;
+  status?: string;
+}
+
+export interface EnhanceCvWithAiDto {
+  cv: ExtractedCvData;
+  jobDescription: string;
+}
+
+export interface DiffSegment {
+  type: "suggestion" | "deletion" | "equal";
+  value: string | string[] | Record<string, any> | null;
+}
+
+export interface Suggestion {
+  id: string;
+  path: string;
+  reason: string;
+  diff: DiffSegment[];
+}
+
+export interface CvAssessment {
+  content: Suggestion[];
+  skills: Suggestion[];
+  format: Suggestion[];
+  section: Suggestion[];
+  style: Suggestion[];
+}
+
+export interface EnhanceCvResponse {
+  data: {
+    cvAssessment: CvAssessment;
+  };
 }

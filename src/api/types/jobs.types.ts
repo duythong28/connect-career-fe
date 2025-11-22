@@ -1,4 +1,4 @@
-import { LogoFile } from "./organizations.types";
+import { Organization } from "./organizations.types";
 
 export interface SalaryDetails {
   currency: string;
@@ -21,65 +21,15 @@ export interface SocialMedia {
   linkedin: string;
 }
 
-export interface Organization {
-  id: string;
-  userId: string;
-  abbreviation: string | null;
-  awardsRecognition: any[];
-  bannerFileId: string | null;
-  benefits: string | null;
-  certifications: string | null;
-  city: string;
-  contactEmail: string | null;
-  contactPhone: string | null;
-  coreValues: any[];
-  country: string;
-  createdAt: string;
-  culture: string | null;
-  deletedAt: string | null;
-  employeeCount: number;
-  fiscalYearEnd: string | null;
-  formerNames: any[];
-  foundedDate: string | null;
-  headquartersAddress: string;
-  hrEmail: string | null;
-  hrPhone: string | null;
-  industryId: string;
-  isActive: boolean;
-  isHiring: boolean;
-  isPublic: boolean;
-  isVerified: boolean;
-  keywords: string[];
-  logoFileId: string;
-  logoFile?: LogoFile | null;
-  longDescription: string | null;
-  mission: string | null;
-  name: string;
-  organizationSize: string;
-  organizationType: string;
-  overtimePolicy: string;
-  postalCode: string | null;
-  productsServices: string | null;
-  registrationNumber: string | null;
-  requiredSkills: string | null;
-  shortDescription: string;
-  socialMedia: SocialMedia;
-  stateProvince: string;
-  subIndustries: any[];
-  tagline: string;
-  taxId: string | null;
-  timezone: string | null;
-  updatedAt: string;
-  vision: string | null;
-  website: string;
-  workScheduleTypes: any[];
-  workingDays: string[];
-  workingHours: string | null;
-}
-
 export interface JobUser {
   id: string;
   [key: string]: any;
+}
+
+export enum JobStatus {
+  DRAFT = "draft",
+  ACTIVE = "active",
+  CLOSED = "closed",
 }
 
 export interface Job {
@@ -111,7 +61,7 @@ export interface Job {
   source: string;
   sourceId: string;
   sourceUrl: string;
-  status: string;
+  status: JobStatus;
   summary: string;
   title: string;
   titleId: string;
@@ -130,16 +80,31 @@ export interface JobsResponse {
   totalPages: number;
 }
 
+export enum JobSortBy {
+  POSTED_DATE = "postedDate",
+  APPLICATIONS = "applications",
+}
+
+export const JobSortByLabel: Record<JobSortBy, string> = {
+  [JobSortBy.POSTED_DATE]: "Most Recent",
+  [JobSortBy.APPLICATIONS]: "Most Applications",
+};
+
 export interface JobFilters {
-  search?: string;
+  pageNumber?: number;
+  pageSize?: number;
+  searchTerm?: string;
   location?: string;
   type?: string;
-  salaryMin?: number;
-  salaryMax?: number;
-  industry?: string;
+  status?: string;
   seniorityLevel?: string;
-  page?: number;
-  limit?: number;
+  organizationId?: string;
+  companyName?: string;
+  keywords?: string[];
+  postedAfter?: string;
+  postedBefore?: string;
+  sortBy?: JobSortBy;
+  sortOrder?: "ASC" | "DESC";
 }
 
 export interface JobApplication {
@@ -169,4 +134,73 @@ export interface SavedJobsResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export enum JobSeniorityLevel {
+  ENTRY_LEVEL = "Entry level",
+  MID_SENIOR = "Mid-Senior level",
+  DIRECTOR = "Director",
+  EXECUTIVE = "Executive",
+  ASSOCIATE = "Associate",
+  INTERNSHIP = "Internship",
+}
+
+export enum JobType {
+  ALL = "all",
+  FULL_TIME = "full_time",
+  PART_TIME = "part_time",
+  FREELANCE = "freelance",
+  CONTRACT = "contract",
+  SEASONAL = "seasonal",
+  INTERNSHIP = "internship",
+  REMOTE = "remote",
+  OTHER = "other",
+}
+
+export const JobTypeLabel: Record<JobType, string> = {
+  [JobType.ALL]: "All types",
+  [JobType.FULL_TIME]: "Full-time",
+  [JobType.PART_TIME]: "Part-time",
+  [JobType.FREELANCE]: "Freelance",
+  [JobType.CONTRACT]: "Contract",
+  [JobType.SEASONAL]: "Seasonal",
+  [JobType.INTERNSHIP]: "Internship",
+  [JobType.REMOTE]: "Remote",
+  [JobType.OTHER]: "Other",
+};
+
+export interface GenerateJobDto {
+  title: string;
+  jobType: string;
+  location: string;
+  companyName: string;
+  seniorityLevel: string;
+  companyDescription: string;
+}
+
+export interface GenerateJobResponse {
+  data: {
+    description: string;
+    summary: string;
+    keywords: string[];
+    requirements: string[];
+    responsibilities: string[];
+    benefits: string[];
+    suggestedTitle: string;
+    confidence: number;
+  };
+}
+
+export interface CreateJobDto {
+  title: string;
+  location: string;
+  salary: string;
+  type: string;
+  seniorityLevel: JobSeniorityLevel;
+  description: string;
+  organizationId: string;
+  hiringPipelineId: string;
+  keywords: string[];
+  requirements: string[];
+  status: JobStatus;
 }

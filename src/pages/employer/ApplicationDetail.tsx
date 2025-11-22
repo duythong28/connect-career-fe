@@ -1,348 +1,380 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
-  ArrowLeft,
-  Mail,
-  MapPin,
-  Calendar,
-  FileText,
-  Clock,
-  XCircle,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
-import { getApplicationById } from "@/api/endpoints/applications.api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getApplicationById,
+  updateApplicationStageForRecruiter,
+} from "@/api/endpoints/applications.api";
+import { PipelineTransition } from "@/api/types/pipelines.types";
+import { getPipelineByJobId } from "@/api/endpoints/pipelines.api";
+import {
+  UpdateApplicationStageForRecruiterDto,
+  ApplicationStatus,
+  ApplicationStatusLabel,
+} from "@/api/types/applications.types";
+import { InterviewResponse } from "@/api/types/interviews.types";
+import { OfferResponse, OfferStatus } from "@/api/types/offers.types";
+import { useAuth } from "@/hooks/useAuth";
+import { getOrganizationById } from "@/api/endpoints/organizations.api";
+import { Organization } from "@/api/types/organizations.types";
+import JobInfoSection from "@/components/employer/applications/JobInfoSection";
+import ApplicationInfoSection from "@/components/employer/applications/ApplicationInfoSection";
+import InterviewsSection from "@/components/employer/applications/InterviewsSection";
+import AvailableActionsSection from "@/components/employer/applications/AvailableActionsSection";
+import StatusLogSection from "@/components/employer/applications/StatusLogSection";
+import ApplicationNotesCard from "@/components/employer/applications/ApplicationNotesCard";
+import CounterOfferDialog from "@/components/employer/applications/CounterOfferDialog";
+import CancelOfferDialog from "@/components/employer/applications/CancelOfferDialog";
+import RejectOfferDialog from "@/components/employer/applications/RejectOfferDialog";
+import AcceptOfferDialog from "@/components/employer/applications/AcceptOfferDialog";
+import EditOfferDialog from "@/components/employer/applications/EditOfferDialog";
+import AddOfferDialog from "@/components/employer/applications/AddOfferDialog";
+import RescheduleInterviewDialog from "@/components/employer/applications/RescheduleInterviewDialog";
+import AddFeedbackDialog from "@/components/employer/applications/AddFeedbackDialog";
+import DeleteInterviewDialog from "@/components/employer/applications/DeleteInterviewDialog";
+import EditInterviewDialog from "@/components/employer/applications/EditInterviewDialog";
+import AddInterviewDialog from "@/components/employer/applications/AddInterviewDialog";
+import OffersSection from "@/components/employer/applications/OffersSection";
 
+// --- Highlight Section ---
+function HighlightSection({
+  job,
+  status,
+  appliedDate,
+  onBack,
+}: {
+  job: any;
+  company: Organization | null;
+  status: string;
+  appliedDate?: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="w-full rounded-xl mb-4 px-4 py-4 sm:px-6 sm:py-6 md:px-10 md:py-8 bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg text-white flex flex-col gap-2">
+      <div className="flex items-center gap-2 mb-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-blue-700"
+          onClick={onBack}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <span className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight truncate">
+          {job?.title}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2 items-center">
+        <Badge
+          variant="outline"
+          className="capitalize bg-white/20 border-white/30 text-white"
+        >
+          {ApplicationStatusLabel[status as ApplicationStatus] || status}
+        </Badge>
+        {appliedDate && (
+          <span className="text-xs sm:text-sm opacity-80 ml-2">
+            Applied: {new Date(appliedDate).toLocaleDateString()}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Main Page ---
 export default function ApplicationDetail() {
-  const { applicationId } = useParams();
+  const { applicationId, jobId } = useParams();
   const navigate = useNavigate();
-  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-  const [interviewDate, setInterviewDate] = useState("");
-  const [interviewTime, setInterviewTime] = useState("");
-  const [meetingLink, setMeetingLink] = useState("");
-  const [notes, setNotes] = useState("");
+  const queryClient = useQueryClient();
+
+  // Interview form state
+  const [showAddInterviewDialog, setShowAddInterviewDialog] = useState(false);
+  // Interview management state
+  const [selectedInterview, setSelectedInterview] =
+    useState<InterviewResponse | null>(null);
+  const [showEditInterviewDialog, setShowEditInterviewDialog] = useState(false);
+  const [showDeleteInterviewDialog, setShowDeleteInterviewDialog] =
+    useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+
+  const [showAddOfferDialog, setShowAddOfferDialog] = useState(false);
+  const [showEditOfferDialog, setShowEditOfferDialog] = useState(false);
+  const [selectedOffer, setSelectedOffer] = useState<OfferResponse | null>(
+    null
+  );
+  const [showAcceptDialog, setShowAcceptDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCounterDialog, setShowCounterDialog] = useState(false);
+
+  const { user } = useAuth();
+
   const { data: applicationData } = useQuery({
     queryKey: ["applications", applicationId],
-    queryFn: async () => {
-      return getApplicationById(applicationId);
-    },
+    queryFn: async () => getApplicationById(applicationId!),
     enabled: !!applicationId,
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 
-  if (!applicationData) {
-    return <div>Application not found</div>;
+  const { data: pipeline } = useQuery({
+    queryKey: ["pipeline", jobId],
+    queryFn: async () => getPipelineByJobId(jobId!),
+    enabled: !!jobId,
+  });
+
+  const { data: company } = useQuery<Organization | null>({
+    queryKey: ["organization", applicationData?.job?.organizationId],
+    queryFn: () =>
+      applicationData?.job?.organizationId
+        ? getOrganizationById(applicationData.job.organizationId)
+        : Promise.resolve(null),
+    enabled: !!applicationData?.job?.organizationId,
+  });
+
+  // --- Mutations ---
+  const { mutate: updateApplicationStageMutate } = useMutation({
+    mutationFn: async ({
+      applicationId,
+      data,
+    }: {
+      applicationId: string;
+      data: UpdateApplicationStageForRecruiterDto;
+    }) => updateApplicationStageForRecruiter(applicationId, data),
+    onSuccess: () => {
+      toast.success("Application stage updated");
+      queryClient.invalidateQueries({
+        queryKey: ["applications", applicationId],
+      });
+    },
+    onError: () => {
+      toast.error("Failed to update application stage");
+    },
+  });
+
+  if (!applicationData || !pipeline) {
+    return <div>Loading...</div>;
   }
 
-  const handleScheduleInterview = () => {
-    if (!interviewDate || !interviewTime) {
-      toast.error("Please select date and time");
-      return;
+  const currentStage = pipeline.stages.find(
+    (s) => s.key === applicationData.currentStageKey
+  );
+  const availableTransitions =
+    pipeline?.transitions.filter(
+      (t) => t.fromStageKey === applicationData.currentStageKey
+    ) || [];
+
+  // Check if current stage requires interviews or offers
+  const isInterviewStage = currentStage?.type === "interview";
+  const isOfferStage = currentStage?.type === "offer";
+
+  // Get pending offer (if any)
+  const acceptedOffer = applicationData.offers?.find(
+    (o: OfferResponse) => o.status === OfferStatus.ACCEPTED
+  );
+
+  // --- Actions ---
+  function handleTransitionClick(transition: PipelineTransition) {
+    const toStage = pipeline.stages.find(
+      (s) => s.key === transition.toStageKey
+    );
+    if (currentStage?.type === "offer" && toStage?.key !== "rejected") {
+      if (!acceptedOffer) {
+        toast.error("Cannot proceed without an accepted offer");
+        return;
+      }
     }
-    toast.success("Interview invitation sent!");
-    setShowScheduleDialog(false);
-  };
+    updateApplicationStageMutate({
+      applicationId: applicationId!,
+      data: {
+        stageKey: toStage.key,
+        reason: `Moved to ${toStage.name} stage`,
+        notes: "",
+      },
+    });
+  }
 
-  const handleReject = () => {
-    toast.success("Application rejected");
-    navigate(-1);
-  };
+  // --- Offer/Interview Handlers ---
+  function handleEditInterview(interview: InterviewResponse) {
+    setSelectedInterview(interview);
+    setShowEditInterviewDialog(true);
+  }
+  function handleDeleteInterview(interview: InterviewResponse) {
+    setSelectedInterview(interview);
+    setShowDeleteInterviewDialog(true);
+  }
+  function handleAddFeedback(interview: InterviewResponse) {
+    setSelectedInterview(interview);
+    setShowFeedbackDialog(true);
+  }
+  function handleReschedule(interview: InterviewResponse) {
+    setSelectedInterview(interview);
+    setShowRescheduleDialog(true);
+  }
+  function handleEditOffer(offer: OfferResponse) {
+    setSelectedOffer(offer);
+    setShowEditOfferDialog(true);
+  }
+  function handleAcceptOffer(offer: OfferResponse) {
+    setSelectedOffer(offer);
+    setShowAcceptDialog(true);
+  }
+  function handleRejectOffer(offer: OfferResponse) {
+    setSelectedOffer(offer);
+    setShowRejectDialog(true);
+  }
+  function handleCancelOffer(offer: OfferResponse) {
+    setSelectedOffer(offer);
+    setShowCancelDialog(true);
+  }
+  function handleCounterOffer(offer: OfferResponse) {
+    setSelectedOffer(offer);
+    setShowCounterDialog(true);
+  }
 
-  const handleCreateOffer = () => {
-    toast.success("Offer created");
-  };
+  // Logic for button display
+  function canEdit(offer: OfferResponse) {
+    return offer.status === "pending" && !offer.isOfferedByCandidate;
+  }
+  function canRespond(offer: OfferResponse, idx: number) {
+    // Only allow respond to the latest offer, and only if it's from candidate and pending
+    if (idx !== 0) return false;
+    if (offer.isOfferedByCandidate && offer.status === "pending") return true;
+    return false;
+  }
 
+  const offers = applicationData.offers || [];
+  const interviews = applicationData.interviews || [];
+  const statusHistory = applicationData.statusHistory || [];
+
+  // --- UI ---
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-      </div>
+      <HighlightSection
+        job={applicationData.job}
+        company={company}
+        status={applicationData.status}
+        appliedDate={applicationData.appliedDate}
+        onBack={() => navigate(-1)}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Column */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-2xl">
-                    {applicationData?.candidateSnapshot?.name ||
-                      applicationData?.candidate?.firstName +
-                        " " +
-                        applicationData?.candidate?.lastName}
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    {applicationData?.candidateSnapshot?.currentTitle}
-                  </CardDescription>
-                </div>
-                <Badge className="bg-purple-500">
-                  {applicationData?.currentStageName}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{applicationData?.candidateSnapshot?.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{applicationData?.candidateSnapshot?.location}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span>
-                  {applicationData?.candidateSnapshot?.yearsOfExperience} years
-                  of experience
-                </span>
-              </div>
-              <div className="space-y-2">
-                <Label>Skills</Label>
-                <div className="flex flex-wrap gap-2">
-                  {applicationData?.parsedResumeData?.skills?.map((skill) => (
-                    <Badge key={skill} variant="outline">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Application for {applicationData?.job?.title}
-              </CardTitle>
-              <CardDescription>
-                Applied on{" "}
-                {new Date(applicationData.appliedDate).toLocaleDateString()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Notes</Label>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {applicationData.notes || "No notes added yet"}
-                </p>
-              </div>
-              {applicationData.matchingScore && (
-                <div>
-                  <Label>Matching Score</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${applicationData.matchingScore}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium">
-                      {applicationData.matchingScore}%
-                    </span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>Pipeline Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {stages.map((stage, index) => (
-                  <div key={stage.name} className="flex items-center gap-4">
-                    <div className="flex flex-col items-center">
-                      {stage.status === "complete" ? (
-                        <CheckCircle2 className="h-6 w-6 text-green-500" />
-                      ) : (
-                        <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/30" />
-                      )}
-                      {index < stages.length - 1 && (
-                        <div
-                          className={`w-0.5 h-8 ${
-                            stage.status === "complete"
-                              ? "bg-green-500"
-                              : "bg-muted-foreground/30"
-                          }`}
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p
-                        className={`font-medium ${
-                          stage.status === "complete"
-                            ? "text-foreground"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {stage.name}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card> */}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Log</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {applicationData?.pipelineStageHistory?.map((activity, id) => (
-                  <div key={id} className="flex items-start gap-3 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <p className="font-medium">{activity.reason}</p>
-                      <p className="text-muted-foreground">
-                        {activity.changedBy} •{" "}
-                        {new Date(activity.changedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <JobInfoSection
+            job={applicationData.job}
+            company={company}
+            onViewJob={() => navigate(`/jobs/${applicationData.job?.id}`)}
+            onViewCompany={() =>
+              company?.id && navigate(`/company/${company.id}/profile`)
+            }
+          />
+          <ApplicationInfoSection
+            application={applicationData}
+            showCvPreview={false}
+            setShowCvPreview={() => {}}
+          />
+          <OffersSection
+            offers={offers}
+            isOfferStage={isOfferStage}
+            onEdit={handleEditOffer}
+            onAddOffer={() => setShowAddOfferDialog(true)}
+            onAccept={handleAcceptOffer}
+            onReject={handleRejectOffer}
+            onCancel={handleCancelOffer}
+            onCounter={handleCounterOffer}
+            canRespond={canRespond}
+            canEdit={canEdit}
+          />
+          <InterviewsSection
+            interviews={interviews}
+            onEdit={handleEditInterview}
+            onReschedule={handleReschedule}
+            onFeedback={handleAddFeedback}
+            onDelete={handleDeleteInterview}
+            isInterviewStage={isInterviewStage}
+            onAddInterview={() => setShowAddInterviewDialog(true)}
+          />
+          <StatusLogSection statusHistory={statusHistory} />
         </div>
-
+        {/* Sidebar */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Mock transitions - in real app, fetch based on current stage */}
-              <Button
-                className="w-full"
-                onClick={() => setShowScheduleDialog(true)}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Move to Technical Phone
-              </Button>
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={handleCreateOffer}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Make Offer
-              </Button>
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={handleReject}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Add Notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                placeholder="Add your notes about this candidate..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={4}
-              />
-              <Button
-                className="w-full"
-                onClick={() => toast.success("Notes saved")}
-              >
-                Save Notes
-              </Button>
-            </CardContent>
-          </Card>
+          <AvailableActionsSection
+            availableTransitions={availableTransitions}
+            currentStageName={applicationData.currentStageName || ""}
+            onTransition={handleTransitionClick}
+          />
+          <ApplicationNotesCard />
         </div>
       </div>
 
-      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Schedule Interview</DialogTitle>
-            <DialogDescription>
-              Select a time slot for the interview with{" "}
-              {applicationData?.candidateSnapshot?.name}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={interviewDate}
-                onChange={(e) => setInterviewDate(e.target.value)}
-                min={format(new Date(), "yyyy-MM-dd")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Time</Label>
-              <Input
-                type="time"
-                value={interviewTime}
-                onChange={(e) => setInterviewTime(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Meeting Link (Optional)</Label>
-              <Input
-                placeholder="https://meet.google.com/..."
-                value={meetingLink}
-                onChange={(e) => setMeetingLink(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={handleScheduleInterview}>
-                Send Invitation
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowScheduleDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* --- Dialogs --- */}
+      <AddInterviewDialog
+        open={showAddInterviewDialog}
+        onOpenChange={setShowAddInterviewDialog}
+        applicationId={applicationId!}
+        currentStageName={currentStage?.name}
+      />
+      <EditInterviewDialog
+        open={showEditInterviewDialog}
+        onOpenChange={setShowEditInterviewDialog}
+        interview={selectedInterview}
+      />
+      <DeleteInterviewDialog
+        open={showDeleteInterviewDialog}
+        onOpenChange={setShowDeleteInterviewDialog}
+        interview={selectedInterview}
+      />
+      <AddFeedbackDialog
+        open={showFeedbackDialog}
+        onOpenChange={setShowFeedbackDialog}
+        interview={selectedInterview}
+        userId={user.id}
+      />
+      <RescheduleInterviewDialog
+        open={showRescheduleDialog}
+        onOpenChange={setShowRescheduleDialog}
+        interview={selectedInterview}
+        userId={user.id}
+      />
+      <AddOfferDialog
+        open={showAddOfferDialog}
+        onOpenChange={setShowAddOfferDialog}
+        applicationId={applicationId!}
+        userId={user.id}
+      />
+      <EditOfferDialog
+        open={showEditOfferDialog}
+        onOpenChange={setShowEditOfferDialog}
+        offer={selectedOffer}
+      />
+      <AcceptOfferDialog
+        open={showAcceptDialog}
+        onOpenChange={setShowAcceptDialog}
+        applicationId={applicationId!}
+      />
+      <RejectOfferDialog
+        open={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        applicationId={applicationId!}
+      />
+      <CancelOfferDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        offer={selectedOffer}
+      />
+      <CounterOfferDialog
+        open={showCounterDialog}
+        onOpenChange={setShowCounterDialog}
+        applicationId={applicationId!}
+        userId={user.id}
+      />
     </div>
   );
 }

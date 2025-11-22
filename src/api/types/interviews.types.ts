@@ -1,14 +1,18 @@
+import { Application } from "./applications.types";
+
 export interface InterviewCreateDto {
   interviewerName: string;
   interviewerEmail?: string;
-  scheduledDate: string; // ISO 8601
-  type?: "TECHNICAL" | "HR" | "CULTURAL" | string;
+  scheduledDate: string;
+  type?: InterviewType;
   interviewRound?: string;
-  duration?: number; // minutes
+  duration?: number;
   location?: string;
   meetingLink?: string;
   notes?: string;
 }
+
+export type InterviewType = "phone" | "video" | "in-person";
 
 export interface InterviewUpdateDto {
   scheduledDate?: string;
@@ -22,9 +26,16 @@ export interface InterviewUpdateDto {
   type?: string;
 }
 
+export enum Recommendation {
+  RECOMMEND = "recommend",
+  STRONGLY_RECOMMEND = "strongly_recommend",
+  NEUTRAL = "neutral",
+  DO_NOT_RECOMMEND = "do_not_recommend",
+}
+
 export interface InterviewFeedbackDto {
   rating: number;
-  recommendation: string; // e.g. "recommend"
+  recommendation: Recommendation;
   strengths?: string[];
   weaknesses?: string[];
   comments?: string;
@@ -40,15 +51,33 @@ export interface InterviewRescheduleDto {
 export interface InterviewResponse {
   id: string;
   applicationId: string;
-  interviewerName: string;
-  interviewerEmail?: string;
+  application?: Application;
+  date: string;
+  type: InterviewType;
+  status: string;
+  notes: string;
   scheduledDate: string;
-  type?: string;
-  interviewRound?: string;
-  duration?: number;
-  location?: string;
-  meetingLink?: string;
-  notes?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  duration: number;
+  location?: string | null;
+  meetingLink?: string | null;
+  interviewerName?: string | null;
+  interviewerEmail?: string | null;
+  interviewRound: string;
+  feedback?: InterviewFeedback | null;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
+  cancellationReason?: string | null;
+  candidateNotified: boolean;
+  interviewerNotified: boolean;
+  reminderSentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InterviewFeedback {
+  rating?: number;
+  comments?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  recommendation?: Recommendation;
 }

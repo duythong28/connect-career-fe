@@ -182,7 +182,7 @@ const CandidateSearchPage = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/candidates/${candidate.id}`)}
+                      onClick={() => navigate(`/candidate/${candidate.id}`)}
                     >
                       <UserIcon className="h-4 w-4 mr-1" />
                       View Profile
