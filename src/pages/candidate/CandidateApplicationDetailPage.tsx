@@ -40,6 +40,8 @@ import ApplicationInfoSection from "@/components/candidate/applications/Applicat
 import OffersSection from "@/components/candidate/applications/OffersSection";
 import InterviewsSection from "@/components/candidate/applications/InterviewsSection";
 import StatusLogSection from "@/components/candidate/applications/StatusLogSection";
+import MessageButton from "@/components/chat/MessageButton";
+import RecruiterFeedbackDialog from "@/components/reviews/RecruiterFeedbackDialog";
 
 // --- Highlight Section ---
 function HighlightSection({
@@ -282,6 +284,8 @@ export default function CandidateApplicationDetailPage() {
     );
   }
 
+  const poster = applicationData.job.user;
+
   const offers = applicationData.offers || [];
   const interviews = applicationData.interviews || [];
   const statusHistory = applicationData.statusHistory || [];
@@ -326,6 +330,30 @@ export default function CandidateApplicationDetailPage() {
           </div>
           {/* Right/Sidebar */}
           <div className="space-y-6">
+            {poster && (
+              <div className="rounded-xl bg-white shadow p-4 flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <img
+                    src={poster.avatarUrl || "/avatar-default.png"}
+                    alt={poster.fullName || poster.username}
+                    className="w-12 h-12 rounded-full object-cover border"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      {poster.fullName || poster.username}
+                    </div>
+                    <div className="text-sm text-gray-500">{poster.email}</div>
+                  </div>
+                </div>
+                <div className="flex w-full justify-between gap-4">
+                  <MessageButton senderId={user.id} recieverId={poster.id} />
+                  <RecruiterFeedbackDialog
+                    applicationId={applicationId}
+                    recruiterUserId={poster.id}
+                  />
+                </div>
+              </div>
+            )}
             <StatusLogSection statusHistory={statusHistory} />
           </div>
         </div>

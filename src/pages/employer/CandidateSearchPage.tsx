@@ -18,27 +18,58 @@ import {
 import { User } from "@/lib/types";
 import { mockUsers } from "@/lib/mock-data";
 
+const experienceOptions = [
+  { value: "all", label: "All levels" },
+  { value: "entry", label: "Entry Level (0-2 years)" },
+  { value: "mid", label: "Mid Level (3-5 years)" },
+  { value: "senior", label: "Senior Level (6+ years)" },
+];
+
+const educationOptions = [
+  { value: "all", label: "All education" },
+  { value: "bachelor", label: "Bachelor's Degree" },
+  { value: "master", label: "Master's Degree" },
+  { value: "phd", label: "PhD" },
+];
+
 const CandidateSearchPage = () => {
   const navigate = useNavigate();
   const [searchFilters, setSearchFilters] = useState({
     skills: "",
     location: "",
-    experience: "",
-    education: "",
+    experience: "all",
+    education: "all",
   });
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const filteredCandidates = users.filter(
-    (user) =>
-      user.role === "candidate" &&
-      (searchFilters.skills === "" ||
-        user.skills?.some((skill) =>
-          skill.toLowerCase().includes(searchFilters.skills.toLowerCase())
-        )) &&
-      (searchFilters.location === "" ||
-        user.location
-          ?.toLowerCase()
-          .includes(searchFilters.location.toLowerCase()))
-  );
+  const [users] = useState<User[]>(mockUsers);
+
+  const filteredCandidates = users.filter((user) => {
+    if (user.role !== "candidate") return false;
+    if (
+      searchFilters.skills &&
+      !user.skills?.some((skill) =>
+        skill.toLowerCase().includes(searchFilters.skills.toLowerCase())
+      )
+    )
+      return false;
+    if (
+      searchFilters.location &&
+      !user.location
+        ?.toLowerCase()
+        .includes(searchFilters.location.toLowerCase())
+    )
+      return false;
+    if (
+      searchFilters.experience !== "all" &&
+      user.experienceLevel !== searchFilters.experience
+    )
+      return false;
+    if (
+      searchFilters.education !== "all" &&
+      user.educationLevel !== searchFilters.education
+    )
+      return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -94,14 +125,15 @@ const CandidateSearchPage = () => {
                     <SelectValue placeholder="Select experience" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All levels</SelectItem>
-                    <SelectItem value="entry">
-                      Entry Level (0-2 years)
-                    </SelectItem>
-                    <SelectItem value="mid">Mid Level (3-5 years)</SelectItem>
-                    <SelectItem value="senior">
-                      Senior Level (6+ years)
-                    </SelectItem>
+                    {experienceOptions.map((opt) => (
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        // Don't allow empty string as value
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -117,10 +149,15 @@ const CandidateSearchPage = () => {
                     <SelectValue placeholder="Select education" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All education</SelectItem>
-                    <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                    <SelectItem value="master">Master's Degree</SelectItem>
-                    <SelectItem value="phd">PhD</SelectItem>
+                    {educationOptions.map((opt) => (
+                      <SelectItem
+                        key={opt.value}
+                        value={opt.value}
+                        // Don't allow empty string as value
+                      >
+                        {opt.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -160,9 +197,7 @@ const CandidateSearchPage = () => {
                       </p>
 
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {(
-                          candidate.skills || ["React", "JavaScript", "Node.js"]
-                        )
+                        {(candidate.skills || ["React", "JavaScript", "Node.js"])
                           .slice(0, 5)
                           .map((skill) => (
                             <Badge key={skill} variant="secondary">

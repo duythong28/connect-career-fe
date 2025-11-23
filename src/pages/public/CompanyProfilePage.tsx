@@ -58,6 +58,9 @@ import {
   WorkScheduleType,
 } from "@/api/types/organizations.types";
 import { useOrganization } from "@/context/OrganizationContext";
+import ReportDialog from "@/components/reports/ReportDialog";
+import OrganizationReviewDialog from "@/components/reviews/OrganizationReviewDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 type CompanyFormValues = {
   name: string;
@@ -116,6 +119,7 @@ const CompanyProfilePage = () => {
   );
   const { pathname } = useLocation();
   const [previewMode, setPreviewMode] = useState(false);
+  const { user } = useAuth();
 
   const { data: companydata } = useQuery({
     queryKey: ["company", companyId],
@@ -502,6 +506,16 @@ const CompanyProfilePage = () => {
                           Edit
                         </Button>
                       )}
+                    {/* Add ReportDialog here */}
+                    {!editMode && companyId && (
+                      <ReportDialog
+                        entityId={companyId}
+                        entityType={"organization"}
+                      />
+                    )}
+                    {!editMode && user && companyId && (
+                      <OrganizationReviewDialog organizationId={companyId} />
+                    )}
 
                     {editMode && previewMode && (
                       <>

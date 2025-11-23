@@ -18,6 +18,7 @@ import { CandidateProfile } from "@/api/types/candidates.types";
 import FeedbackTab from "@/components/candidate/profile/FeedbackTab";
 import ProfileDetailTab from "@/components/candidate/profile/ProfileDetailTab";
 import CVSTab from "@/components/candidate/profile/CVSTab";
+import ReportDialog from "@/components/reports/ReportDialog";
 
 // --- MAIN COMPONENT ---
 export function CandidateProfilePage() {
@@ -31,6 +32,7 @@ export function CandidateProfilePage() {
   const tabs = [
     { value: "details", label: "Details" },
     { value: "feedback", label: "Feedback" },
+    { value: "interview-feedback", label: "Interview Feedback" },
     ...(isMyProfile ? [{ value: "cvs", label: "CVs" }] : []),
   ];
   const [activeTab, setActiveTab] = useState(tabs[0].value);
@@ -161,6 +163,7 @@ export function CandidateProfilePage() {
             </Button>
           </div>
         )}
+        <ReportDialog entityId={profileData.user.id} entityType={"user"} />
       </div>
 
       {/* Tabs */}
@@ -185,9 +188,15 @@ export function CandidateProfilePage() {
 
         {/* --- FEEDBACK TAB --- */}
         <TabsContent value="feedback">
-          <FeedbackTab interviewFeedbacks={profileData.interviewFeedbacks} />
+         <FeedbackTab recruiterFeedbacks={profileData.userFeedbacks.givenAsRecruiter.recruiterFeedbacks} />
         </TabsContent>
-
+        <TabsContent value="interview-feedback">
+          <FeedbackTab
+            interviewFeedbacks={
+              profileData.userFeedbacks.receivedAsCandidate.interviewFeedbacks
+            }
+          />
+        </TabsContent>
         {/* --- CVS TAB (OWNER ONLY) --- */}
         {isMyProfile && (
           <TabsContent value="cvs">

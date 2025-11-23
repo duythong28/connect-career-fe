@@ -73,7 +73,7 @@ export default function ApplicationInfoSection({
               className="p-0 h-auto mt-1"
               onClick={() =>
                 candidate?.id &&
-                window.open(`/candidate/${candidateProfile.id}`, "_blank")
+                window.open(`/candidate/profile/${candidateProfile.id}`, "_blank")
               }
             >
               View Candidate Profile
