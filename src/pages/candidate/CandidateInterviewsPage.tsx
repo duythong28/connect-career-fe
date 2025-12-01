@@ -1,9 +1,16 @@
-import { useState } from "react";
-import { 
-  Calendar as CalendarIcon, 
-  MessageSquare, 
-  List, 
-  ChevronLeft, 
+import {
+  JSXElementConstructor,
+  Key,
+  ReactElement,
+  ReactNode,
+  ReactPortal,
+  useState,
+} from "react";
+import {
+  Calendar as CalendarIcon,
+  MessageSquare,
+  List,
+  ChevronLeft,
   ChevronRight,
   Video,
   Phone,
@@ -14,7 +21,7 @@ import {
   User,
   ThumbsUp,
   ThumbsDown,
-  Star
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,17 +36,22 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { getMyInterviews } from "@/api/endpoints/candidates.api";
-import { useChatContext } from "@/context/ChatContext";
-import { useChatClient } from "@/hooks/useChatClient";
-import { createDirectMessageChannel } from "@/lib/streamChat";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isPast } from "date-fns";
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  addMonths,
+  subMonths,
+  isPast,
+} from "date-fns";
 import { Recommendation } from "@/api/types/interviews.types";
+import MessageButton from "@/components/chat/MessageButton";
 
 const CandidateInterviewsPage = () => {
   const { user } = useAuth();
-  const { openChatBox } = useChatContext();
-  const { client } = useChatClient();
-  
+
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedInterview, setSelectedInterview] = useState<any>(null);
@@ -54,84 +66,58 @@ const CandidateInterviewsPage = () => {
     enabled: !!user?.id,
   });
 
-  const handleMessageRecruiter = async (recruiterId: string) => {
-    if (!client || !user) return;
-
-    try {
-      const userResponse = await client.queryUsers(
-        { id: { $eq: recruiterId } },
-        {},
-        { limit: 1 }
-      );
-
-      const recruiterUser = userResponse.users[0];
-      const recruiterName = recruiterUser?.name || "Recruiter";
-      const recruiterAvatar = recruiterUser?.image;
-
-      const channel = await createDirectMessageChannel(
-        client,
-        user.id,
-        recruiterId
-      );
-
-      openChatBox(channel, recruiterId, recruiterName, recruiterAvatar);
-    } catch (error) {
-      console.error("Failed to start chat with recruiter:", error);
-
-      try {
-        const channel = await createDirectMessageChannel(
-          client,
-          user.id,
-          recruiterId
-        );
-        openChatBox(channel, recruiterId, "Recruiter");
-      } catch (fallbackError) {
-        console.error("Fallback chat creation also failed:", fallbackError);
-      }
-    }
-  };
-
   const getInterviewsForDate = (date: Date) => {
     if (!interviews?.data) return [];
-    return interviews.data.filter(interview => 
+    return interviews.data.filter((interview) =>
       isSameDay(new Date(interview.scheduledDate), date)
     );
   };
 
   const getStatusColor = (status: string, isPastInterview: boolean = false) => {
-    const baseColors = {
-      'scheduled': 'bg-blue-500',
-      'rescheduled': 'bg-orange-500', 
-      'completed': 'bg-green-500',
-      'cancelled': 'bg-red-500'
+    const baseColors: Record<string, string> = {
+      scheduled: "bg-blue-500",
+      rescheduled: "bg-orange-500",
+      completed: "bg-green-500",
+      cancelled: "bg-red-500",
     };
-    
-    const pastColors = {
-      'scheduled': 'bg-blue-300',
-      'rescheduled': 'bg-orange-300',
-      'completed': 'bg-green-300', 
-      'cancelled': 'bg-red-300'
+
+    const pastColors: Record<string, string> = {
+      scheduled: "bg-blue-300",
+      rescheduled: "bg-orange-300",
+      completed: "bg-green-300",
+      cancelled: "bg-red-300",
     };
-    
-    return isPastInterview ? pastColors[status] || 'bg-gray-300' : baseColors[status] || 'bg-gray-500';
+
+    return isPastInterview
+      ? pastColors[status] || "bg-gray-300"
+      : baseColors[status] || "bg-gray-500";
   };
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'default';
-      case 'rescheduled': return 'secondary';
-      case 'completed': return 'outline';
-      case 'cancelled': return 'destructive';
-      default: return 'secondary';
+      case "scheduled":
+        return "default";
+      case "rescheduled":
+        return "secondary";
+      case "completed":
+        return "outline";
+      case "cancelled":
+        return "destructive";
+      default:
+        return "secondary";
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'video': return <Video className="h-4 w-4" />;
-      case 'phone': return <Phone className="h-4 w-4" />;
-      case 'in-person': return <MapPinned className="h-4 w-4" />;
-      default: return <Video className="h-4 w-4" />;
+      case "video":
+        return <Video className="h-4 w-4" />;
+      case "phone":
+        return <Phone className="h-4 w-4" />;
+      case "in-person":
+        return <MapPinned className="h-4 w-4" />;
+      default:
+        return <Video className="h-4 w-4" />;
     }
   };
 
@@ -148,7 +134,7 @@ const CandidateInterviewsPage = () => {
   const renderCalendarView = () => (
     <Card className="p-6">
       <CardHeader className="flex flex-row items-center justify-between p-0 mb-6">
-        <CardTitle>{format(currentMonth, 'MMMM yyyy')}</CardTitle>
+        <CardTitle>{format(currentMonth, "MMMM yyyy")}</CardTitle>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -176,26 +162,29 @@ const CandidateInterviewsPage = () => {
 
       <CardContent className="p-0">
         <div className="grid grid-cols-7 gap-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="text-center font-medium text-sm text-muted-foreground p-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div
+              key={day}
+              className="text-center font-medium text-sm text-muted-foreground p-2"
+            >
               {day}
             </div>
           ))}
-          
+
           {/* Empty cells for days before the first day of the month */}
-          {emptyDays.map(i => (
+          {emptyDays.map((i) => (
             <div key={`empty-${i}`} className="min-h-24 p-2" />
           ))}
-          
-          {daysInMonth.map(day => {
+
+          {daysInMonth.map((day) => {
             const dayInterviews = getInterviewsForDate(day);
             const isToday = isSameDay(day, new Date());
-            
+
             return (
               <div
                 key={day.toString()}
                 className={`min-h-24 p-2 border rounded-lg cursor-pointer hover:bg-accent transition-colors ${
-                  isToday ? 'bg-accent border-primary' : ''
+                  isToday ? "bg-accent border-primary" : ""
                 }`}
                 onClick={() => {
                   if (dayInterviews.length > 0) {
@@ -203,18 +192,28 @@ const CandidateInterviewsPage = () => {
                   }
                 }}
               >
-                <div className={`font-medium text-sm mb-1 ${isToday ? 'text-primary' : ''}`}>
-                  {format(day, 'd')}
+                <div
+                  className={`font-medium text-sm mb-1 ${
+                    isToday ? "text-primary" : ""
+                  }`}
+                >
+                  {format(day, "d")}
                 </div>
                 <div className="space-y-1">
-                  {dayInterviews.slice(0, 2).map(interview => {
-                    const isPastInterview = isPast(new Date(interview.scheduledDate));
+                  {dayInterviews.slice(0, 2).map((interview) => {
+                    const isPastInterview = isPast(
+                      new Date(interview.scheduledDate)
+                    );
                     return (
                       <div
                         key={interview.id}
-                        className={`text-xs p-1 rounded text-white truncate ${getStatusColor(interview.status, isPastInterview)}`}
+                        className={`text-xs p-1 rounded text-white truncate ${getStatusColor(
+                          interview.status,
+                          isPastInterview
+                        )}`}
                       >
-                        {format(new Date(interview.scheduledDate), 'HH:mm')} - {interview.application?.job?.title}
+                        {format(new Date(interview.scheduledDate), "HH:mm")} -{" "}
+                        {interview.application?.job?.title}
                       </div>
                     );
                   })}
@@ -242,8 +241,13 @@ const CandidateInterviewsPage = () => {
           const isPastInterview = isPast(new Date(interview.scheduledDate));
 
           return (
-            <Card key={interview.id} className={`cursor-pointer hover:shadow-md transition-shadow ${isPastInterview ? 'opacity-75' : ''}`}
-                  onClick={() => setSelectedInterview(interview)}>
+            <Card
+              key={interview.id}
+              className={`cursor-pointer hover:shadow-md transition-shadow ${
+                isPastInterview ? "opacity-75" : ""
+              }`}
+              onClick={() => setSelectedInterview(interview)}
+            >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -251,9 +255,7 @@ const CandidateInterviewsPage = () => {
                       <div className="flex items-center gap-2">
                         {getTypeIcon(interview.type)}
                         <div>
-                          <h3 className="text-xl font-semibold">
-                            {job.title}
-                          </h3>
+                          <h3 className="text-xl font-semibold">{job.title}</h3>
                           <p className="text-gray-600">{job.companyName}</p>
                         </div>
                       </div>
@@ -277,7 +279,10 @@ const CandidateInterviewsPage = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-500">Status</p>
-                        <Badge variant={getStatusVariant(interview.status)} className="capitalize">
+                        <Badge
+                          variant={getStatusVariant(interview.status)}
+                          className="capitalize"
+                        >
                           {interview.status}
                         </Badge>
                       </div>
@@ -286,7 +291,9 @@ const CandidateInterviewsPage = () => {
                           <p className="text-sm text-gray-500">Duration</p>
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{interview.duration} min</span>
+                            <span className="font-medium">
+                              {interview.duration} min
+                            </span>
                           </div>
                         </div>
                       )}
@@ -297,7 +304,9 @@ const CandidateInterviewsPage = () => {
                         <p className="text-sm text-gray-500">Interviewer</p>
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{interview.interviewerName}</span>
+                          <span className="font-medium">
+                            {interview.interviewerName}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -305,13 +314,17 @@ const CandidateInterviewsPage = () => {
                     {(interview.location || interview.meetingLink) && (
                       <div className="mb-3">
                         <p className="text-sm text-gray-500">
-                          {interview.type === 'in-person' ? 'Location' : 'Meeting Link'}
+                          {interview.type === "in-person"
+                            ? "Location"
+                            : "Meeting Link"}
                         </p>
                         <div className="flex items-center gap-2">
-                          {interview.type === 'in-person' ? (
+                          {interview.type === "in-person" ? (
                             <>
                               <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{interview.location}</span>
+                              <span className="font-medium">
+                                {interview.location}
+                              </span>
                             </>
                           ) : (
                             <>
@@ -366,7 +379,10 @@ const CandidateInterviewsPage = () => {
                               }
                               className="capitalize"
                             >
-                              {interview.feedback.recommendation.replace('_', ' ')}
+                              {interview.feedback.recommendation.replace(
+                                "_",
+                                " "
+                              )}
                             </Badge>
                           </div>
                         </div>
@@ -443,29 +459,21 @@ const CandidateInterviewsPage = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    {interview.status === "scheduled" && interview.meetingLink && !isPastInterview && (
-                      <Button 
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(interview.meetingLink, '_blank');
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        Join
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMessageRecruiter(job.userId || "recruiter-id");
-                      }}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-1" />
-                      Message
-                    </Button>
+                    {interview.status === "scheduled" &&
+                      interview.meetingLink &&
+                      !isPastInterview && (
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(interview.meetingLink, "_blank");
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          Join
+                        </Button>
+                      )}
+                    <MessageButton senderId={user.id} recieverId={job.userId} />
                   </div>
                 </div>
               </CardContent>
@@ -504,12 +512,14 @@ const CandidateInterviewsPage = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Interviews</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                My Interviews
+              </h1>
               <p className="text-gray-600 mt-2">
                 View and manage your upcoming and past interviews
               </p>
             </div>
-            
+
             <div className="flex gap-2">
               <Button
                 variant={viewMode === "calendar" ? "default" : "outline"}
@@ -559,12 +569,15 @@ const CandidateInterviewsPage = () => {
 
         {/* Interview Details Dialog */}
         {selectedInterview && (
-          <Dialog open={!!selectedInterview} onOpenChange={() => setSelectedInterview(null)}>
+          <Dialog
+            open={!!selectedInterview}
+            onOpenChange={() => setSelectedInterview(null)}
+          >
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Interview Details</DialogTitle>
               </DialogHeader>
-              
+
               <div className="space-y-6">
                 <div>
                   <h3 className="font-semibold text-lg">
@@ -579,20 +592,28 @@ const CandidateInterviewsPage = () => {
                   <div>
                     <span className="font-medium">Date & Time:</span>
                     <p className="text-muted-foreground">
-                      {format(new Date(selectedInterview.scheduledDate), "PPP p")}
+                      {format(
+                        new Date(selectedInterview.scheduledDate),
+                        "PPP p"
+                      )}
                     </p>
                   </div>
                   <div>
                     <span className="font-medium">Type:</span>
                     <div className="flex items-center gap-2 mt-1">
                       {getTypeIcon(selectedInterview.type)}
-                      <span className="capitalize">{selectedInterview.type}</span>
+                      <span className="capitalize">
+                        {selectedInterview.type}
+                      </span>
                     </div>
                   </div>
                   <div>
                     <span className="font-medium">Status:</span>
                     <div className="mt-1">
-                      <Badge variant={getStatusVariant(selectedInterview.status)} className="capitalize">
+                      <Badge
+                        variant={getStatusVariant(selectedInterview.status)}
+                        className="capitalize"
+                      >
                         {selectedInterview.status}
                       </Badge>
                     </div>
@@ -679,7 +700,10 @@ const CandidateInterviewsPage = () => {
                           }
                           className="capitalize"
                         >
-                          {selectedInterview.feedback.recommendation.replace('_', ' ')}
+                          {selectedInterview.feedback.recommendation.replace(
+                            "_",
+                            " "
+                          )}
                         </Badge>
                       </div>
                     </div>
@@ -696,7 +720,19 @@ const CandidateInterviewsPage = () => {
                             </div>
                             <ul className="space-y-1">
                               {selectedInterview.feedback.strengths.map(
-                                (strength, idx) => (
+                                (
+                                  strength:
+                                    | string
+                                    | number
+                                    | boolean
+                                    | ReactElement<
+                                        any,
+                                        string | JSXElementConstructor<any>
+                                      >
+                                    | Iterable<ReactNode>
+                                    | ReactPortal,
+                                  idx: Key
+                                ) => (
                                   <li
                                     key={idx}
                                     className="flex items-start gap-2 text-sm text-green-800 dark:text-green-200"
@@ -722,7 +758,19 @@ const CandidateInterviewsPage = () => {
                             </div>
                             <ul className="space-y-1">
                               {selectedInterview.feedback.weaknesses.map(
-                                (weakness, idx) => (
+                                (
+                                  weakness:
+                                    | string
+                                    | number
+                                    | boolean
+                                    | ReactElement<
+                                        any,
+                                        string | JSXElementConstructor<any>
+                                      >
+                                    | Iterable<ReactNode>
+                                    | ReactPortal,
+                                  idx: Key
+                                ) => (
                                   <li
                                     key={idx}
                                     className="flex items-start gap-2 text-sm text-red-800 dark:text-red-200"
@@ -755,27 +803,26 @@ const CandidateInterviewsPage = () => {
                 )}
 
                 <div className="flex gap-2 pt-4">
-                  {selectedInterview.status === "scheduled" && selectedInterview.meetingLink && !isPast(new Date(selectedInterview.scheduledDate)) && (
-                    <Button 
-                      className="flex-1"
-                      onClick={() => window.open(selectedInterview.meetingLink, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      Join Meeting
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => 
-                      handleMessageRecruiter(
-                        selectedInterview.application?.job?.userId || "recruiter-id"
-                      )
+                  {selectedInterview.status === "scheduled" &&
+                    selectedInterview.meetingLink &&
+                    !isPast(new Date(selectedInterview.scheduledDate)) && (
+                      <Button
+                        className="flex-1"
+                        onClick={() =>
+                          window.open(selectedInterview.meetingLink, "_blank")
+                        }
+                      >
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        Join Meeting
+                      </Button>
+                    )}
+                  <MessageButton
+                    recieverId={
+                      selectedInterview.application?.job?.userId ||
+                      "recruiter-id"
                     }
-                  >
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    Message Recruiter
-                  </Button>
+                    senderId={user.id}
+                  />
                 </div>
               </div>
             </DialogContent>

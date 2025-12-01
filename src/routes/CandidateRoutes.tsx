@@ -11,6 +11,9 @@ import MessagePage from "@/pages/shared/MessagePage";
 import CandidateApplicationDetailPage from "@/pages/candidate/CandidateApplicationDetailPage";
 import CvImprovenentPage from "@/pages/candidate/CVImprovementPage";
 import Cv2 from "@/pages/candidate/Cv2";
+import MyReportsPage from "@/pages/shared/MyReportsPage";
+import OrganizationJoinPage from "@/pages/public/OrganizationJoinPage";
+import UserWalletPage from "@/pages/shared/UserWalletPage";
 
 export const CandidateRoutes = () => {
   return (
@@ -27,8 +30,11 @@ export const CandidateRoutes = () => {
       <Route path="messages" element={<MessagePage />} />
       <Route path="chatbot" element={<ChatbotPage />} />
       <Route path="settings" element={<SubscriptionPage />} />
+      <Route path="my-reports" element={<MyReportsPage />} />
       <Route path="resume-improvement" element={<CvImprovenentPage />} />
       <Route path="create-organization" element={<CompanyProfilePage />} />
+      <Route path="join-organization" element={<OrganizationJoinPage />} />
+      <Route path="wallet" element={<UserWalletPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
