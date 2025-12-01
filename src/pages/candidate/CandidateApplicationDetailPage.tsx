@@ -1,20 +1,32 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  Building2,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  ExternalLink,
+  FileText,
+  CheckSquare,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { getApplicationById } from "@/api/endpoints/applications.api";
 import { getOrganizationById } from "@/api/endpoints/organizations.api";
 import {
@@ -34,7 +46,8 @@ import {
   candidateCreateOffer,
 } from "@/api/endpoints/offers.api";
 import { useAuth } from "@/hooks/useAuth";
-import "@react-pdf-viewer/core/lib/styles/index.css";
+
+// Import Sub-components
 import JobInfoSection from "@/components/candidate/applications/JobInfoSection";
 import ApplicationInfoSection from "@/components/candidate/applications/ApplicationInfoSection";
 import OffersSection from "@/components/candidate/applications/OffersSection";
@@ -43,60 +56,50 @@ import StatusLogSection from "@/components/candidate/applications/StatusLogSecti
 import MessageButton from "@/components/chat/MessageButton";
 import RecruiterFeedbackDialog from "@/components/reviews/RecruiterFeedbackDialog";
 
-// --- Highlight Section ---
-function HighlightSection({
-  job,
-  company,
-  status,
-  appliedDate,
-  onBack,
-}: {
-  job: any;
-  company: Organization | null;
-  status: string;
-  appliedDate?: string;
-  onBack: () => void;
-}) {
-  return (
-    <div className="w-full rounded-xl mb-4 px-2 py-3 sm:px-4 sm:py-4 md:px-8 md:py-6 bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg text-white flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-white hover:bg-blue-700"
-          onClick={onBack}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <span className="text-lg sm:text-xl md:text-2xl font-bold leading-tight truncate">
-          {job?.title}
-        </span>
-      </div>
-      <div className="flex flex-wrap gap-2 items-center mt-2">
-        <Badge
-          variant="outline"
-          className="capitalize bg-white/20 border-white/30 text-white"
-        >
-          {ApplicationStatusLabel[status as ApplicationStatus] || status}
-        </Badge>
-        {appliedDate && (
-          <span className="text-xs sm:text-sm opacity-80 ml-2">
-            Applied: {new Date(appliedDate).toLocaleDateString()}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
+// --- Helper: Status Badge (Fixed Colors & Size) ---
+const StatusBadge = ({ status }: { status: string }) => {
+  // Mapping màu sắc cụ thể cho từng trạng thái
+  const styles: Record<string, string> = {
+    // Offer statuses
+    [ApplicationStatus.OFFER]: "bg-purple-50 text-purple-700 border-purple-200",
+    OFFER_ACCEPTED: "bg-green-50 text-green-700 border-green-200", // Giả định trạng thái
+    OFFER_REJECTED: "bg-red-50 text-red-700 border-red-200", // Giả định trạng thái
 
-// --- Main Page ---
+    // Standard statuses
+    [ApplicationStatus.REJECTED]: "bg-red-50 text-red-600 border-red-100",
+    [ApplicationStatus.INTERVIEW]: "bg-blue-50 text-blue-700 border-blue-200",
+    [ApplicationStatus.SCREENING]:
+      "bg-orange-50 text-orange-700 border-orange-100",
+  };
+
+  // Xử lý logic hiển thị text
+  let label = ApplicationStatusLabel[status as ApplicationStatus] || status;
+  let styleClass =
+    styles[status] || "bg-gray-100 text-gray-600 border-gray-200";
+
+  // Nếu status là OFFER nhưng trong context đã accept/reject (logic frontend)
+  // Bạn có thể tùy chỉnh logic này dựa trên dữ liệu thực tế
+
+  return (
+    <span
+      className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${styleClass}`}
+    >
+      {label}
+    </span>
+  );
+};
+
 export default function CandidateApplicationDetailPage() {
   const { applicationId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  // Offer dialog state
+  const [activeTab, setActiveTab] = useState<"application" | "hiring">(
+    "application"
+  );
+
+  // Dialog & Form States
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showCounterOfferDialog, setShowCounterOfferDialog] = useState(false);
@@ -104,7 +107,6 @@ export default function CandidateApplicationDetailPage() {
     null
   );
 
-  // Counter offer form state
   const [counterOfferBaseSalary, setCounterOfferBaseSalary] = useState("");
   const [counterOfferCurrency, setCounterOfferCurrency] = useState("VND");
   const [counterOfferSalaryPeriod, setCounterOfferSalaryPeriod] =
@@ -114,17 +116,13 @@ export default function CandidateApplicationDetailPage() {
   const [counterOfferIsNegotiable, setCounterOfferIsNegotiable] =
     useState(true);
 
-  // Query application
-  const { data: applicationData } = useQuery<Application>({
+  // Queries
+  const { data: applicationData, isLoading } = useQuery<Application>({
     queryKey: ["candidate-applications", applicationId],
     queryFn: async () => getApplicationById(applicationId!),
     enabled: !!applicationId,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
   });
 
-  // Query organization
   const { data: company } = useQuery<Organization | null>({
     queryKey: ["organization", applicationData?.job?.organizationId],
     queryFn: () =>
@@ -134,7 +132,7 @@ export default function CandidateApplicationDetailPage() {
     enabled: !!applicationData?.job?.organizationId,
   });
 
-  // Accept offer mutation
+  // Mutations (Giữ nguyên logic cũ)
   const { mutate: acceptOfferMutate } = useMutation({
     mutationFn: ({
       applicationId,
@@ -144,18 +142,16 @@ export default function CandidateApplicationDetailPage() {
       notes?: string;
     }) => candidateAcceptOffer(applicationId, notes),
     onSuccess: () => {
-      toast.success("Offer accepted successfully");
+      toast({ title: "Offer Accepted!", description: "Congratulations!" });
       setShowAcceptDialog(false);
       queryClient.invalidateQueries({
         queryKey: ["candidate-applications", applicationId],
       });
     },
-    onError: () => {
-      toast.error("Failed to accept offer");
-    },
+    onError: () =>
+      toast({ title: "Error", description: "Failed.", variant: "destructive" }),
   });
 
-  // Reject offer mutation
   const { mutate: rejectOfferMutate } = useMutation({
     mutationFn: ({
       applicationId,
@@ -165,18 +161,16 @@ export default function CandidateApplicationDetailPage() {
       reason?: string;
     }) => candidateRejectOffer(applicationId, reason),
     onSuccess: () => {
-      toast.success("Offer rejected");
+      toast({ title: "Offer Rejected", description: "Sent." });
       setShowRejectDialog(false);
       queryClient.invalidateQueries({
         queryKey: ["candidate-applications", applicationId],
       });
     },
-    onError: () => {
-      toast.error("Failed to reject offer");
-    },
+    onError: () =>
+      toast({ title: "Error", description: "Failed.", variant: "destructive" }),
   });
 
-  // Create counter offer mutation
   const { mutate: createCounterOfferMutate } = useMutation({
     mutationFn: ({
       applicationId,
@@ -186,16 +180,15 @@ export default function CandidateApplicationDetailPage() {
       data: any;
     }) => candidateCreateOffer(applicationId, data),
     onSuccess: () => {
-      toast.success("Counter offer submitted successfully");
+      toast({ title: "Sent", description: "Counter offer submitted." });
       setShowCounterOfferDialog(false);
       resetCounterOfferForm();
       queryClient.invalidateQueries({
         queryKey: ["candidate-applications", applicationId],
       });
     },
-    onError: () => {
-      toast.error("Failed to submit counter offer");
-    },
+    onError: () =>
+      toast({ title: "Error", description: "Failed.", variant: "destructive" }),
   });
 
   const resetCounterOfferForm = () => {
@@ -211,12 +204,10 @@ export default function CandidateApplicationDetailPage() {
     setSelectedOffer(offer);
     setShowAcceptDialog(true);
   };
-
   const handleRejectOffer = (offer: OfferResponse) => {
     setSelectedOffer(offer);
     setShowRejectDialog(true);
   };
-
   const handleCounterOffer = (offer: OfferResponse) => {
     setSelectedOffer(offer);
     setCounterOfferBaseSalary(offer.baseSalary?.toString() || "");
@@ -229,63 +220,50 @@ export default function CandidateApplicationDetailPage() {
   };
 
   const confirmAcceptOffer = () => {
-    if (selectedOffer && applicationId) {
-      acceptOfferMutate({
-        applicationId,
-        notes: "Candidate accepted the offer",
-      });
-    }
+    if (selectedOffer && applicationId)
+      acceptOfferMutate({ applicationId, notes: "Candidate accepted offer" });
   };
-
   const confirmRejectOffer = () => {
-    if (selectedOffer && applicationId) {
-      rejectOfferMutate({
-        applicationId,
-        reason: "Candidate rejected the offer",
-      });
-    }
+    if (selectedOffer && applicationId)
+      rejectOfferMutate({ applicationId, reason: "Candidate rejected offer" });
   };
-
   const submitCounterOffer = () => {
     if (!counterOfferBaseSalary || !applicationId) {
-      toast.error("Please fill in required fields");
+      toast({ title: "Missing fields", variant: "destructive" });
       return;
     }
     rejectOfferMutate(
-      {
-        applicationId,
-        reason: "Candidate submitted counter offer",
-      },
+      { applicationId, reason: "Counter offer submitted" },
       {
         onSuccess: () => {
-          const data = {
-            baseSalary: parseFloat(counterOfferBaseSalary),
-            currency: counterOfferCurrency,
-            salaryPeriod: counterOfferSalaryPeriod,
-            signingBonus: counterOfferSigningBonus
-              ? parseFloat(counterOfferSigningBonus)
-              : null,
-            notes: counterOfferNotes || null,
-            offeredBy: user.id,
-            isNegotiable: counterOfferIsNegotiable,
-            isOfferedByCandidate: true,
-          };
-          createCounterOfferMutate({ applicationId, data });
+          createCounterOfferMutate({
+            applicationId,
+            data: {
+              baseSalary: parseFloat(counterOfferBaseSalary),
+              currency: counterOfferCurrency,
+              salaryPeriod: counterOfferSalaryPeriod,
+              signingBonus: counterOfferSigningBonus
+                ? parseFloat(counterOfferSigningBonus)
+                : null,
+              notes: counterOfferNotes || null,
+              offeredBy: user.id,
+              isNegotiable: counterOfferIsNegotiable,
+              isOfferedByCandidate: true,
+            },
+          });
         },
       }
     );
   };
 
-  if (!applicationData) {
+  if (isLoading || !applicationData)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center text-lg text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
-  }
 
   const poster = applicationData.job.user;
-
   const offers = applicationData.offers || [];
   const interviews = applicationData.interviews || [];
   const statusHistory = applicationData.statusHistory || [];
@@ -294,203 +272,217 @@ export default function CandidateApplicationDetailPage() {
     offers[0].status === OfferStatus.PENDING &&
     offers[0].isOfferedByCandidate === false;
 
-  // Responsive 2-column layout
+    const handleViewRecruiterProfile = () => {
+    if (poster?.id) {
+        navigate(`/user/${poster.id}/profile`); 
+    }
+};
+
   return (
-    <div className="min-h-screen bg-gray-50 px-2 py-4 sm:px-6 md:px-10">
-      <div className="max-w-6xl mx-auto">
-        {/* Highlight */}
-        <HighlightSection
-          job={applicationData.job}
-          company={company}
-          status={applicationData.status}
-          appliedDate={applicationData.appliedDate}
-          onBack={() => navigate(-1)}
-        />
+   <div className="min-h-screen bg-[#F8F9FB] font-sans text-slate-900 pb-12">
+        <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8 animate-fadeIn">
+            
+            {/* --- HEADER (Compact) --- */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
+                <div className="p-6 pb-0">
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                        {/* Left: Back + Title + Meta */}
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                                {/* Back Button Inline with Title */}
+                                <button onClick={() => navigate(-1)} className="group flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors" title="Back">
+                                    <ArrowLeft size={18} className="text-gray-400 group-hover:text-gray-800"/>
+                                </button>
+                                
+                                <h1 className="text-xl font-bold text-gray-900 leading-tight">{applicationData.job?.title}</h1>
+                                <StatusBadge status={applicationData.status} />
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 font-medium ml-11">
+                                <span className="flex items-center gap-1.5"><Building2 size={12} className="text-gray-400"/> {company?.name || "Company"}</span>
+                                <span className="flex items-center gap-1.5"><MapPin size={12} className="text-gray-400"/> {applicationData.job?.location || "Remote"}</span>
+                                <span className="flex items-center gap-1.5"><Clock size={12} className="text-gray-400"/> Applied {new Date(applicationData.appliedDate).toLocaleDateString()}</span>
+                            </div>
+                        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left/Main Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <JobInfoSection
-              job={applicationData.job}
-              company={company}
-              onViewJob={() => navigate(`/jobs/${applicationData.job?.id}`)}
-              onViewCompany={() =>
-                company?.id && navigate(`/company/${company.id}/profile`)
-              }
-            />
-            <ApplicationInfoSection application={applicationData} />
-            <OffersSection
-              offers={offers}
-              onAccept={handleAcceptOffer}
-              onReject={handleRejectOffer}
-              onCounter={handleCounterOffer}
-              canRespond={canRespondToOffer}
-            />
-            <InterviewsSection interviews={interviews} />
-          </div>
-          {/* Right/Sidebar */}
-          <div className="space-y-6">
-            {poster && (
-              <div className="rounded-xl bg-white shadow p-4 flex flex-col gap-4">
-                <div className="flex items-center gap-4">
-                  <img
-                    src={poster.avatarUrl || "/avatar-default.png"}
-                    alt={poster.fullName || poster.username}
-                    className="w-12 h-12 rounded-full object-cover border"
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      {poster.fullName || poster.username}
+                        {/* Right: Actions */}
+                        <Button variant="outline" onClick={() => navigate(`/jobs/${applicationData.job?.id}`)} className="bg-white border-gray-200 text-gray-700 font-bold text-xs h-9 rounded-lg hover:bg-gray-50 shrink-0">
+                            View Job <ExternalLink size={12} className="ml-2"/>
+                        </Button>
                     </div>
-                    <div className="text-sm text-gray-500">{poster.email}</div>
-                  </div>
                 </div>
-                <div className="flex w-full justify-between gap-4">
-                  <MessageButton senderId={user.id} recieverId={poster.id} />
-                  <RecruiterFeedbackDialog
-                    applicationId={applicationId}
-                    recruiterUserId={poster.id}
-                  />
+
+                {/* --- TABS NAVIGATION (Bottom of Header) --- */}
+                <div className="flex items-center gap-8 px-6 mt-6 border-t border-gray-100 bg-white">
+                    <button
+                        onClick={() => setActiveTab('application')}
+                        className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                            activeTab === 'application' 
+                            ? 'border-[#0EA5E9] text-gray-900' 
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <FileText size={16}/> Application
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('hiring')}
+                        className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                            activeTab === 'hiring' 
+                            ? 'border-[#0EA5E9] text-gray-900' 
+                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                    >
+                        <CheckSquare size={16}/> Hiring Process
+                    </button>
                 </div>
-              </div>
-            )}
-            <StatusLogSection statusHistory={statusHistory} />
-          </div>
+            </div>
+
+            <div className="grid grid-cols-12 gap-6 lg:gap-8">
+                {/* --- LEFT COLUMN (Main Content) --- */}
+                <div className="col-span-12 lg:col-span-8 space-y-6">
+                    
+                    {activeTab === 'application' && (
+                        <div className="space-y-6 animate-fadeIn">
+                            {/* Application Data Card */}
+                            <ApplicationInfoSection application={applicationData} />
+                            
+                            {/* Job Info Card */}
+                            <JobInfoSection 
+                                job={applicationData.job} 
+                                company={company} 
+                                onViewJob={() => navigate(`/jobs/${applicationData.job?.id}`)} 
+                                onViewCompany={() => company?.id && navigate(`/company/${company.id}/profile`)}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === 'hiring' && (
+                        <div className="space-y-6 animate-fadeIn">
+                            {/* Offers */}
+                            {offers.length > 0 ? (
+                                <OffersSection 
+                                  offers={offers} 
+                                  onAccept={handleAcceptOffer} 
+                                  onReject={handleRejectOffer} 
+                                  onCounter={handleCounterOffer} 
+                                  canRespond={canRespondToOffer}
+                                />
+                            ) : (
+                                <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+                                    <div className="text-gray-300 mb-2"><CheckSquare size={32} className="mx-auto"/></div>
+                                    <p className="text-sm text-gray-500 italic">No offers received yet.</p>
+                                </div>
+                            )}
+
+                            {/* Interviews */}
+                            {interviews.length > 0 ? (
+                                <InterviewsSection interviews={interviews} />
+                            ) : (
+                                <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+                                    <div className="text-gray-300 mb-2"><MessageSquare size={32} className="mx-auto"/></div>
+                                    <p className="text-sm text-gray-500 italic">No interviews scheduled.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                </div>
+
+                {/* --- RIGHT SIDEBAR --- */}
+                <div className="col-span-12 lg:col-span-4 space-y-6">
+                    
+                    {/* Recruiter Card (Clickable) */}
+                    {poster && (
+                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                            <h3 className="font-bold text-gray-900 mb-4 text-xs uppercase tracking-wide text-gray-400">Recruiter</h3>
+                            <div className="flex items-center gap-3 mb-4 cursor-pointer group" onClick={handleViewRecruiterProfile}>
+                                <Avatar className="h-10 w-10 border border-gray-100">
+                                    <AvatarImage src={poster.avatarUrl} />
+                                    <AvatarFallback className="bg-blue-600 text-white font-bold">{poster.fullName?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="overflow-hidden">
+                                    <div className="font-bold text-gray-900 text-sm truncate group-hover:text-[#0EA5E9]">{poster.fullName || "Recruiter"}</div>
+                                    <div className="text-xs text-gray-500 truncate">{poster.email}</div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <MessageButton senderId={user.id} recieverId={poster.id} />
+                                <RecruiterFeedbackDialog applicationId={applicationId!} recruiterUserId={poster.id} />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Timeline */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                         <h3 className="font-bold text-gray-900 mb-4 text-xs uppercase tracking-wide text-gray-400">Timeline</h3>
+                         <StatusLogSection statusHistory={statusHistory} />
+                    </div>
+
+                </div>
+            </div>
+
+            {/* --- DIALOGS (Giữ nguyên logic) --- */}
+            <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
+                <DialogContent className="max-w-md rounded-xl p-6">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-green-700"><CheckCircle2 className="h-5 w-5"/> Accept Offer</DialogTitle>
+                        <DialogDescription>Confirm acceptance of this offer?</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 mt-4">
+                        <Button variant="outline" onClick={() => setShowAcceptDialog(false)}>Cancel</Button>
+                        <Button onClick={confirmAcceptOffer} className="bg-green-600 hover:bg-green-700 text-white">Confirm</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+                 <DialogContent className="max-w-md rounded-xl p-6">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600"><XCircle className="h-5 w-5"/> Reject Offer</DialogTitle>
+                        <DialogDescription>Decline this offer? This cannot be undone.</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 mt-4">
+                        <Button variant="outline" onClick={() => setShowRejectDialog(false)}>Cancel</Button>
+                        <Button onClick={confirmRejectOffer} variant="destructive">Reject</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showCounterOfferDialog} onOpenChange={setShowCounterOfferDialog}>
+                <DialogContent className="max-w-lg rounded-xl p-0 overflow-hidden">
+                    <DialogHeader className="p-6 border-b border-gray-100 bg-gray-50/50">
+                        <DialogTitle className="text-gray-900">Submit Counter Offer</DialogTitle>
+                        <DialogDescription className="text-gray-500">Propose new terms for this position.</DialogDescription>
+                    </DialogHeader>
+                    <div className="p-6 space-y-5 bg-white">
+                        <div className="grid grid-cols-2 gap-5">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-gray-700 uppercase">Base Salary</Label>
+                                <Input type="number" value={counterOfferBaseSalary} onChange={(e) => setCounterOfferBaseSalary(e.target.value)} className="border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"/>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-gray-700 uppercase">Currency</Label>
+                                <Input value={counterOfferCurrency} onChange={(e) => setCounterOfferCurrency(e.target.value)} className="border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"/>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-gray-700 uppercase">Signing Bonus</Label>
+                            <Input type="number" value={counterOfferSigningBonus} onChange={(e) => setCounterOfferSigningBonus(e.target.value)} className="border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-gray-700 uppercase">Notes / Reasoning</Label>
+                            <Textarea value={counterOfferNotes} onChange={(e) => setCounterOfferNotes(e.target.value)} rows={3} className="border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500" placeholder="Explain your desired compensation..."/>
+                        </div>
+                    </div>
+                    <DialogFooter className="p-6 bg-gray-50 border-t border-gray-100 flex gap-3">
+                        <Button variant="outline" onClick={() => setShowCounterOfferDialog(false)} className="rounded-lg font-bold border-gray-300 text-gray-700">Cancel</Button>
+                        <Button onClick={submitCounterOffer} className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white rounded-lg font-bold shadow-sm">Send Counter Offer</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
-      </div>
-
-      {/* Accept Offer Dialog */}
-      <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
-        <DialogContent className="max-w-md w-full rounded-2xl p-6">
-          <DialogHeader>
-            <DialogTitle>Accept Offer</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to accept this offer?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 pt-4">
-            <Button className="flex-1" onClick={confirmAcceptOffer}>
-              Accept Offer
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowAcceptDialog(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reject Offer Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent className="max-w-md w-full rounded-2xl p-6">
-          <DialogHeader>
-            <DialogTitle>Reject Offer</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to reject this offer?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 pt-4">
-            <Button
-              className="flex-1"
-              variant="destructive"
-              onClick={confirmRejectOffer}
-            >
-              Reject Offer
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowRejectDialog(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Counter Offer Dialog */}
-      <Dialog
-        open={showCounterOfferDialog}
-        onOpenChange={setShowCounterOfferDialog}
-      >
-        <DialogContent className="max-w-md w-full rounded-2xl p-6 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Submit Counter Offer</DialogTitle>
-            <DialogDescription>Propose your preferred terms</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Base Salary *</Label>
-              <Input
-                type="number"
-                placeholder="70000000"
-                value={counterOfferBaseSalary}
-                onChange={(e) => setCounterOfferBaseSalary(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Currency *</Label>
-              <Input
-                value={counterOfferCurrency}
-                onChange={(e) => setCounterOfferCurrency(e.target.value)}
-                placeholder="Currency"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Salary Period</Label>
-              <Input
-                value={counterOfferSalaryPeriod}
-                onChange={(e) =>
-                  setCounterOfferSalaryPeriod(e.target.value as SalaryPeriod)
-                }
-                placeholder="Salary Period"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Signing Bonus</Label>
-              <Input
-                type="number"
-                placeholder="10000000"
-                value={counterOfferSigningBonus}
-                onChange={(e) => setCounterOfferSigningBonus(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                placeholder="I would like to negotiate the salary based on my experience..."
-                value={counterOfferNotes}
-                onChange={(e) => setCounterOfferNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="counter-negotiable"
-                checked={counterOfferIsNegotiable}
-                onChange={(e) => setCounterOfferIsNegotiable(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <Label htmlFor="counter-negotiable">
-                Open to further negotiation
-              </Label>
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={submitCounterOffer}>
-                Submit Counter Offer
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowCounterOfferDialog(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
+    
   );
 }

@@ -1,152 +1,82 @@
-import { Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Application, ApplicationStatusLabel } from "@/api/types/applications.types";
+import { MapPin, Building2, Calendar, ChevronRight, DollarSign } from "lucide-react";
+import { Badge } from "@/components/ui/button"; // Using Button styles for badge-like appearance if needed, or standard div
+import { Application, ApplicationStatus, ApplicationStatusLabel } from "@/api/types/applications.types";
 import { Job } from "@/api/types/jobs.types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ApplicationCard({ application, onView }: { application: Application; onView: () => void }) {
   const job: Job | undefined = application.job ?? undefined;
   const companyName = job?.companyName || "Company";
   const companyLogo = job?.organization?.logoFile?.url || job?.companyLogo || undefined;
-  const descriptionPlain =
-    (job?.description ?? "")
-      .replace(/<[^>]*>/g, "")
-      .replace(/[#*]/g, "")
-      .trim() || "";
-  const salaryLabel =
-    job?.salary ||
-    (job?.salaryDetails &&
-    (job.salaryDetails.minAmount || job.salaryDetails.maxAmount)
-      ? `${
-          job.salaryDetails.minAmount
-            ? `$${job.salaryDetails.minAmount.toLocaleString()}`
-            : ""
-        }${
-          job.salaryDetails.minAmount && job.salaryDetails.maxAmount
-            ? " - "
-            : ""
-        }${
-          job.salaryDetails.maxAmount
-            ? `$${job.salaryDetails.maxAmount.toLocaleString()}`
-            : ""
-        }`
-      : "—");
+  
+  // Helper for status styling to match Simplify Tracker
+  const getStatusColor = (status: ApplicationStatus) => {
+      switch (status) {
+          case ApplicationStatus.OFFER: return "text-green-700 bg-green-50 border-green-200";
+          case ApplicationStatus.REJECTED: return "text-red-700 bg-red-50 border-red-200";
+          case ApplicationStatus.INTERVIEW: return "text-purple-700 bg-purple-50 border-purple-200";
+          default: return "text-gray-700 bg-white border-gray-200";
+      }
+  };
+
+  // Salary Label Logic
+  const salaryLabel = job?.salary || (job?.salaryDetails && (job.salaryDetails.minAmount || job.salaryDetails.maxAmount)
+      ? `${job.salaryDetails.minAmount ? `$${job.salaryDetails.minAmount.toLocaleString()}` : ""}${job.salaryDetails.minAmount && job.salaryDetails.maxAmount ? " - " : ""}${job.salaryDetails.maxAmount ? `$${job.salaryDetails.maxAmount.toLocaleString()}` : ""}`
+      : null);
 
   return (
-    <Card className="border border-gray-200 hover:shadow-md transition-shadow rounded-xl overflow-hidden w-full">
-      <CardContent className="p-4 sm:p-6 w-full min-w-0">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 items-start">
-          {/* Logo */}
-          <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 sm:h-16 sm:w-16 rounded-md bg-gray-100 overflow-hidden">
-            {companyLogo ? (
-              <img
-                src={companyLogo}
-                alt={companyName}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="text-base font-medium text-gray-600">
-                {companyName.charAt(0)}
-              </span>
-            )}
+    <div 
+        onClick={onView}
+        className="group bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+    >
+      {/* Left: Logo & Main Info */}
+      <div className="flex items-center gap-4 overflow-hidden">
+         {/* Logo */}
+         <div className="w-12 h-12 flex-shrink-0 rounded-xl border border-gray-100 bg-white flex items-center justify-center overflow-hidden shadow-sm">
+            <Avatar className="w-full h-full rounded-none">
+                <AvatarImage src={companyLogo} className="object-contain" />
+                <AvatarFallback className="bg-blue-50 text-[#0EA5E9] font-bold text-lg w-full h-full flex items-center justify-center">
+                    {companyName.charAt(0)}
+                </AvatarFallback>
+            </Avatar>
+         </div>
+
+         {/* Info */}
+         <div className="min-w-0">
+             <h3 className="font-bold text-gray-900 text-sm group-hover:text-[#0EA5E9] transition-colors truncate">
+                {job?.title || "Unknown Position"}
+             </h3>
+             <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                 <span className="font-semibold flex items-center gap-1 text-gray-700"><Building2 size={10}/> {companyName}</span>
+                 <span className="text-gray-300">•</span>
+                 <span className="flex items-center gap-1"><MapPin size={10}/> {job?.location || "Remote"}</span>
+             </div>
+         </div>
+      </div>
+
+      {/* Middle: Salary / Metadata (Hidden on small mobile) */}
+      {salaryLabel && (
+          <div className="hidden md:flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 whitespace-nowrap">
+              <DollarSign size={10} strokeWidth={3}/> {salaryLabel}
           </div>
-          {/* Main Info */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between min-w-0">
-              <div className="min-w-0">
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 truncate">
-                  {job?.title}
-                </h3>
-                <p className="text-sm sm:text-base text-gray-700 truncate">
-                  {companyName}
-                </p>
+      )}
+
+      {/* Right: Status & Date */}
+      <div className="flex items-center gap-4 flex-shrink-0">
+          <div className="text-right hidden sm:block">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Applied</div>
+              <div className="text-xs font-bold text-gray-700 flex items-center justify-end gap-1">
+                  {application.appliedDate ? new Date(application.appliedDate).toLocaleDateString() : "N/A"}
               </div>
-              <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                <Badge
-                  variant="outline"
-                  className="capitalize border border-blue-400 bg-blue-50 text-blue-700 text-xs md:text-sm px-2 py-0.5"
-                >
-                  {job?.type}
-                </Badge>
-                <Badge
-                  variant="outline"
-                  className="capitalize border border-gray-300 bg-gray-100 text-gray-700 text-xs md:text-sm px-2 py-0.5"
-                >
-                  {ApplicationStatusLabel[application.status] || application.status}
-                </Badge>
-              </div>
-            </div>
-            {/* Info row */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600 mt-2 mb-1">
-              <div className="flex items-center min-w-0">
-                <span className="mr-1">Location:</span>
-                <span>{job?.location ?? "—"}</span>
-              </div>
-              <div className="flex items-center min-w-0">
-                <span className="mr-1">Salary:</span>
-                <span>{salaryLabel}</span>
-              </div>
-              <div className="flex items-center min-w-0">
-                <span className="mr-1">Applied:</span>
-                <span>
-                  {application.appliedDate
-                    ? new Date(application.appliedDate).toLocaleDateString()
-                    : "—"}
-                </span>
-              </div>
-            </div>
-            {/* Description */}
-            <div className="mb-2">
-              <p className="text-gray-700 text-xs sm:text-sm md:text-base line-clamp-2">
-                {descriptionPlain.substring(0, 150)}
-                {descriptionPlain.length > 150 ? "..." : ""}
-              </p>
-            </div>
-            {/* Keywords */}
-            <div className="flex flex-wrap gap-1 mb-2">
-              {(job?.keywords || []).slice(0, 5).map((kw: string) => (
-                <Badge
-                  key={kw}
-                  variant="outline"
-                  className="text-[11px] border border-gray-300 bg-gray-100 text-gray-700 px-2 py-0.5"
-                >
-                  {kw}
-                </Badge>
-              ))}
-            </div>
-            {/* Notes */}
-            {application.notes && (
-              <div className="mb-2">
-                <p className="text-xs text-gray-500 mb-1">Recruiter Feedback</p>
-                <p className="text-gray-700 bg-gray-50 p-2 rounded-lg text-xs sm:text-sm">
-                  {application.notes}
-                </p>
-              </div>
-            )}
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
-              <div className="flex items-center gap-2 text-xs md:text-sm text-gray-500">
-                <span className="flex items-center">
-                  <Eye className="h-4 w-4 mr-1" />
-                  {job?.applications ?? 0} applicants
-                </span>
-              </div>
-              <div className="flex flex-row gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={onView}
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  View Details
-                </Button>
-              </div>
-            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+
+          {/* Status Pill */}
+          <div className={`px-3 py-1.5 rounded-lg border text-xs font-bold capitalize ${getStatusColor(application.status)} flex items-center justify-center min-w-[80px]`}>
+              {ApplicationStatusLabel[application.status] || application.status}
+          </div>
+          
+          <ChevronRight size={16} className="text-gray-300 group-hover:text-[#0EA5E9] transition-colors"/>
+      </div>
+    </div>
   );
 }

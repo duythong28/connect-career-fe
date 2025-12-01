@@ -30,11 +30,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { AlertTriangle, Flag } from "lucide-react";
+import { AlertTriangle, Flag, ShieldAlert } from "lucide-react";
 
 interface ReportDialogProps {
   entityId: string;
   entityType: ReportEntityType;
+  trigger?: React.ReactNode; // Flexible trigger
   className?: string;
 }
 
@@ -43,10 +44,7 @@ const reasonOptionsMap: Record<
   { value: string; label: string }[]
 > = {
   user: [
-    {
-      value: UserReportReason.INAPPROPRIATE_BEHAVIOR,
-      label: "Inappropriate Behavior",
-    },
+    { value: UserReportReason.INAPPROPRIATE_BEHAVIOR, label: "Inappropriate Behavior" },
     { value: UserReportReason.SPAM, label: "Spam" },
     { value: UserReportReason.FAKE_ACCOUNT, label: "Fake Account" },
     { value: UserReportReason.HARASSMENT, label: "Harassment" },
@@ -57,23 +55,14 @@ const reasonOptionsMap: Record<
   organization: [
     { value: OrganizationReportReason.FAKE_COMPANY, label: "Fake Company" },
     { value: OrganizationReportReason.SCAM, label: "Scam" },
-    {
-      value: OrganizationReportReason.INAPPROPRIATE_CONTENT,
-      label: "Inappropriate Content",
-    },
-    {
-      value: OrganizationReportReason.MISLEADING_INFO,
-      label: "Misleading Info",
-    },
+    { value: OrganizationReportReason.INAPPROPRIATE_CONTENT, label: "Inappropriate Content" },
+    { value: OrganizationReportReason.MISLEADING_INFO, label: "Misleading Info" },
     { value: OrganizationReportReason.OTHER, label: "Other" },
   ],
   job: [
     { value: JobReportReason.FAKE_JOB, label: "Fake Job" },
     { value: JobReportReason.SCAM, label: "Scam" },
-    {
-      value: JobReportReason.MISLEADING_DESCRIPTION,
-      label: "Misleading Description",
-    },
+    { value: JobReportReason.MISLEADING_DESCRIPTION, label: "Misleading Description" },
     { value: JobReportReason.DISCRIMINATORY, label: "Discriminatory" },
     { value: JobReportReason.DUPLICATE, label: "Duplicate" },
     { value: JobReportReason.EXPIRED, label: "Expired" },
@@ -84,35 +73,24 @@ const reasonOptionsMap: Record<
     { value: RefundReportReason.MISLEADING_INFO, label: "Misleading Info" },
     { value: RefundReportReason.WRONG_AMOUNT, label: "Wrong Amount" },
     { value: RefundReportReason.WRONG_CURRENCY, label: "Wrong Currency" },
-    {
-      value: RefundReportReason.WRONG_PAYMENT_METHOD,
-      label: "Wrong Payment Method",
-    },
-    {
-      value: RefundReportReason.WRONG_PAYMENT_STATUS,
-      label: "Wrong Payment Status",
-    },
-    {
-      value: RefundReportReason.WRONG_PAYMENT_DATE,
-      label: "Wrong Payment Date",
-    },
-    {
-      value: RefundReportReason.WRONG_PAYMENT_TIME,
-      label: "Wrong Payment Time",
-    },
+    { value: RefundReportReason.WRONG_PAYMENT_METHOD, label: "Wrong Payment Method" },
+    { value: RefundReportReason.WRONG_PAYMENT_STATUS, label: "Wrong Payment Status" },
+    { value: RefundReportReason.WRONG_PAYMENT_DATE, label: "Wrong Payment Date" },
+    { value: RefundReportReason.WRONG_PAYMENT_TIME, label: "Wrong Payment Time" },
     { value: RefundReportReason.OTHER, label: "Other" },
   ],
 };
 
 const priorityOptions = [
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
+  { value: "low", label: "Low Priority", color: "bg-gray-500" },
+  { value: "medium", label: "Medium Priority", color: "bg-yellow-500" },
+  { value: "high", label: "High Priority", color: "bg-red-500" },
 ];
 
 const ReportDialog = ({
   entityId,
   entityType,
+  trigger,
   className,
 }: ReportDialogProps) => {
   const [open, setOpen] = useState(false);
@@ -127,18 +105,24 @@ const ReportDialog = ({
       return createCandidateReport(data);
     },
     onSuccess: () => {
-      toast({ title: "Report submitted successfully" });
+      toast({ title: "Report submitted", description: "We will review your report shortly." });
       setOpen(false);
       setReason("");
       setDescription("");
+      setSubject("");
     },
     onError: () => {
       toast({ title: "Failed to submit report", variant: "destructive" });
     },
   });
+
   const handleSubmit = () => {
     if (!reason || !subject || !description) {
-      toast({ title: "Please fill in all fields", variant: "destructive" });
+      toast({
+        title: "Missing Information",
+        description: "Please provide a reason, subject, and description.",
+        variant: "destructive",
+      });
       return;
     }
     createReportMutation.mutate({
@@ -154,27 +138,40 @@ const ReportDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={className}
-          title="Report"
-        >
-          <Flag className="h-5 w-5" />
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={className}
+            title={`Report ${entityType}`}
+          >
+            <Flag className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors" />
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
+      
+      <DialogContent className="max-w-md bg-white rounded-xl shadow-2xl p-0 gap-0 overflow-hidden">
+        {/* Header */}
+        <DialogHeader className="p-6 border-b border-gray-100 bg-white">
+          <DialogTitle className="flex items-center gap-3 text-lg font-bold text-gray-900">
+            <div className="p-2 bg-red-50 text-red-500 rounded-lg">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
             Report {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
           </DialogTitle>
+          <p className="text-xs text-gray-500 mt-1 ml-11">
+            Help us maintain a safe community. Your report is anonymous.
+          </p>
         </DialogHeader>
-        <div className="space-y-4">
+
+        {/* Body */}
+        <div className="p-6 space-y-5">
           <div>
-            <Label>Reason</Label>
+            <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Reason <span className="text-red-500">*</span></Label>
             <Select value={reason} onValueChange={setReason}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
               <SelectContent>
@@ -186,51 +183,66 @@ const ReportDialog = ({
               </SelectContent>
             </Select>
           </div>
+
           <div>
-            <Label>Subject</Label>
+            <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Subject <span className="text-red-500">*</span></Label>
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="Short summary (e.g. Fake job posting detected)"
+              placeholder="Brief summary of the issue..."
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
+
           <div>
-            <Label>Description</Label>
+            <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Description <span className="text-red-500">*</span></Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Please provide details about your report..."
-              rows={5}
+              placeholder="Please provide specific details..."
+              rows={4}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
+
           <div>
-            <Label>Priority</Label>
+            <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Priority</Label>
             <Select
               value={priority}
               onValueChange={(v) => setPriority(v as "low" | "medium" | "high")}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 <SelectValue placeholder="Select priority" />
               </SelectTrigger>
               <SelectContent>
                 {priorityOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${option.color}`}></div>
+                        {option.label}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+
+        {/* Footer */}
+        <DialogFooter className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setOpen(false)}
+            className="px-5 py-2 border border-gray-200 rounded-lg text-gray-600 font-bold text-sm hover:bg-white h-auto"
+          >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={createReportMutation.isPending}
+            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-sm shadow-sm h-auto transition-colors"
           >
-            Submit Report
+            {createReportMutation.isPending ? "Submitting..." : "Submit Report"}
           </Button>
         </DialogFooter>
       </DialogContent>
