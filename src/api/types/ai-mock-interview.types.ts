@@ -1,9 +1,6 @@
 import { MockInterviewConfig } from "@/components/candidate/ai-mock-interview/types";
 import axios from "../client";
 import axiosInstance from "../client";
-
-
-
 export interface ExtractFocusAreasRequest {
     userPrompt: string;
     jobDescription: string;
@@ -69,53 +66,146 @@ export interface CreateAIMockInterviewResponse {
     description: string;
 }
 
-export interface GetInterviewersResponse {
-  success: boolean;
-  data: AIInterviewer[];
+export interface InterviewResponse { 
+    id: string; 
+    callId: string;
+    sessionId: string;
+    email: string; 
+    name: string; 
+    createdAt: string; 
+    isEnded: boolean; 
+    isAnalysed: boolean;
+    candidateStatus?: string;
+    tabSwitchCount?: number;
+    analytics?: InterviewAnalytics;
 }
 
-export const aiMockInterviewAPI = {
-    extractFocusAreas: async (
-        data: ExtractFocusAreasRequest
-    ): Promise<ExtractFocusAreasResponse> => {
-        const response = await axios.post('/candidates/mock-ai-interview/questions/specific-areas', data);
-        return response.data;
-    },
-
-    generateQuestions: async (
-        config: MockInterviewConfig
-    ): Promise<GenerateQuestionsResponse> => {
-        const response = await axios.post('/candidates/mock-ai-interview/questions/generate', config);
-        return response.data;
-    },
-
-
-
-    createAIMockInterview: async (
-        config: MockInterviewConfig,
-        questions: InterviewQuestion[]
-    ): Promise<CreateAIMockInterviewResponse> => {
-        const response = await axios.post('/candidates/mock-ai-interview', {
-            ...config,
-            questions
-        });
-        return response.data;
-    },
-
-    endAIMockInterview: async (interviewId: string) => {
-        const response = await axios.post(`/candidates/mock-ai-interview/${interviewId}/end`);
-        return response.data;
-    },
-
-    getAIMockInterviewResults: async (interviewId: string) => {
-        const response = await axios.get(`/candidates/mock-ai-interview/${interviewId}/results`);
-        return response.data;
-    }
+export interface InterviewAnalytics {
+    overallScore?: number;
+    overallFeedback?: string;
+    scores?: Record<string, number>;
+    strengths?: string[];
+    weaknesses?: string[];
+    feedback?: string;
+    transcript?: string;
+    communication?: {
+        score: number;
+        feedback: string;
+    };
+    questionSummaries?: Array<{
+        question: string;
+        summary: string;
+    }>;
 }
 
+export interface CallData {
+    transcript?: string;
+    recording_url?: string;
+    call_analysis?: {
+        user_sentiment?: string;
+        call_summary?: string;
+        call_completion_rating_reason?: string;
+    };
+}
+
+export interface RegisterCallRequest {
+    interviewerId: string;  
+    sessionId: string;      
+    email: string;
+    name: string;
+    dynamicData?: Record<string, any>;
+}
+
+export interface RegisterCallResponse {
+    success: boolean;
+    data: {
+      callId: string;
+      accessToken: string;
+      responseId: string;
+    };
+}
+
+export interface InterviewAnalytics {
+    overallScore?: number;
+    overallFeedback?: string;
+    scores?: Record<string, number>;
+    dimensionScores?: Record<string, number>;
+    strengths?: string[];
+    weaknesses?: string[];
+    recommendations?: string[];
+    feedback?: Array<{
+      type?: string;
+      content: string;
+      priority?: string;
+      dimension?: string;
+    }> | string;
+    transcript?: string;
+    duration?: number;
+    criteria?: Record<string, string[]>;
+    evidence?: Record<string, string[]>;
+    questionAnswers?: Array<{
+      question: string;
+      answer: string;
+    }>;
+    communicationAnalysis?: Record<string, any>;
+    learningTags?: string[];
+}
+export interface GetCallResponse {
+    success: boolean;
+    data: {
+      response: InterviewResponse & {
+        session?: {
+          id: string;
+          status: string;
+          // ... other session fields
+        };
+        duration?: number;
+        transcript?: string;
+      };
+      analytics?: InterviewAnalytics & {
+        dimensionScores?: Record<string, number>;
+        recommendations?: string[];
+        feedback?: Array<{
+          type: string;
+          content: string;
+          priority?: string;
+          dimension?: string;
+        }>;
+      };
+    };
+}export interface GenerateInsightsRequest {
+    sessionId: string;
+}
+
+export interface GenerateInsightsResponse {
+    success: boolean;
+    data: {
+      overallTrends?: string;
+      commonStrengths?: string[];
+      commonWeaknesses?: string[];
+      recommendations?: string[];
+      keyLearnings?: string[];
+    };
+}
+
+export interface SubmitFeedbackRequest {
+    satisfaction: number;
+    feedback: string;
+    email: string;
+    sessionId: string;
+}
+
+export interface PaginatedAIMockInterviewsResponse {
+    data: AIMockInterviewConfiguration[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }
+  
+  export interface GetMyAIMockInterviewsParams {
+    page?: number;
+    limit?: number;
+  }
+  
 const API_MOCK_INTERVIEW_URL = "/candidates/mock-ai-interview";
-
-export const getInterviewers = async (): Promise<GetInterviewersResponse> => {
-  const response = await axiosInstance.get(`${API_MOCK_INTERVIEW_URL}/interviewers`);
-  return response.data;
-};

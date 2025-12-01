@@ -21,3 +21,10 @@ export const DEFAULT_CONFIG: MockInterviewConfig = {
   realtimeScoring: false,
   questionTypes: ['behavioral', 'specific-skills']
 };
+
+export interface InterviewResponse {
+  id: string;
+  callId: string;
+  name: string; 
+  
+}

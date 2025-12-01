@@ -6,8 +6,9 @@ import Step3ReviewSettings from './steps/Step3ReviewSettings';
 import Step4PreferencesAndReview from './steps/Step4PreferencesAndReview';
 import ProgressSteps from './ProgressSteps';
 import { MockInterviewConfig, DEFAULT_CONFIG } from './types';
-import { aiMockInterviewAPI, InterviewQuestion } from '@/api/types/ai-mock-interview.types';
+import { InterviewQuestion } from '@/api/types/ai-mock-interview.types';
 import { useNavigate } from 'react-router-dom';
+import { aiMockInterviewAPI } from '@/api/endpoints/ai-mock-interview.api';
 
 const MockInterviewCreator = () => {
   const [step, setStep] = useState(1);
@@ -50,13 +51,19 @@ const MockInterviewCreator = () => {
 
       console.log('Interview created successfully:', response);
 
-      navigate(`/mock-interview/${response.mockInterviewSession.id}`, {
-        state: {
-          interviewId: response.mockInterviewSession.id,
-          questions: response.questions,
-          config: response.mockInterviewSession.configuration,
-        },
-      });
+      // Use sessionId from response to navigate to start interview page
+      if (response.sessionId) {
+        navigate(`/candidate/ai-mock-interview/${response.sessionId}`, {
+          state: {
+            sessionId: response.sessionId,
+            callId: response.callId,
+            questions: generatedQuestions,
+            config: config,
+          },
+        });
+      } else {
+        throw new Error('Session ID not found in response');
+      }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to create mock interview. Please try again.';

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Check, Sparkles, Loader, AlertCircle, Zap } from 'lucide-react';
 import { MockInterviewConfig } from '../types';
 import { } from '@/api/endpoints/ai-mock-interview.api';
-import { InterviewQuestion, aiMockInterviewAPI } from '@/api/types/ai-mock-interview.types';
+import { InterviewQuestion } from '@/api/types/ai-mock-interview.types';
+import { aiMockInterviewAPI } from '@/api/endpoints/ai-mock-interview.api';
 
 interface Step3ReviewSettingsProps {
   config: MockInterviewConfig;

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Sparkles, Loader, AlertCircle, Volume2, Users } from 'lucide-react';
 import { MockInterviewConfig } from '../types';
+import { AIInterviewer } from '@/api/types/ai-mock-interview.types';
 import { aiMockInterviewAPI } from '@/api/endpoints/ai-mock-interview.api';
-import { AIInterviewer, getInterviewers } from '@/api/types/ai-mock-interview.types';
 import { VITE_BACKEND_PUBLIC_URL } from '@/constants/constants';
 
 interface Step2FinetuneSettingsProps {
@@ -67,8 +67,8 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
       try {
         setLoadingInterviewers(true);
         setInterviewerError(null);
-        const response = await getInterviewers();
-        setInterviewers(response.data);
+        const response = await aiMockInterviewAPI.getAllInterviewers();
+        setInterviewers(response as AIInterviewer[]);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Failed to load interviewers';
