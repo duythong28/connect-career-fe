@@ -6,11 +6,14 @@ import { AdminRoutes } from "./AdminRoutes";
 import ProtectedRoute from "./ProtectedRoute";
 import { CandidateProfilePage } from "@/pages/public/CandidateProfilePage";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
+import SimplifyPage from "@/pages/public/SimplifyPage";
 
 export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/*" element={<PublicRoutes />} />
+      <Route path="simpify" element={<SimplifyPage />} />
+
       <Route
         path="/candidate/profile/:candidateId"
         element={<CandidateProfilePage />}

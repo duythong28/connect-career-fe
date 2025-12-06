@@ -1,163 +1,131 @@
 import axios from "../client/axios";
-
 import {
-  GenerateJobDto,
-  GenerateJobResponse,
-  Job,
-  JobFilters,
-  JobsResponse,
-  SavedJobsResponse,
-} from "../types/jobs.types";
+  BackOfficeUserStats,
+  BackOfficeDashboardStats,
+  BackOfficePaginatedResponse,
+  UpdateOrganizationStatusDto,
+  UpdateJobStatusDto,
+  UserDetailsResponse,
+  BackOfficeOrganizationsPaginatedResponse,
+  BackOfficeOrganizationWithStats,
+  BackOfficeJobsPaginatedResponse,
+} from "../types/back-office.types";
+import { Job, JobStatus } from "../types/jobs.types";
+import { UserResponse, UserStatus } from "../types/users.types";
 
-const API_CANDIDATE_JOB_URL = "/candidates/jobs";
-
-const API_URL = "/jobs";
-
-const API_RECRUITER_JOB_URL = "/recruiters/jobs";
-
-const API_AI_JOB_URL = "/ai";
-
-function cleanParams(filters?: JobFilters) {
-  if (!filters) return {};
-
-  const params: Record<string, any> = { ...filters };
-
-  Object.keys(params).forEach((k) => {
-    const v = params[k];
-    if (
-      v === undefined ||
-      v === null ||
-      (typeof v === "string" && v.trim() === "") ||
-      (Array.isArray(v) && v.length === 0)
-    ) {
-      delete params[k];
-    }
-  });
-
-  return params;
-}
-
-const getCandidateJobs = async (
-  filters?: JobFilters
-): Promise<JobsResponse> => {
-  const params = cleanParams(filters);
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}`, { params });
-  return response.data;
-};
-
-const getCandidateJobStats = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/stats`);
-  return response.data;
-};
-
-const getCandidateJobLatest = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/latest`);
-  return response.data;
-};
-
-const getFeaturedJobs = async () => {
-  const response = await axios.get(`${API_URL}/featured`);
-  return response.data;
-};
-
-const getCandidateJobsByLocation = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/location`);
-  return response.data;
-};
-
-const getCandidateJobsByKeyword = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/keyword`);
-  return response.data;
-};
-
-const getCandidateJobSearchByKeyword = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/search/keyword`);
-  return response.data;
-};
-
-const getCandidateJobsByOrganization = async ({
-  id,
-  limit,
-  page,
-}: {
-  id: string;
-  limit: number;
-  page: number;
-}): Promise<Job[]> => {
+// Users
+const getAllUsers = async (
+  page = 1,
+  pageSize = 10,
+  search = ""
+): Promise<BackOfficePaginatedResponse<UserResponse>> => {
   const response = await axios.get(
-    `${API_CANDIDATE_JOB_URL}/organizations/${id}`,
-    {
-      params: { limit, page },
-    }
+    `users/back-office?page=${page}&pageSize=${pageSize}&search=${search}`
   );
   return response.data;
 };
 
-const getCandidateSimilarJobs = async (id: string) => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/${id}/similar`);
-  return response.data;
-};
-
-const getCandidateJobById = async (id: string) => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/${id}`);
-  return response.data;
-};
-
-const increaseApplyCount = async (id: string) => {
-  const response = await axios.post(`${API_CANDIDATE_JOB_URL}/${id}/apply`);
-  return response.data;
-};
-
-const saveCandidateJobById = async (id: string) => {
-  const response = await axios.post(`${API_CANDIDATE_JOB_URL}/saved`, {
-    jobId: id,
-    notes: "",
-    folderName: "saved_jobs",
+const updateUserStatus = async (
+  userId: string,
+  status: UserStatus
+): Promise<UserResponse> => {
+  const response = await axios.put(`back-office/users/${userId}/status`, {
+    status,
   });
   return response.data;
 };
 
-const getCandidateSavedJobs = async ({
-  limit,
-  page,
-}): Promise<SavedJobsResponse> => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/saved`, {
-    params: { folder: "saved_jobs", limit, page },
-  });
+const getAllUserStats = async (): Promise<BackOfficeUserStats> => {
+  const response = await axios.get(`users/back-office/stats`);
   return response.data;
 };
 
-const getCandidateSavedJobById = async (id: string) => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/${id}/is-saved`);
+const getApplicationStats = async () => {
+  const response = await axios.get(`candidates/applications/stats`);
   return response.data;
 };
 
-const deleteCandidateSavedJobById = async (id: string) => {
-  const response = await axios.delete(`${API_CANDIDATE_JOB_URL}/saved/${id}`);
+const getUserDetails = async (userId: string): Promise<UserDetailsResponse> => {
+  const response = await axios.get(`back-office/users/${userId}/details`);
   return response.data;
 };
 
-const createRecruiterJob = async (data) => {
-  const response = await axios.post(`${API_RECRUITER_JOB_URL}`, data);
-  return response.data;
-};
-
-const generateJobDescription = async (
-  data: GenerateJobDto
-): Promise<GenerateJobResponse> => {
-  const response = await axios.post(
-    `${API_AI_JOB_URL}/job-description/generate`,
-    {
-      ...data,
-      tone: "professional",
-    }
+// Organizations
+const getAllOrganizations = async (
+  page = 1,
+  pageSize = 10,
+  search = ""
+): Promise<BackOfficeOrganizationsPaginatedResponse> => {
+  const response = await axios.get(
+    `back-office/organizations?page=${page}&pageSize=${pageSize}&&search=${search}`
   );
   return response.data;
 };
 
-const getAllUsers = async () => {
-  const response = await axios.get(`users/back-office?page=1&pageSize=10`);
+const getOrganizationDetails = async (
+  organizationId: string
+): Promise<BackOfficeOrganizationWithStats> => {
+  const response = await axios.get(
+    `back-office/organizations/${organizationId}`
+  );
   return response.data;
 };
 
-export { getAllUsers };
+const updateOrganizationStatus = async (
+  organizationId: string,
+  dto: UpdateOrganizationStatusDto
+): Promise<BackOfficeOrganizationWithStats> => {
+  const response = await axios.put(
+    `back-office/organizations/${organizationId}/status`,
+    dto
+  );
+  return response.data;
+};
+
+// Jobs
+const getAllJobs = async (
+  page = 1,
+  pageSize = 10
+): Promise<BackOfficeJobsPaginatedResponse> => {
+  const response = await axios.get(
+    `back-office/jobs?page=${page}&pageSize=${pageSize}`
+  );
+  return response.data;
+};
+
+const getJobDetails = async (jobId: string): Promise<Job> => {
+  const response = await axios.get(`back-office/jobs/${jobId}`);
+  return response.data;
+};
+
+const updateJobStatus = async (
+  jobId: string,
+  dto: {
+    status: JobStatus;
+  }
+): Promise<Job> => {
+  const response = await axios.put(`back-office/jobs/${jobId}/status`, dto);
+  return response.data;
+};
+
+// Dashboard
+const getBackOfficeDashboardStats =
+  async (): Promise<BackOfficeDashboardStats> => {
+    const response = await axios.get(`back-office/stats`);
+    return response.data;
+  };
+
+export {
+  getAllUsers,
+  updateUserStatus,
+  getAllUserStats,
+  getApplicationStats,
+  getUserDetails,
+  getAllOrganizations,
+  getOrganizationDetails,
+  updateOrganizationStatus,
+  getAllJobs,
+  getJobDetails,
+  updateJobStatus,
+  getBackOfficeDashboardStats,
+};

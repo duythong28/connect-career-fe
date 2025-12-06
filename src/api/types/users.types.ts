@@ -5,6 +5,8 @@ export interface updateUserInfoDto {
   avatarUrl?: string;
 }
 
+export type UserStatus = "active" | "inactive";
+
 export interface UserResponse {
   id: string;
   email: string;
@@ -15,7 +17,7 @@ export interface UserResponse {
   fullName: string | null;
   avatarUrl: string | null;
   phoneNumber: string | null;
-  status: "active" | "inactive" | string;
+  status: UserStatus;
   authProvider: string;
   primaryAuthProvider: string;
   emailVerified: boolean;
@@ -33,6 +35,7 @@ export interface UserResponse {
   avatar: string | null;
   createdAt: string;
   updatedAt: string;
+  roles?: string[];
 }
 
 export interface MatchingDetails {

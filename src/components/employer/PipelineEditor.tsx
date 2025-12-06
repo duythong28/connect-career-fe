@@ -25,7 +25,7 @@ import {
   PipelineTransition,
 } from "@/api/types/pipelines.types";
 import { useQuery } from "@tanstack/react-query";
-import { getRoles } from "@/api/endpoints/organization-roles.api";
+import { getOrganizationRoles } from "@/api/endpoints/organizations-rbac.api";
 
 interface PipelineEditorProps {
   pipeline: Pipeline | null;
@@ -88,7 +88,7 @@ export function PipelineEditor({
   const { data: roles } = useQuery({
     queryKey: ["dummy-query"],
     queryFn: async () => {
-      return getRoles(organizationId);
+      return getOrganizationRoles(organizationId);
     },
     enabled: !!organizationId,
   });
