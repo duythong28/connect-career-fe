@@ -139,7 +139,7 @@ export interface CandidateProfile {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-  interviewFeedbacks?: MyInterviewFeedback[];
+  userFeedbacks?: UserFeedbacks;
 }
 
 export interface MyInterviewFeedback {
@@ -181,4 +181,38 @@ export interface CandidatesResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface RecruiterFeedbackSummary {
+  id: string;
+  candidateId: string;
+  candidate: {
+    id: string;
+    fullName: string | null;
+    email: string;
+  };
+  applicationId: string;
+  interviewId: string | null;
+  feedbackType:
+    | "application_process"
+    | "interview_experience"
+    | "communication"
+    | "general";
+  rating: number;
+  feedback: string;
+  isPositive: boolean;
+  createdAt: string;
+}
+
+export interface UserFeedbacks {
+  receivedAsCandidate: {
+    interviewFeedbacks: MyInterviewFeedback[];
+  };
+  givenAsRecruiter: {
+    recruiterFeedbacks: RecruiterFeedbackSummary[];
+  };
+  totals: {
+    receivedAsCandidate: number;
+    givenAsRecruiter: number;
+  };
 }
