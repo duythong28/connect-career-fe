@@ -14,6 +14,7 @@ import JobDetail from "@/pages/employer/JobDetail";
 import PipelineTemplates from "@/pages/employer/PipelineTemplates";
 import ApplicationDetail from "@/pages/employer/ApplicationDetail";
 import MessagePage from "@/pages/shared/MessagePage";
+import OrganizationMembersPage from "@/pages/employer/OrganizationMembersPage";
 
 export const EmployerRoutes = () => {
   return (
@@ -26,6 +27,7 @@ export const EmployerRoutes = () => {
       <Route path="pipeline" element={<PipelineTemplates />} />
       <Route path="candidates" element={<CandidateSearchPage />} />
       <Route path="interviews" element={<EmployerInterviewsPage />} />
+      <Route path="members" element={<OrganizationMembersPage />} />
       <Route path="messages" element={<MessagePage />} />
       <Route path="chatbot" element={<ChatbotPage />} />
       <Route path="analytics" element={<EmployerAnalyticsPage />} />

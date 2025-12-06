@@ -16,6 +16,9 @@ import AIMockInterviewsPage from "@/pages/candidate/AIMockInterviewsPage";
 import StartAIMockInterviewPage from "@/pages/candidate/StartAIMockInterviewPage";
 import CallDetailPage from "@/pages/candidate/CallDetailPage";
 import InterviewDetailPage from "@/components/candidate/ai-mock-interview/interview-details/InterviewDetailPage";
+import MyReportsPage from "@/pages/shared/MyReportsPage";
+import OrganizationJoinPage from "@/pages/public/OrganizationJoinPage";
+import UserWalletPage from "@/pages/shared/UserWalletPage";
 
 export const CandidateRoutes = () => {
   return (
@@ -32,6 +35,7 @@ export const CandidateRoutes = () => {
       <Route path="messages" element={<MessagePage />} />
       <Route path="chatbot" element={<ChatbotPage />} />
       <Route path="settings" element={<SubscriptionPage />} />
+      <Route path="my-reports" element={<MyReportsPage />} />
       <Route path="resume-improvement" element={<CvImprovenentPage />} />
       <Route path="create-organization" element={<CompanyProfilePage />} />
       
@@ -41,6 +45,8 @@ export const CandidateRoutes = () => {
       <Route path="ai-mock-interview/:interviewId/results" element={<InterviewDetailPage />} />
       <Route path="ai-mock-interview/:interviewId/call/:callId" element={<CallDetailPage />} />
       
+      <Route path="join-organization" element={<OrganizationJoinPage />} />
+      <Route path="wallet" element={<UserWalletPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

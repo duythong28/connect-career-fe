@@ -70,6 +70,7 @@ export interface Job {
   user: JobUser;
   userId: string;
   views: number;
+  savedByUserIds?: string[];
 }
 
 export interface JobsResponse {

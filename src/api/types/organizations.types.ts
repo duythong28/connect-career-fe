@@ -68,6 +68,29 @@ export interface OrganizationBase {
   metadata?: Record<string, any> | null;
 }
 
+export interface OrganizationReview {
+  id: string;
+  organizationId: string;
+  candidateId: string;
+  applicationId: string | null;
+  overallRating: number;
+  summary: string;
+  overtimePolicySatisfaction: string;
+  overtimePolicyReason: string;
+  whatMakesYouLoveWorkingHere: string;
+  suggestionForImprovement: string;
+  ratingDetails: {
+    cultureFun: number;
+    salaryBenefits: number;
+    managementCares: number;
+    officeWorkspace: number;
+    trainingLearning: number;
+  };
+  wouldRecommend: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Organization extends OrganizationBase {
   id: string;
   userId: string;
@@ -153,6 +176,7 @@ export interface Organization extends OrganizationBase {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  reviews?: OrganizationReview[];
 }
 
 export interface OrganizationLocation {
