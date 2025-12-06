@@ -7,10 +7,15 @@ import CandidateApplicationsPage from "@/pages/candidate/CandidateApplicationsPa
 import CandidateInterviewsPage from "@/pages/candidate/CandidateInterviewsPage";
 import NotFound from "@/pages/shared/NotFound";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
+import MockInterviewCreator from "@/components/candidate/ai-mock-interview";
 import MessagePage from "@/pages/shared/MessagePage";
 import CandidateApplicationDetailPage from "@/pages/candidate/CandidateApplicationDetailPage";
 import CvImprovenentPage from "@/pages/candidate/CVImprovementPage";
 import Cv2 from "@/pages/candidate/Cv2";
+import AIMockInterviewsPage from "@/pages/candidate/AIMockInterviewsPage";
+import StartAIMockInterviewPage from "@/pages/candidate/StartAIMockInterviewPage";
+import CallDetailPage from "@/pages/candidate/CallDetailPage";
+import InterviewDetailPage from "@/components/candidate/ai-mock-interview/interview-details/InterviewDetailPage";
 import MyReportsPage from "@/pages/shared/MyReportsPage";
 import OrganizationJoinPage from "@/pages/public/OrganizationJoinPage";
 import UserWalletPage from "@/pages/shared/UserWalletPage";
@@ -33,6 +38,13 @@ export const CandidateRoutes = () => {
       <Route path="my-reports" element={<MyReportsPage />} />
       <Route path="resume-improvement" element={<CvImprovenentPage />} />
       <Route path="create-organization" element={<CompanyProfilePage />} />
+      
+      <Route path="ai-mock-interview" element={<AIMockInterviewsPage />} />
+      <Route path="ai-mock-interview/create" element={<MockInterviewCreator />} />
+      <Route path="ai-mock-interview/:interviewId" element={<StartAIMockInterviewPage />} />
+      <Route path="ai-mock-interview/:interviewId/results" element={<InterviewDetailPage />} />
+      <Route path="ai-mock-interview/:interviewId/call/:callId" element={<CallDetailPage />} />
+      
       <Route path="join-organization" element={<OrganizationJoinPage />} />
       <Route path="wallet" element={<UserWalletPage />} />
       <Route path="*" element={<NotFound />} />
