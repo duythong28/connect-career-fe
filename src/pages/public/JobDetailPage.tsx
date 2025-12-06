@@ -33,6 +33,7 @@ import {
   JobTypeLabel,
 } from "@/api/types/jobs.types";
 import { toast } from "@/hooks/use-toast";
+import ReportDialog from "@/components/reports/ReportDialog";
 
 const JobDetailPage = () => {
   const { user } = useAuth();
@@ -162,6 +163,10 @@ const JobDetailPage = () => {
                     <Button variant="outline" size="sm" onClick={handleShare}>
                       <Share className="h-4 w-4" />
                     </Button>
+                    <ReportDialog
+                      entityId={jobData.id}
+                      entityType={"job"}
+                    />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 mt-4">

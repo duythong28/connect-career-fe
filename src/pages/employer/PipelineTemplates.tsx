@@ -14,6 +14,7 @@ import {
   createPipeline,
   deletePipeline,
   getActivePipelines,
+  updatePipeline,
 } from "@/api/endpoints/pipelines.api";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -42,21 +43,60 @@ export default function PipelineTemplates() {
     },
   });
 
+  const {mutate: updatePipelineMutate} = useMutation({
+    mutationFn: (data: {id: string, updateData: Partial<PipelineCreateDto>}) => {
+      const {id, updateData} = data;
+      return updatePipeline(id, updateData);
+    }
+  });
+
   const [editingPipeline, setEditingPipeline] = useState<Pipeline | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-
-  const handleSavePipeline = (pipeline: Pipeline) => {
-    console.log("Saved Pipeline:", pipeline);
-    // if (isCreating) {
-    //   setPipelines([...pipelines, { ...pipeline, id: Date.now().toString() }]);
-    //   toast.success("Pipeline created successfully");
-    // } else {
-    //   setPipelines(pipelines.map((p) => (p.id === pipeline.id ? pipeline : p)));
-    //   toast.success("Pipeline updated successfully");
-    // }
-    // setEditingPipeline(null);
-    // setIsCreating(false);
-  };
+const handleSavePipeline = (pipeline: Pipeline) => {
+  if (isCreating) {
+    createPipelineMutate(
+      {
+        ...pipeline,
+        organizationId: companyId,
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["active-pipelines", companyId],
+          });
+          toast.success("Pipeline created successfully");
+          setEditingPipeline(null);
+          setIsCreating(false);
+        },
+        onError: () => {
+          toast.error("Failed to create pipeline");
+        },
+      }
+    );
+  } else {
+    updatePipelineMutate(
+      {
+        id: pipeline.id,
+        updateData: {
+          ...pipeline,
+        },
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["active-pipelines", companyId],
+          });
+          toast.success("Pipeline updated successfully");
+          setEditingPipeline(null);
+          setIsCreating(false);
+        },
+        onError: () => {
+          toast.error("Failed to update pipeline");
+        },
+      }
+    );
+  }
+};
 
   const handleDelete = (id: string) => {
     deletePipelineMutate(id, {

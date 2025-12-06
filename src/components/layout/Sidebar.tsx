@@ -18,6 +18,8 @@ import {
   DollarSign,
   CreditCard,
   TrendingUp,
+  Flag,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
@@ -61,6 +63,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       url: ROUTES.CANDIDATE.RESUME_IMPROVEMENT,
       icon: Brain,
     },
+    { title: "My Wallet", url: "/candidate/wallet", icon: Wallet },
+    { title: "My Reports", url: ROUTES.CANDIDATE.MY_REPORTS, icon: Flag },
   ];
 
   const getCompanyMenuItems = (id: string): MenuItem[] => [
@@ -100,6 +104,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       icon: Calendar,
     },
     {
+      title: "Members",
+      url: `/company/${id}${ROUTES.COMPANY.MEMBERS}`,
+      icon: Users,
+    },
+    {
       title: "Messages",
       url: `/company/${id}${ROUTES.COMPANY.MESSAGES}`,
       icon: MessageCircle,
@@ -109,13 +118,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
   const getAdminMenuItems = (): MenuItem[] => [
     { title: "Dashboard", url: ROUTES.ADMIN.DASHBOARD, icon: Home },
     { title: "User Management", url: ROUTES.ADMIN.USERS, icon: Users },
-    { title: "Content Management", url: ROUTES.ADMIN.CONTENT, icon: FileText },
-    { title: "Job Approvals", url: ROUTES.ADMIN.JOBS, icon: CheckCircle },
     {
       title: "Company Management",
       url: ROUTES.ADMIN.COMPANIES,
       icon: Building2,
     },
+    { title: "Content Management", url: ROUTES.ADMIN.CONTENT, icon: FileText },
+    { title: "Job Management", url: ROUTES.ADMIN.JOBS, icon: CheckCircle },
+
     {
       title: "Reports & Violations",
       url: ROUTES.ADMIN.REPORTS,
@@ -126,8 +136,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       url: ROUTES.ADMIN.REVENUE,
       icon: DollarSign,
     },
-    { title: "Refunds", url: ROUTES.ADMIN.REFUNDS, icon: CreditCard },
+    // { title: "Refunds", url: ROUTES.ADMIN.REFUNDS, icon: CreditCard },
     { title: "Analytics", url: ROUTES.ADMIN.ANALYTICS, icon: TrendingUp },
+    { title: "Wallet Management", url: "/admin/wallets", icon: Wallet }, // Add this line
+    { title: "Refund Management", url: "/admin/refunds", icon: CreditCard }, // Add this line
   ];
 
   const getMenuItems = (): MenuItem[] => {
@@ -136,7 +148,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     if (
       currentPath.startsWith("/company/") &&
       companyId &&
-      myOrganizations?.some((org) => String(org.id) === String(companyId))
+      myOrganizations?.some(
+        (org) => String(org.organization.id) === String(companyId)
+      )
     ) {
       return getCompanyMenuItems(companyId);
     }
@@ -154,7 +168,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
   const isMyCompanyPage =
     currentPath.startsWith("/company") &&
     companyId &&
-    myOrganizations?.some((org) => String(org.id) === String(companyId));
+    myOrganizations?.some(
+      (org) => String(org.organization.id) === String(companyId)
+    );
+
   const menuTitle = getMenuTitle(isMyCompanyPage);
 
   if (!user) return null;
@@ -211,7 +228,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
               className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
                 ${
                   currentPath.startsWith("/candidate") &&
-                  currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION
+                  currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION &&
+                  currentPath !== ROUTES.CANDIDATE.JOIN_ORGANIZATION
                     ? "bg-blue-50 text-blue-700 border border-blue-200"
                     : "text-gray-700 hover:text-primary hover:bg-gray-100"
                 }
@@ -233,21 +251,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
               <User className="mr-3 h-4 w-4" />
               Create Organization
             </Link>
+            <Link
+              to={ROUTES.CANDIDATE.JOIN_ORGANIZATION}
+              className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
+                  ${
+                    currentPath.startsWith(ROUTES.CANDIDATE.JOIN_ORGANIZATION)
+                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      : "text-gray-700 hover:text-primary hover:bg-gray-100"
+                  }
+                `}
+            >
+              <User className="mr-3 h-4 w-4" />
+              Join Organization
+            </Link>
             {myOrganizations &&
               myOrganizations.map((org) => (
                 <Link
-                  key={org.id}
-                  to={`/company/${org.id}/dashboard`}
+                  key={org.organization.id}
+                  to={`/company/${org.organization.id}/dashboard`}
                   className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                    ${
-                      currentPath.startsWith(`/company/${org.id}`)
-                        ? "bg-green-50 text-green-700 border border-green-200"
-                        : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                    }
-                  `}
+          ${
+            currentPath.startsWith(`/company/${org.organization.id}`)
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "text-gray-700 hover:text-primary hover:bg-gray-100"
+          }
+        `}
                 >
                   <Building2 className="mr-3 h-4 w-4" />
-                  {org.name} View
+                  {org.organization.name} View
                 </Link>
               ))}
           </div>
@@ -310,7 +341,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
                 className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
                   ${
                     currentPath.startsWith("/candidate") &&
-                    currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION
+                    currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION &&
+                    currentPath !== ROUTES.CANDIDATE.JOIN_ORGANIZATION
                       ? "bg-blue-50 text-blue-700 border border-blue-200"
                       : "text-gray-700 hover:text-primary hover:bg-gray-100"
                   }
@@ -335,23 +367,37 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
                 Create Organization
               </Link>
             </SheetClose>
+            <SheetClose asChild>
+              <Link
+                to={ROUTES.CANDIDATE.JOIN_ORGANIZATION}
+                className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
+                  ${
+                    currentPath.startsWith(ROUTES.CANDIDATE.JOIN_ORGANIZATION)
+                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      : "text-gray-700 hover:text-primary hover:bg-gray-100"
+                  }
+                `}
+              >
+                <User className="mr-3 h-4 w-4" />
+                Join Organization
+              </Link>
+            </SheetClose>
             {myOrganizations &&
               myOrganizations.map((org) => (
-                <SheetClose asChild key={org.id}>
-                  <Link
-                    to={`/company/${org.id}/dashboard`}
-                    className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                      ${
-                        currentPath.startsWith(`/company/${org.id}`)
-                          ? "bg-green-50 text-green-700 border border-green-200"
-                          : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                      }
-                    `}
-                  >
-                    <Building2 className="mr-3 h-4 w-4" />
-                    {org.name} View
-                  </Link>
-                </SheetClose>
+                <Link
+                  key={org.organization.id}
+                  to={`/company/${org.organization.id}/dashboard`}
+                  className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
+          ${
+            currentPath.startsWith(`/company/${org.organization.id}`)
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "text-gray-700 hover:text-primary hover:bg-gray-100"
+          }
+        `}
+                >
+                  <Building2 className="mr-3 h-4 w-4" />
+                  {org.organization.name} View
+                </Link>
               ))}
           </div>
         </div>

@@ -2,7 +2,6 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
@@ -28,21 +27,19 @@ const DEFAULT_PARAMS: GetMyApplicationsParams = {
   sortOrder: "DESC",
 };
 
-// --- EmptyStateCard Component ---
+// --- EmptyStateCard Component (Restyled) ---
 function EmptyStateCard({ onBrowse }: { onBrowse: () => void }) {
   return (
-    <Card>
-      <CardContent className="p-12 text-center">
-        <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          No applications yet
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Start applying to jobs to see them here
-        </p>
-        <Button onClick={onBrowse}>Browse Jobs</Button>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center py-16 bg-white border border-gray-200 rounded-xl text-center shadow-sm">
+      <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+        <FileText className="h-6 w-6 text-gray-400" />
+      </div>
+      <h3 className="text-sm font-bold text-gray-900 mb-1">No applications yet</h3>
+      <p className="text-xs text-gray-500 mb-6">
+        Start applying to jobs to see them here.
+      </p>
+      <Button onClick={onBrowse} className="bg-[#0EA5E9] hover:bg-[#0284c7] font-bold text-xs">Browse Jobs</Button>
+    </div>
   );
 }
 
@@ -82,47 +79,23 @@ const CandidateApplicationsPage = () => {
   }, [error]);
 
   // --- UI ---
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <p className="text-gray-700">
-            You must be signed in to view applications.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (!user) return null;
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <p>Loading applications...</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-4 sm:px-8 sm:py-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Highlight area */}
-        <div
-          className="w-full rounded-xl mb-4 px-4 py-4 sm:px-6 sm:py-6 md:px-10 md:py-8 bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg text-white flex flex-col gap-3 md:flex-row md:items-center md:justify-between relative"
-          style={{ minHeight: "90px" }}
-        >
-          <div>
-            <h1 className="text-xl font-bold mb-1 sm:text-2xl md:text-4xl md:mb-2 leading-tight">
-              My Applications
-            </h1>
-            <p className="text-sm sm:text-base md:text-lg opacity-90">
-              Track your job applications and their status
-            </p>
-          </div>
+    <div className="min-h-screen bg-[#F8F9FB] px-4 py-8 font-sans">
+      <div className="max-w-[1200px] mx-auto">
+        
+        {/* Clean Header */}
+        <div className="mb-6">
+           <h1 className="text-2xl font-bold text-gray-900">My Applications</h1>
+           <p className="text-sm text-gray-500 mt-1">Track and manage your job applications.</p>
         </div>
 
-        {/* Filter bar */}
+        {/* Filter Bar */}
         <div className="mb-6">
           <FilterBar
             params={params}
@@ -137,7 +110,8 @@ const CandidateApplicationsPage = () => {
           />
         </div>
 
-        <div className="grid gap-4 sm:gap-6">
+        {/* Application List */}
+        <div className="space-y-3">
           {applications.length > 0 ? (
             applications.map((application) => (
               <ApplicationCard
@@ -152,9 +126,10 @@ const CandidateApplicationsPage = () => {
             <EmptyStateCard onBrowse={() => navigate("/jobs")} />
           )}
         </div>
-        {/* Pagination: always show if at least 1 page, never if 0 */}
-        {applicationsResponse && (
-          <div className="pt-6">
+
+        {/* Pagination */}
+        {applicationsResponse && (applicationsResponse.total > 0) && (
+          <div className="pt-6 pb-10">
             <SmartPagination
               page={currentPage}
               totalPages={totalPages}

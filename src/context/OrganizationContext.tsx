@@ -6,12 +6,12 @@ import {
   useContext,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getMyOrganizations } from "@/api/endpoints/organizations.api";
-import { Organization } from "@/api/types/organizations.types";
+import { OrganizationMembership } from "@/api/types/organizations-rbac.types";
 import { useAuth } from "@/hooks/useAuth";
+import { getMyOrganizations } from "@/api/endpoints/organizations-rbac.api";
 
 interface OrganizationContextType {
-  myOrganizations: Organization[] | null;
+  myOrganizations: OrganizationMembership[] | null;
 }
 
 export const OrganizationContext = createContext<
@@ -19,7 +19,7 @@ export const OrganizationContext = createContext<
 >(undefined);
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
-  const [myOrganizations, setMyOrganizations] = useState<Organization[] | null>(
+  const [myOrganizations, setMyOrganizations] = useState<OrganizationMembership[] | null>(
     null
   );
   const { user } = useAuth();
@@ -32,15 +32,11 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false,
   });
 
-  const handleSetUser = (organizationsData: Organization[] | null) => {
-    setMyOrganizations(organizationsData);
-  };
-
   useEffect(() => {
     if (organizationsData) {
-      handleSetUser(organizationsData);
+      setMyOrganizations(organizationsData);
     } else if (error) {
-      handleSetUser(null);
+      setMyOrganizations(null);
     }
   }, [organizationsData, error]);
 
@@ -58,7 +54,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 export function useOrganization() {
   const context = useContext(OrganizationContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useOrganization must be used within an OrganizationProvider");
   }
   return context;
 }
