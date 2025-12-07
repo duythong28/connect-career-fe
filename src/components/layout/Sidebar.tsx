@@ -20,6 +20,8 @@ import {
   TrendingUp,
   Flag,
   Wallet,
+  Sparkles,
+  Mic
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
@@ -65,6 +67,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     },
     { title: "My Wallet", url: "/candidate/wallet", icon: Wallet },
     { title: "My Reports", url: ROUTES.CANDIDATE.MY_REPORTS, icon: Flag },
+    {
+      title: "AI Assistant",  
+      url: ROUTES.CANDIDATE.AI_AGENT_CHATBOT,
+      icon: Sparkles,
+    },
+    {
+      title: "AI Mock Interview", // Add this
+      url: ROUTES.CANDIDATE.AI_MOCK_INTERVIEW,
+      icon: Mic,
+    }
   ];
 
   const getCompanyMenuItems = (id: string): MenuItem[] => [
@@ -112,6 +124,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       title: "Messages",
       url: `/company/${id}${ROUTES.COMPANY.MESSAGES}`,
       icon: MessageCircle,
+    },
+    {
+      title: "AI Assistant",
+      url: `/company/${id}${ROUTES.COMPANY.CHATBOT}`,
+      icon: Sparkles,
     },
   ];
 
