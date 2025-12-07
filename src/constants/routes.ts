@@ -17,6 +17,8 @@ export const ROUTES = {
     MESSAGES: "/candidate/messages",
     CHATBOT: "/candidate/chatbot",
     SETTINGS: "/candidate/settings",
+    AI_MOCK_INTERVIEW: "/candidate/ai-mock-interview",
+    AI_AGENT_CHATBOT: "/candidate/chatbot",
     CREATE_ORGANIZATION: "/candidate/create-organization",
     JOIN_ORGANIZATION: "/candidate/join-organization",
     RESUME_IMPROVEMENT: "/candidate/resume-improvement",

@@ -1,6 +1,5 @@
 import { Routes, Route } from "react-router-dom";
 import SavedJobsPage from "@/pages/candidate/SavedJobsPage";
-import ChatbotPage from "@/pages/shared/ChatbotPage";
 import SubscriptionPage from "@/pages/shared/SubscriptionPage";
 import { CandidateDashboard } from "@/components/candidate/CandidateDashboard";
 import CandidateApplicationsPage from "@/pages/candidate/CandidateApplicationsPage";
@@ -19,6 +18,7 @@ import InterviewDetailPage from "@/components/candidate/ai-mock-interview/interv
 import MyReportsPage from "@/pages/shared/MyReportsPage";
 import OrganizationJoinPage from "@/pages/public/OrganizationJoinPage";
 import UserWalletPage from "@/pages/shared/UserWalletPage";
+import AIAgentChatPageV2 from "@/pages/shared/AIAgentChatbotPageV2";
 
 export const CandidateRoutes = () => {
   return (
@@ -33,7 +33,7 @@ export const CandidateRoutes = () => {
       <Route path="interviews" element={<CandidateInterviewsPage />} />
       <Route path="saved" element={<SavedJobsPage />} />
       <Route path="messages" element={<MessagePage />} />
-      <Route path="chatbot" element={<ChatbotPage />} />
+      <Route path="chatbot" element={<AIAgentChatPageV2 />} />
       <Route path="settings" element={<SubscriptionPage />} />
       <Route path="my-reports" element={<MyReportsPage />} />
       <Route path="resume-improvement" element={<CvImprovenentPage />} />

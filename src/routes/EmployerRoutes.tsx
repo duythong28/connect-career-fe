@@ -5,7 +5,6 @@ import CandidateSearchPage from "@/pages/employer/CandidateSearchPage";
 import EmployerInterviewsPage from "@/pages/employer/EmployerInterviewsPage";
 import EmployerAnalyticsPage from "@/pages/employer/EmployerAnalyticsPage";
 import RecruiterProfilePage from "@/pages/employer/RecruiterProfilePage";
-import ChatbotPage from "@/pages/shared/ChatbotPage";
 import SubscriptionPage from "@/pages/shared/SubscriptionPage";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
 import { EmployerDashboard } from "@/components/employer/EmployerDashboard";
@@ -15,7 +14,7 @@ import PipelineTemplates from "@/pages/employer/PipelineTemplates";
 import ApplicationDetail from "@/pages/employer/ApplicationDetail";
 import MessagePage from "@/pages/shared/MessagePage";
 import OrganizationMembersPage from "@/pages/employer/OrganizationMembersPage";
-
+import AIAgentChatPage from "@/pages/shared/AIAgentChatbotPage";
 export const EmployerRoutes = () => {
   return (
     <Routes>
@@ -29,7 +28,7 @@ export const EmployerRoutes = () => {
       <Route path="interviews" element={<EmployerInterviewsPage />} />
       <Route path="members" element={<OrganizationMembersPage />} />
       <Route path="messages" element={<MessagePage />} />
-      <Route path="chatbot" element={<ChatbotPage />} />
+      <Route path="chatbot" element={<AIAgentChatPage />} />
       <Route path="analytics" element={<EmployerAnalyticsPage />} />
       <Route path="profile" element={<RecruiterProfilePage />} />
       <Route path="settings" element={<SubscriptionPage />} />
