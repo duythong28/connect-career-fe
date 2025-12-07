@@ -26,6 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     gcTime: Infinity,
   });
 
+  if (user && Array.isArray(user?.roles) && user.roles.length > 0) {
+    user.role = "admin";
+  }
+
   const value = {
     user: user || null,
     isLoading: hasAccessToken ? isLoading : false,

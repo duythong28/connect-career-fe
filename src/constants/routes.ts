@@ -48,9 +48,7 @@ export const ROUTES = {
     JOBS: "/admin/jobs",
     COMPANIES: "/admin/companies",
     REPORTS: "/admin/reports",
-    REVENUE: "/admin/revenue",
     REFUNDS: "/admin/refunds",
-    ANALYTICS: "/admin/analytics",
   },
 
   NOT_FOUND: "*",
