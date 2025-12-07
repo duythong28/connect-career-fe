@@ -21,7 +21,7 @@ import {
   Flag,
   Wallet,
   Sparkles,
-  Mic
+  Mic,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
@@ -68,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     { title: "My Wallet", url: "/candidate/wallet", icon: Wallet },
     { title: "My Reports", url: ROUTES.CANDIDATE.MY_REPORTS, icon: Flag },
     {
-      title: "AI Assistant",  
+      title: "AI Assistant",
       url: ROUTES.CANDIDATE.AI_AGENT_CHATBOT,
       icon: Sparkles,
     },
@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       title: "AI Mock Interview", // Add this
       url: ROUTES.CANDIDATE.AI_MOCK_INTERVIEW,
       icon: Mic,
-    }
+    },
   ];
 
   const getCompanyMenuItems = (id: string): MenuItem[] => [
@@ -140,7 +140,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       url: ROUTES.ADMIN.COMPANIES,
       icon: Building2,
     },
-    { title: "Content Management", url: ROUTES.ADMIN.CONTENT, icon: FileText },
     { title: "Job Management", url: ROUTES.ADMIN.JOBS, icon: CheckCircle },
 
     {
@@ -148,15 +147,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       url: ROUTES.ADMIN.REPORTS,
       icon: AlertTriangle,
     },
-    {
-      title: "Revenue Management",
-      url: ROUTES.ADMIN.REVENUE,
-      icon: DollarSign,
-    },
-    // { title: "Refunds", url: ROUTES.ADMIN.REFUNDS, icon: CreditCard },
-    { title: "Analytics", url: ROUTES.ADMIN.ANALYTICS, icon: TrendingUp },
-    { title: "Wallet Management", url: "/admin/wallets", icon: Wallet }, // Add this line
-    { title: "Refund Management", url: "/admin/refunds", icon: CreditCard }, // Add this line
+    { title: "Wallet Management", url: "/admin/wallets", icon: Wallet },
+    { title: "Refund Management", url: "/admin/refunds", icon: CreditCard },
   ];
 
   const getMenuItems = (): MenuItem[] => {
