@@ -1,38 +1,44 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Eye,
-  Heart,
-  MapPin,
-  Users,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Heart, Search, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getCandidateSavedJobs,
   deleteCandidateSavedJobById,
 } from "@/api/endpoints/jobs.api";
-import { Job, SavedJob, SavedJobsResponse } from "@/api/types/jobs.types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import ApplyJobDialog from "@/components/candidate/applications/ApplyJobDialog";
+import { SavedJob, SavedJobsResponse } from "@/api/types/jobs.types";
+import JobCard from "@/components/jobs/JobCard";
+import { SmartPagination } from "@/components/shared/SmartPagination";
+
+const PAGE_SIZE = 20;
+
+// Component button theo style Simplify
+const SimplifyButton = ({ children, className = '', ...props }: React.ComponentPropsWithoutRef<'button'>) => (
+    <button
+        className={`bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold py-2.5 rounded-lg shadow-sm transition-colors ${className}`}
+        {...props}
+    >
+        {children}
+    </button>
+);
+
 
 const SavedJobsPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [page, setPage] = React.useState(1);
 
   const {
     data: savedJobsData,
     isLoading,
     error,
   } = useQuery<SavedJobsResponse, Error>({
-    queryKey: ["savedJobs"],
-    queryFn: () => getCandidateSavedJobs({ limit: 20, page: 1 }),
+    queryKey: ["savedJobs", page],
+    queryFn: () => getCandidateSavedJobs({ limit: PAGE_SIZE, page }),
+    staleTime: 1000 * 30,
+    refetchOnWindowFocus: false,
   });
 
   React.useEffect(() => {
@@ -48,6 +54,7 @@ const SavedJobsPage = () => {
   const deleteSavedJobMutation = useMutation({
     mutationFn: (id: string) => deleteCandidateSavedJobById(id),
     onSuccess: () => {
+      // GIỮ NGUYÊN LOGIC CŨ
       queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
       toast({
         title: "Job removed",
@@ -62,18 +69,20 @@ const SavedJobsPage = () => {
       }),
   });
 
+  // HÀM XỬ LÝ SỰ KIỆN CŨ
   const handleUnsave = (id: string) => {
     if (!id) return;
     deleteSavedJobMutation.mutate(id);
   };
-  console.log("savedJobsData:", savedJobsData);
+
   const savedJobs = savedJobsData?.data || [];
+  const totalPages = savedJobsData?.totalPages || 1;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-[#F8F9FB] px-2 sm:px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <p>Loading saved jobs...</p>
+          <p className="text-gray-500">Loading saved jobs...</p>
         </div>
       </div>
     );
@@ -81,187 +90,70 @@ const SavedJobsPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-[#F8F9FB] px-2 sm:px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <p className="text-red-600">Failed to load saved jobs.</p>
+          <p className="text-red-600 font-bold">Failed to load saved jobs.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#F8F9FB] px-2 sm:px-4 py-8 font-sans">
+      <div className="max-w-[1400px] mx-auto">
+        
+        {/* Header (UI Simplify, Logic Cũ) */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Saved Jobs</h1>
-          <p className="text-gray-600 mt-2">Jobs you've bookmarked for later</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Saved Jobs</h1>
+            <p className="text-gray-500 text-sm">Jobs you've bookmarked for later</p>
         </div>
 
-        <div className="grid gap-6">
+        <div className="space-y-4">
           {savedJobs.length > 0 ? (
-            savedJobs.map((saved: SavedJob) => {
-              const job = saved.job;
-              const isApplied = false;
-              const isSaved = true;
-
-              const descriptionPlain =
-                job.description
-                  ?.replace(/<[^>]*>/g, "")
-                  .replace(/[#*]/g, "")
-                  .trim() ?? "";
-
-              const salaryLabel =
-                job.salary ||
-                (job.salaryDetails &&
-                (job.salaryDetails.minAmount || job.salaryDetails.maxAmount)
-                  ? `${
-                      job.salaryDetails.minAmount
-                        ? `$${job.salaryDetails.minAmount.toLocaleString()}`
-                        : ""
-                    }${
-                      job.salaryDetails.minAmount && job.salaryDetails.maxAmount
-                        ? " - "
-                        : ""
-                    }${
-                      job.salaryDetails.maxAmount
-                        ? `$${job.salaryDetails.maxAmount.toLocaleString()}`
-                        : ""
-                    }`
-                  : "—");
-
-              return (
-                <Card
+            <>
+              {savedJobs.map((saved: SavedJob) => (
+                <JobCard
                   key={saved.id}
-                  className="hover:shadow-md transition-shadow"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
-                        <Avatar className="h-16 w-16">
-                          <AvatarImage src={job.companyLogo} />
-                          <AvatarFallback>
-                            {job?.companyName?.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                                {job.title}
-                              </h3>
-                              <p className="text-lg text-gray-700 mb-2">
-                                {job.companyName}
-                              </p>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleUnsave(saved.id)}
-                                disabled={deleteSavedJobMutation.isPending}
-                              >
-                                <Heart
-                                  className={`h-4 w-4 ${
-                                    isSaved ? "fill-red-500 text-red-500" : ""
-                                  }`}
-                                />
-                              </Button>
-                              <Badge variant="secondary" className="capitalize">
-                                {job.type}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div className="flex items-center text-gray-600">
-                              <MapPin className="h-4 w-4 mr-2" />
-                              {job.location}
-                            </div>
-                            <div className="flex items-center text-gray-600">
-                              <DollarSign className="h-4 w-4 mr-2" />
-                              {salaryLabel}
-                            </div>
-                            <div className="flex items-center text-gray-600">
-                              <Clock className="h-4 w-4 mr-2" />
-                              {job.postedDate
-                                ? new Date(job.postedDate).toLocaleDateString()
-                                : "—"}
-                            </div>
-                          </div>
-
-                          <div className="mb-4">
-                            <p className="text-gray-700 line-clamp-2">
-                              {descriptionPlain.substring(0, 150)}
-                              {descriptionPlain.length > 150 ? "..." : ""}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 mb-4">
-                            {(job.keywords || []).slice(0, 5).map((keyword) => (
-                              <Badge
-                                key={keyword}
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {keyword}
-                              </Badge>
-                            ))}
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <span className="flex items-center">
-                                <Eye className="h-4 w-4 mr-1" />
-                                {job.views ?? 0} views
-                              </span>
-                              <span className="flex items-center">
-                                <Users className="h-4 w-4 mr-1" />
-                                {job.applications ?? 0} applicants
-                              </span>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="outline"
-                                onClick={() => navigate(`/jobs/${job.id}`)}
-                              >
-                                View Details
-                              </Button>
-                              <ApplyJobDialog jobId={job.id ?? ""} />
-
-                              {isApplied && (
-                                <Button disabled variant="secondary">
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Applied
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                  job={saved.job}
+                  isApplied={false} 
+                  isSaved={true}
+                  onSave={() => handleUnsave(saved.id)} // GIỮ NGUYÊN LOGIC CŨ
+                  onView={() => navigate(`/jobs/${saved.job.id}`)} // GIỮ NGUYÊN LOGIC CŨ
+                  onApply={() => {}}
+                />
+              ))}
+              {/* Phân trang (Logic cũ) */}
+              <div className="pt-6 flex justify-center">
+                <SmartPagination
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              </div>
+            </>
           ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
+            // Nội dung khi không có job (UI: Simplify, Logic cũ)
+            <Card className="rounded-xl border border-gray-200 shadow-sm">
+              <CardContent className="p-12 text-center bg-white">
                 <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
                   No saved jobs
                 </h3>
-                <p className="text-gray-600 mb-4">
-                  Save jobs you're interested in to access them quickly later
+                <p className="text-gray-600 mb-6 text-sm">
+                  Save jobs you're interested in to access them quickly later.
                 </p>
-                <Button onClick={() => navigate("/jobs")}>Browse Jobs</Button>
+                <SimplifyButton onClick={() => navigate("/jobs")}>
+                    Browse Jobs
+                </SimplifyButton>
               </CardContent>
             </Card>
           )}
         </div>
       </div>
+       {/* Floating Feedback Button (UI: Simplify) */}
+        <button className="fixed bottom-6 right-6 bg-[#0EA5E9] text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg hover:bg-[#0284c7] flex items-center gap-2 z-50">
+            <MessageSquare size={16}/> Feedback
+        </button>
     </div>
   );
 };

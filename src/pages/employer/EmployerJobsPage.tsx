@@ -1,152 +1,291 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Briefcase, Edit, Trash2, Plus, BarChart3 } from "lucide-react";
-import { JobEditDialog } from "@/components/admin/JobEditDialog";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
+import { Input } from "@/components/ui/input";
+import {
+  Plus,
+  Search,
+  Users,
+  MoreHorizontal,
+  Edit,
+  Clock,
+  DollarSign,
+  ArrowRight,
+  Building,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Job } from "@/lib/types";
-import { mockJobs } from "@/lib/mock-data";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getCandidateJobsByOrganization,
+  updateRecruiterJob,
+} from "@/api/endpoints/jobs.api";
+import { JobStatus } from "@/api/types/jobs.types";
+import { toast } from "@/hooks/use-toast";
 
-const EmployerJobsPage = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
-  const employerJobs = jobs.filter((job) => job.company === user?.company);
-
-  const handleSaveJob = (updatedJob: Job) => {
-    const updatedJobs = jobs.map((j) =>
-      j.id === updatedJob.id ? updatedJob : j
-    );
-    setJobs(updatedJobs);
-    setEditingJob(null);
-    toast({
-      title: "Job updated",
-      description: "Job information has been updated successfully.",
+// --- 1. HOOKS & LOGIC (Senior Practice: Custom Hook for Mutations) ---
+const useJobMutations = (companyId: string | undefined) => {
+  const queryClient = useQueryClient();
+  const invalidate = () =>
+    queryClient.invalidateQueries({
+      queryKey: ["organization-jobs", companyId],
     });
+
+  const publishJobMutation = useMutation({
+    mutationFn: (jobId: string) =>
+      updateRecruiterJob(jobId, { status: JobStatus.ACTIVE }),
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Job published!", description: "The job is now live." });
+    },
+  });
+
+  const closeJobMutation = useMutation({
+    mutationFn: (jobId: string) =>
+      updateRecruiterJob(jobId, { status: JobStatus.CLOSED }),
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Job closed!", description: "The job has been closed." });
+    },
+  });
+
+  return { publishJobMutation, closeJobMutation };
+};
+
+// --- 2. SUB-COMPONENTS (Senior Practice: Modularizing Complex JSX) ---
+const JobCardActions = ({
+  job,
+  navigate,
+  publishJobMutation,
+  closeJobMutation,
+}) => {
+  const getStatusBadge = (status: Job["status"]) => {
+    switch (status) {
+      case "active":
+        return (
+          <Badge className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs px-2 py-0.5">
+            Active
+          </Badge>
+        );
+      case "draft":
+        return (
+          <Badge className="bg-gray-200 text-gray-600 font-medium text-xs px-2 py-0.5 border border-gray-300">
+            Draft
+          </Badge>
+        );
+      case "closed":
+        return (
+          <Badge className="bg-red-100 text-red-600 font-medium text-xs px-2 py-0.5 border border-red-200">
+            Closed
+          </Badge>
+        );
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Jobs</h1>
-            <p className="text-gray-600 mt-2">Manage your job postings</p>
+    <Card
+      key={job.id}
+      className="border border-gray-200 hover:border-blue-400 transition-colors p-4 bg-white shadow-sm"
+    >
+      <CardHeader className="p-0 mb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-1">
+              <CardTitle
+                className="text-base font-bold text-gray-900 cursor-pointer hover:text-[#0EA5E9]"
+                onClick={() => navigate(`${job.id}`)}
+              >
+                {job.title}
+              </CardTitle>
+              {getStatusBadge(job.status)}
+            </div>
+            <CardDescription className="text-xs text-gray-500 flex items-center gap-2">
+              <span className="flex items-center gap-1">
+                <Building className="h-3 w-3" />
+                {job.location}
+              </span>
+              <span className="text-gray-300">•</span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {job.type}
+              </span>
+            </CardDescription>
           </div>
-          <Button onClick={() => navigate("/employer/post-job")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Post New Job
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="bg-white border border-gray-200 rounded-lg p-1 text-sm"
+            >
+              <DropdownMenuItem
+                onClick={() => navigate(`${job.id}/edit-job`)}
+                className="flex items-center px-2 py-1.5 text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md"
+              >
+                <Edit className="h-3 w-3 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              {job.status === JobStatus.DRAFT && (
+                <DropdownMenuItem
+                  onClick={() => publishJobMutation.mutate(job.id)}
+                  disabled={publishJobMutation.isPending}
+                  className="flex items-center px-2 py-1.5 text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md"
+                >
+                  <span className="flex items-center text-green-600 font-bold">
+                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2" />
+                    Publish
+                  </span>
+                </DropdownMenuItem>
+              )}
+              {job.status === JobStatus.ACTIVE && (
+                <DropdownMenuItem
+                  onClick={() => closeJobMutation.mutate(job.id)}
+                  disabled={closeJobMutation.isPending}
+                  className="flex items-center px-2 py-1.5 text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md"
+                >
+                  <span className="flex items-center text-red-600 font-bold">
+                    <span className="h-2 w-2 rounded-full bg-red-500 mr-2" />
+                    Close Job
+                  </span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="flex items-center justify-between text-xs text-gray-600">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3 w-3 text-[#0EA5E9]" />
+              <span className="font-bold text-gray-900">
+                {job.applications}
+              </span>
+              applications
+            </div>
+            <div className="flex items-center gap-1.5">
+              <DollarSign className="h-3 w-3 text-emerald-500" />
+              <span className="font-bold">{job.salary}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3 w-3 text-gray-400" />
+              <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <Button
+            onClick={() => navigate(`${job.id}`)}
+            className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold h-8 px-3 rounded-lg text-xs flex items-center gap-1 shadow-sm transition-colors"
+          >
+            View Pipeline <ArrowRight className="w-3 h-3" />
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  );
+};
 
-        <div className="grid gap-6">
-          {employerJobs.map((job) => (
-            <Card key={job.id}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-3">
-                      <div>
-                        <h3 className="text-xl font-semibold">{job.title}</h3>
-                        <p className="text-gray-600">{job.location}</p>
-                      </div>
-                    </div>
+// --- 3. MAIN COMPONENT ---
+const EmployerJobsPage = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const { companyId } = useParams();
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Applications</p>
-                        <p className="font-medium">{job.applications}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Posted</p>
-                        <p className="font-medium">{job.postedDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Status</p>
-                        <Badge
-                          variant={
-                            job.status === "active" ? "default" : "secondary"
-                          }
-                        >
-                          {job.status}
-                        </Badge>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Salary</p>
-                        <p className="font-medium">{job.salary}</p>
-                      </div>
-                    </div>
+  const { data: organizationJobsData, isLoading } = useQuery({
+    queryKey: ["organization-jobs", companyId],
+    queryFn: () =>
+      getCandidateJobsByOrganization({ id: companyId, limit: 20, page: 1 }),
+    enabled: !!companyId,
+  });
 
-                    <p className="text-gray-700">
-                      {job.description.substring(0, 200)}...
-                    </p>
-                  </div>
+  const { publishJobMutation, closeJobMutation } = useJobMutations(companyId);
 
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingJob(job)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <BarChart3 className="h-4 w-4 mr-1" />
-                      Analytics
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        const updatedJobs = jobs.filter((j) => j.id !== job.id);
-                        setJobs(updatedJobs);
-                        toast({
-                          title: "Job deleted",
-                          description:
-                            "Job posting has been successfully deleted.",
-                        });
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+  const filteredJobs =
+    organizationJobsData?.filter((job) =>
+      job.title.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
-          {employerJobs.length === 0 && (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No job postings yet
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Create your first job posting to start hiring
-                </p>
-                <Button onClick={() => navigate("/employer/post-job")}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Post Your First Job
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+  return (
+    <div className="max-w-[1400px] mx-auto py-6 px-4 md:px-6 lg:px-8 space-y-6 font-sans bg-gray-50 min-h-screen">
+      <div className="flex items-start justify-between border-b border-gray-200 pb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Jobs Management</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            View and manage all your job postings (
+            {organizationJobsData?.length || 0})
+          </p>
+        </div>
+        <Button
+          onClick={() => navigate(`/company/${companyId}/post-job`)}
+          className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold py-2.5 px-4 rounded-lg text-sm shadow-sm transition-colors"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Job
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+        <div className="relative flex-1 max-w-lg">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search jobs by title or keyword..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-10 text-sm border-gray-300 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 rounded-lg"
+          />
         </div>
       </div>
 
-      <JobEditDialog
-        job={editingJob as any}
-        open={!!editingJob}
-        onOpenChange={(open) => !open && setEditingJob(null)}
-        onSave={handleSaveJob as any}
-      />
+      <div className="grid gap-3">
+        {isLoading ? (
+          <div className="text-center py-10 text-gray-500">Loading jobs...</div>
+        ) : filteredJobs.length === 0 && organizationJobsData?.length === 0 ? (
+          <div className="text-center py-10 border border-gray-200 rounded-xl bg-white shadow-sm">
+            <h3 className="text-lg font-bold text-gray-900">
+              No Jobs Posted Yet
+            </h3>
+            <p className="text-gray-500 mt-2">
+              Start your hiring process by creating your first job posting.
+            </p>
+          </div>
+        ) : filteredJobs.length === 0 &&
+          organizationJobsData &&
+          organizationJobsData.length > 0 ? (
+          <div className="text-center py-10 text-gray-500">
+            No results found for "{searchQuery}".
+          </div>
+        ) : (
+          filteredJobs.map((job) => (
+            <JobCardActions
+              key={job.id}
+              job={job}
+              navigate={navigate}
+              publishJobMutation={publishJobMutation}
+              closeJobMutation={closeJobMutation}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 };

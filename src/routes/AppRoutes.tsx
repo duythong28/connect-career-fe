@@ -4,25 +4,38 @@ import { CandidateRoutes } from "./CandidateRoutes";
 import { EmployerRoutes } from "./EmployerRoutes";
 import { AdminRoutes } from "./AdminRoutes";
 import ProtectedRoute from "./ProtectedRoute";
+import { CandidateProfilePage } from "@/pages/public/CandidateProfilePage";
+import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
+import SimplifyPage from "@/pages/public/SimplifyPage";
 
 export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/*" element={<PublicRoutes />} />
+      <Route path="simpify" element={<SimplifyPage />} />
+
+      <Route
+        path="/candidate/profile/:candidateId"
+        element={<CandidateProfilePage />}
+      />
+      <Route
+        path="company/:companyId/profile"
+        element={<CompanyProfilePage />}
+      />
 
       <Route
         path="/candidate/*"
         element={
-          <ProtectedRoute allowedRoles={["candidate"]}>
+          <ProtectedRoute allowedRoles={["user"]}>
             <CandidateRoutes />
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/company/*"
+        path="/company/:companyId/*"
         element={
-          <ProtectedRoute allowedRoles={["candidate"]}>
+          <ProtectedRoute allowedRoles={["user"]}>
             <EmployerRoutes />
           </ProtectedRoute>
         }

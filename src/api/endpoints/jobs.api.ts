@@ -1,12 +1,22 @@
 import axios from "../client/axios";
 
-import { JobFilters, JobsResponse, SavedJobsResponse } from "../types/jobs.types";
-
-const API_CANDIDATE_JOB_URL = "/candidates/jobs";
+import {
+  CreateJobDto,
+  GenerateJobDto,
+  GenerateJobResponse,
+  Job,
+  JobFilters,
+  JobsResponse,
+  SavedJobsResponse,
+} from "../types/jobs.types";
 
 const API_URL = "/jobs";
 
-const API_RECRUITER_JOB_URL = "/recruiter/jobs";
+const API_CANDIDATE_JOB_URL = "/candidates/jobs";
+
+const API_RECRUITER_JOB_URL = "/recruiters/jobs";
+
+const API_AI_JOB_URL = "/ai";
 
 function cleanParams(filters?: JobFilters) {
   if (!filters) return {};
@@ -28,6 +38,11 @@ function cleanParams(filters?: JobFilters) {
   return params;
 }
 
+const getFeaturedJobs = async () => {
+  const response = await axios.get(`${API_URL}/featured`);
+  return response.data;
+};
+
 const getCandidateJobs = async (
   filters?: JobFilters
 ): Promise<JobsResponse> => {
@@ -41,34 +56,40 @@ const getCandidateJobStats = async () => {
   return response.data;
 };
 
-const getCandidateJobLatest = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/latest`);
-  return response.data;
-};
+// const getCandidateJobLatest = async () => {
+//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/latest`);
+//   return response.data;
+// };
 
-const getFeaturedJobs = async () => {
-  const response = await axios.get(`${API_URL}/featured`);
-  return response.data;
-};
+// const getCandidateJobsByLocation = async () => {
+//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/location`);
+//   return response.data;
+// };
 
-const getCandidateJobsByLocation = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/location`);
-  return response.data;
-};
+// const getCandidateJobsByKeyword = async () => {
+//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/keyword`);
+//   return response.data;
+// };
 
-const getCandidateJobsByKeyword = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/keyword`);
-  return response.data;
-};
+// const getCandidateJobSearchByKeyword = async () => {
+//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/search/keyword`);
+//   return response.data;
+// };
 
-const getCandidateJobSearchByKeyword = async () => {
-  const response = await axios.get(`${API_CANDIDATE_JOB_URL}/search/keyword`);
-  return response.data;
-};
-
-const getCandidateJobsByOrganization = async (id: string) => {
+const getCandidateJobsByOrganization = async ({
+  id,
+  limit,
+  page,
+}: {
+  id: string;
+  limit: number;
+  page: number;
+}): Promise<Job[]> => {
   const response = await axios.get(
-    `${API_CANDIDATE_JOB_URL}/organization/${id}`
+    `${API_CANDIDATE_JOB_URL}/organizations/${id}`,
+    {
+      params: { limit, page },
+    }
   );
   return response.data;
 };
@@ -100,6 +121,9 @@ const saveCandidateJobById = async (id: string) => {
 const getCandidateSavedJobs = async ({
   limit,
   page,
+}: {
+  limit: number;
+  page: number;
 }): Promise<SavedJobsResponse> => {
   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/saved`, {
     params: { folder: "saved_jobs", limit, page },
@@ -117,19 +141,37 @@ const deleteCandidateSavedJobById = async (id: string) => {
   return response.data;
 };
 
-const createRecruiterJob = async (data) => {
+const createRecruiterJob = async (data: CreateJobDto) => {
   const response = await axios.post(`${API_RECRUITER_JOB_URL}`, data);
+  return response.data;
+};
+
+const updateRecruiterJob = async (id: string, data: Partial<CreateJobDto>) => {
+  const response = await axios.put(`${API_RECRUITER_JOB_URL}/${id}`, data);
+  return response.data;
+};
+
+const generateJobDescription = async (
+  data: GenerateJobDto
+): Promise<GenerateJobResponse> => {
+  const response = await axios.post(
+    `${API_AI_JOB_URL}/job-description/generate`,
+    {
+      ...data,
+      tone: "professional",
+    }
+  );
   return response.data;
 };
 
 export {
   getCandidateJobs,
   getCandidateJobStats,
-  getCandidateJobLatest,
+  // getCandidateJobLatest,
   getFeaturedJobs,
-  getCandidateJobsByLocation,
-  getCandidateJobsByKeyword,
-  getCandidateJobSearchByKeyword,
+  // getCandidateJobsByLocation,
+  // getCandidateJobsByKeyword,
+  // getCandidateJobSearchByKeyword,
   getCandidateJobsByOrganization,
   getCandidateSimilarJobs,
   getCandidateJobById,
@@ -139,4 +181,6 @@ export {
   getCandidateSavedJobById,
   deleteCandidateSavedJobById,
   createRecruiterJob,
+  generateJobDescription,
+  updateRecruiterJob,
 };

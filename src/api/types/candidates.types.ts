@@ -1,3 +1,6 @@
+import { InterviewFeedback } from "./interviews.types";
+import { Organization } from "./organizations.types";
+
 export interface User {
   id: string;
   email: string;
@@ -50,6 +53,7 @@ export interface WorkExperience {
   skills: string[];
   createdAt: string;
   updatedAt: string;
+  organization?: Organization;
 }
 
 export interface Education {
@@ -70,52 +74,44 @@ export interface Education {
 }
 
 export interface Project {
-  id: string;
-  candidateProfileId: string;
+  id?: string;
+  candidateProfileId?: string;
   title: string;
   description: string;
-  technologies: string[];
+  status: string; // e.g. "completed"
   startDate: string;
   endDate: string | null;
-  isCurrent: boolean;
   projectUrl: string | null;
   repositoryUrl: string | null;
+  technologies: string[];
+  features: string[];
+  role: string | null;
+  teamSize: number | null;
   createdAt: string;
   updatedAt: string;
+  name?: string; // to match API structure
 }
 
 export interface Certification {
-  id: string;
-  candidateProfileId: string;
+  id?: string;
+  candidateProfileId?: string;
   name: string;
-  issuer: string;
-  issueDate: string;
-  expirationDate: string | null;
-  credentialId: string | null;
-  credentialUrl: string | null;
-  createdAt: string;
-  updatedAt: string;
+  issuingOrganization: string;
+  credentialId?: string | null;
+  credentialUrl?: string | null;
+  description?: string | null;
+  issueDate?: string | null;
+  expiryDate?: string | null;
 }
 
 export interface Award {
-  id: string;
-  candidateProfileId: string;
+  id?: string;
+  candidateProfileId?: string;
   title: string;
   issuer: string;
-  date: string;
-  description: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Publication {
-  id: string;
-  candidateProfileId: string;
-  title: string;
-  publisher: string;
-  publishedDate: string;
-  description: string | null;
-  url: string | null;
+  dateReceived: string; // ISO string (Date in backend, string in API/JSON)
+  description?: string | null;
+  certificateUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -140,10 +136,33 @@ export interface CandidateProfile {
   projects: Project[];
   certifications: Certification[];
   awards: Award[];
-  publications: Publication[];
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  userFeedbacks?: UserFeedbacks;
+}
+
+export interface MyInterviewFeedback {
+  id: string;
+  applicationId: string;
+  job: {
+    id: string;
+    title: string;
+    organization: {
+      id: string;
+      name: string;
+    };
+  };
+  type: string;
+  status: string;
+  scheduledDate: string;
+  date: string;
+  interviewer: string | null;
+  interviewerName: string;
+  feedback: InterviewFeedback;
+  notes: string;
+  completedAt: string;
+  createdAt: string;
 }
 
 export interface CandidateFilters {
@@ -162,4 +181,38 @@ export interface CandidatesResponse {
   total: number;
   page: number;
   limit: number;
+}
+
+export interface RecruiterFeedbackSummary {
+  id: string;
+  candidateId: string;
+  candidate: {
+    id: string;
+    fullName: string | null;
+    email: string;
+  };
+  applicationId: string;
+  interviewId: string | null;
+  feedbackType:
+    | "application_process"
+    | "interview_experience"
+    | "communication"
+    | "general";
+  rating: number;
+  feedback: string;
+  isPositive: boolean;
+  createdAt: string;
+}
+
+export interface UserFeedbacks {
+  receivedAsCandidate: {
+    interviewFeedbacks: MyInterviewFeedback[];
+  };
+  givenAsRecruiter: {
+    recruiterFeedbacks: RecruiterFeedbackSummary[];
+  };
+  totals: {
+    receivedAsCandidate: number;
+    givenAsRecruiter: number;
+  };
 }

@@ -1,8 +1,11 @@
-import { Job, Candidate, CV, Interview, Offer } from "../../lib/types";
+import { Candidate, CV, Interview, Offer } from "../../lib/types";
+import { Job } from "./jobs.types";
 
 export interface updateUserInfoDto {
   avatarUrl?: string;
 }
+
+export type UserStatus = "active" | "inactive";
 
 export interface UserResponse {
   id: string;
@@ -14,7 +17,7 @@ export interface UserResponse {
   fullName: string | null;
   avatarUrl: string | null;
   phoneNumber: string | null;
-  status: "active" | "inactive" | string;
+  status: UserStatus;
   authProvider: string;
   primaryAuthProvider: string;
   emailVerified: boolean;
@@ -32,6 +35,7 @@ export interface UserResponse {
   avatar: string | null;
   createdAt: string;
   updatedAt: string;
+  roles?: string[];
 }
 
 export interface MatchingDetails {
@@ -79,4 +83,13 @@ export interface ApplicationDetailed {
   backgroundCheckCompleted: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UsersListResponse {
+  people: {
+    items: UserResponse[];
+    total: number;
+    page: number;
+    limit: number;
+  };
 }

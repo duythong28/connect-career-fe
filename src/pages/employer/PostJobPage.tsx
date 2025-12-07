@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { MapPin, DollarSign, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,160 +17,203 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Company, Job } from "@/lib/types";
-import { useAuth } from "@/hooks/useAuth";
-import { mockCompanies, mockJobs } from "@/lib/mock-data";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  createRecruiterJob,
+  generateJobDescription,
+  getCandidateJobById,
+  updateRecruiterJob,
+} from "@/api/endpoints/jobs.api";
+import {
+  GenerateJobDto,
+  JobSeniorityLevel,
+  JobStatus,
+} from "@/api/types/jobs.types";
+import { getActivePipelines } from "@/api/endpoints/pipelines.api";
+import { getOrganizationById } from "@/api/endpoints/organizations.api";
 
 const PostJobPage = () => {
-  const { user } = useAuth();
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
-  const userCompany = companies.find((c) => c.id === user?.companyId);
+  const { companyId, jobId } = useParams();
+  const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
-  // Form States
+
+  const { data: userOrganization } = useQuery({
+    queryKey: ["company", companyId],
+    queryFn: () => getOrganizationById(companyId!),
+    enabled: !!companyId,
+  });
+
+  const { data: editingJob } = useQuery({
+    queryKey: ["job", jobId],
+    queryFn: () => getCandidateJobById(jobId!),
+    enabled: !!jobId,
+  });
+
+  const { data: pipelines } = useQuery({
+    queryKey: ["active-pipelines", companyId],
+    queryFn: async () => {
+      return getActivePipelines(companyId);
+    },
+    enabled: !!companyId,
+  });
+
   const [jobForm, setJobForm] = useState({
     title: "",
     location: "",
     salary: "",
-    type: "full-time",
+    type: "full_time",
+    seniorityLevel: JobSeniorityLevel.MID_SENIOR,
     description: "",
-    companyId: "",
+    organizationId: companyId || "",
+    hiringPipelineId: "",
+    keywords: [] as string[],
+    conditions: [] as string[],
   });
 
-  const generateJobDescription = (
-    title: string,
-    industry: string,
-    level: string
-  ): string => {
-    const templates = {
-      technology: {
-        senior: `# ${title}
-  
-  ## About the Role
-  We are seeking a ${title} to join our innovative technology team and drive our next generation of products.
-  
-  ## Key Responsibilities
-  - Lead technical architecture and design decisions
-  - Mentor junior team members
-  - Collaborate with cross-functional teams
-  - Implement best practices and coding standards
-  - Drive technical innovation and process improvements
-  
-  ## Qualifications
-  - 5+ years of relevant experience
-  - Strong technical leadership skills
-  - Experience with modern development practices
-  - Excellent communication and collaboration skills
-  - Bachelor's degree in Computer Science or related field
-  
-  ## What We Offer
-  - Competitive salary and equity package
-  - Comprehensive health benefits
-  - Flexible work arrangements
-  - Professional development opportunities
-  - Cutting-edge technology stack`,
-        mid: `# ${title}
-  
-  ## Position Overview
-  Join our growing team as a ${title} and help build innovative solutions that impact millions of users.
-  
-  ## Responsibilities
-  - Develop and maintain high-quality software
-  - Collaborate with product and design teams
-  - Participate in code reviews and technical discussions
-  - Contribute to system architecture decisions
-  - Support junior developers
-  
-  ## Requirements
-  - 3+ years of relevant experience
-  - Strong problem-solving skills
-  - Experience with agile development
-  - Good communication skills
-  - Relevant technical degree preferred
-  
-  ## Benefits
-  - Health and dental insurance
-  - Professional development budget
-  - Flexible PTO
-  - Modern office environment`,
-        junior: `# ${title}
-  
-  ## Role Description
-  Great opportunity for a ${title} to start their career with a dynamic technology company.
-  
-  ## What You'll Do
-  - Write clean, maintainable code
-  - Learn from experienced team members
-  - Participate in team meetings and planning
-  - Contribute to feature development
-  - Grow your technical skills
-  
-  ## Qualifications
-  - 0-2 years of experience
-  - Strong fundamentals in programming
-  - Eagerness to learn and grow
-  - Good problem-solving abilities
-  - Recent graduate or bootcamp completion
-  
-  ## Why Join Us
-  - Mentorship and learning opportunities
-  - Collaborative team environment
-  - Growth potential
-  - Competitive entry-level compensation`,
-      },
-    };
+  const [keywordsInput, setKeywordsInput] = useState("");
+  const [conditionsInput, setConditionsInput] = useState("");
 
-    return templates.technology?.[level] || templates.technology.mid;
-  };
+  useEffect(() => {
+    if (editingJob) {
+      setJobForm({
+        title: editingJob.title,
+        location: editingJob.location,
+        salary: editingJob.salary,
+        type: editingJob.type,
+        seniorityLevel: editingJob.seniorityLevel,
+        description: editingJob.description,
+        organizationId: editingJob.organizationId,
+        hiringPipelineId: editingJob.hiringPipelineId,
+        keywords: editingJob.keywords || [],
+        conditions: editingJob.requirements || [],
+      });
+      setKeywordsInput((editingJob.keywords || []).join(", "));
+      setConditionsInput((editingJob.requirements || []).join(", "));
+    }
+  }, [editingJob]);
 
-  const postJob = () => {
-    if (!jobForm.title || !jobForm.description || !jobForm.companyId) {
+  const { mutate: generateDescriptionMutate, isPending } = useMutation({
+    mutationFn: (data: GenerateJobDto) => generateJobDescription(data),
+    onSuccess: (response) => {
+      console.log("Generated description:", response);
+      setJobForm({
+        ...jobForm,
+        description: response?.data?.description || "",
+        keywords: response?.data?.keywords || [],
+      });
+      setKeywordsInput((response?.data?.keywords || []).join(", "));
+
+      toast({
+        title: "Job description generated",
+        description: "The job description has been generated successfully.",
+      });
+    },
+  });
+
+  // Mutation for posting job
+  const postJobMutation = useMutation({
+    mutationFn: (data: any) => createRecruiterJob(data),
+    onSuccess: (response) => {
+      toast({
+        title: "Job posted successfully!",
+        description: "Your job is now live.",
+      });
+      // Redirect to job detail page
+      navigate(`/jobs/${response.id}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error posting job",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateJobMutation = useMutation({
+    mutationFn: ({ jobId, jobData }: { jobId: string; jobData: any }) =>
+      updateRecruiterJob(jobId, jobData),
+    onSuccess: (response) => {
+      toast({
+        title: "Job updated successfully!",
+        description: "Your job has been updated.",
+      });
+      navigate(`/jobs/${response.id}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating job",
+        description: error.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const postJob = (status: JobStatus) => {
+    if (
+      !jobForm.title ||
+      !jobForm.description ||
+      !jobForm.organizationId ||
+      !jobForm.hiringPipelineId ||
+      jobForm.keywords.length === 0 ||
+      jobForm.conditions.length === 0
+    ) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields, including keywords.",
         variant: "destructive",
       });
       return;
     }
 
-    const newJob: Job = {
-      id: `job${jobs.length + 1}`,
-      ...jobForm,
-      type: jobForm.type as Job["type"],
-      postedDate: new Date().toISOString().split("T")[0],
-      applications: 0,
-      status: user?.role === "admin" ? "active" : "draft",
-      views: 0,
-      employerId: user?.id || "",
-      keywords: jobForm.description
-        .toLowerCase()
-        .split(" ")
-        .filter((word) => word.length > 3)
-        .slice(0, 5),
+    const jobData = {
+      title: jobForm.title,
+      location: jobForm.location,
+      salary: jobForm.salary,
+      type: jobForm.type,
+      seniorityLevel: jobForm.seniorityLevel,
+      description: jobForm.description,
+      organizationId: jobForm.organizationId,
+      hiringPipelineId: jobForm.hiringPipelineId,
+      keywords: jobForm.keywords,
+      requirements: jobForm.conditions,
+      status,
     };
 
-    setJobs([...jobs, newJob]);
-    setJobForm({
-      title: "",
-      location: "",
-      salary: "",
-      type: "full-time",
-      description: "",
-      companyId: "",
-    });
+    if (jobId) {
+      updateJobMutation.mutate({ jobId, jobData });
+    } else {
+      postJobMutation.mutate(jobData);
+    }
+  };
 
-    toast({
-      title: "Job posted",
-      description:
-        user?.role === "admin"
-          ? "Job is now live!"
-          : "Job submitted for review.",
-    });
+  const handleKeywordsChange = (value: string) => {
+    setKeywordsInput(value);
+  };
+
+  const handleKeywordsBlur = () => {
+    const keywordsArray = keywordsInput
+      .split(",")
+      .map((k) => k.trim())
+      .filter((k) => k);
+    setJobForm({ ...jobForm, keywords: keywordsArray });
+  };
+
+  const handleConditionsChange = (value: string) => {
+    setConditionsInput(value);
+  };
+
+  const handleConditionsBlur = () => {
+    const conditionsArray = conditionsInput
+      .split(",")
+      .map((c) => c.trim())
+      .filter((c) => c);
+    setJobForm({ ...jobForm, conditions: conditionsArray });
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div>
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Post a New Job</h1>
           <p className="text-gray-600 mt-2">
@@ -196,27 +240,6 @@ const PostJobPage = () => {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="company">Company *</Label>
-                <Select
-                  value={jobForm.companyId}
-                  onValueChange={(value) =>
-                    setJobForm({ ...jobForm, companyId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select company" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userCompany && (
-                      <SelectItem value={userCompany.id}>
-                        {userCompany.name}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="location">Location *</Label>
@@ -229,39 +252,79 @@ const PostJobPage = () => {
                     placeholder="e.g., San Francisco, CA"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="type">Job Type *</Label>
                   <Select
                     value={jobForm.type}
                     onValueChange={(value) =>
-                      setJobForm({ ...jobForm, type: value as any })
+                      setJobForm({ ...jobForm, type: value })
                     }
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="full-time">Full-time</SelectItem>
-                      <SelectItem value="part-time">Part-time</SelectItem>
+                      <SelectItem value="full_time">Full-time</SelectItem>
+                      <SelectItem value="part_time">Part-time</SelectItem>
+                      <SelectItem value="freelance">Freelance</SelectItem>
                       <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="remote">Remote</SelectItem>
+                      <SelectItem value="seasonal">Seasonal</SelectItem>
                       <SelectItem value="internship">Internship</SelectItem>
+                      <SelectItem value="remote">Remote</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="salary">Salary Range</Label>
-                <Input
-                  id="salary"
-                  value={jobForm.salary}
-                  onChange={(e) =>
-                    setJobForm({ ...jobForm, salary: e.target.value })
-                  }
-                  placeholder="e.g., $120,000 - $160,000"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="seniorityLevel">Level *</Label>
+                  <Select
+                    value={jobForm.seniorityLevel}
+                    onValueChange={(value) =>
+                      setJobForm({
+                        ...jobForm,
+                        seniorityLevel: value as JobSeniorityLevel,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={JobSeniorityLevel.ENTRY_LEVEL}>
+                        {JobSeniorityLevel.ENTRY_LEVEL}
+                      </SelectItem>
+                      <SelectItem value={JobSeniorityLevel.MID_SENIOR}>
+                        {JobSeniorityLevel.MID_SENIOR}
+                      </SelectItem>
+                      <SelectItem value={JobSeniorityLevel.DIRECTOR}>
+                        {JobSeniorityLevel.DIRECTOR}
+                      </SelectItem>
+                      <SelectItem value={JobSeniorityLevel.EXECUTIVE}>
+                        {JobSeniorityLevel.EXECUTIVE}
+                      </SelectItem>
+                      <SelectItem value={JobSeniorityLevel.ASSOCIATE}>
+                        {JobSeniorityLevel.ASSOCIATE}
+                      </SelectItem>
+                      <SelectItem value={JobSeniorityLevel.INTERNSHIP}>
+                        {JobSeniorityLevel.INTERNSHIP}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="salary">Salary Range</Label>
+                  <Input
+                    id="salary"
+                    value={jobForm.salary}
+                    onChange={(e) =>
+                      setJobForm({ ...jobForm, salary: e.target.value })
+                    }
+                    placeholder="e.g., $120,000 - $160,000"
+                  />
+                </div>
               </div>
 
               <div>
@@ -273,16 +336,30 @@ const PostJobPage = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const generated = generateJobDescription(
-                        jobForm.title || "Software Developer",
-                        "technology",
-                        "senior"
-                      );
-                      setJobForm({ ...jobForm, description: generated });
+                      generateDescriptionMutate({
+                        title: jobForm.title,
+                        jobType: jobForm.type,
+                        location: jobForm.location,
+                        companyName: userOrganization?.name || "",
+                        seniorityLevel: jobForm.seniorityLevel,
+                        companyDescription:
+                          userOrganization?.shortDescription || "",
+                      });
                     }}
+                    disabled={
+                      !jobForm.title ||
+                      !jobForm.seniorityLevel ||
+                      !jobForm.type ||
+                      !jobForm.location ||
+                      isPending
+                    }
                   >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate
+                    <Sparkles
+                      className={`h-4 w-4 mr-2 ${
+                        isPending ? "animate-spin" : ""
+                      }`}
+                    />
+                    {isPending ? "Generating..." : "Generate"}
                   </Button>
                 </div>
                 <Textarea
@@ -301,9 +378,86 @@ const PostJobPage = () => {
                 </p>
               </div>
 
+              <div>
+                <Label htmlFor="pipeline">Pipeline *</Label>
+                <Select
+                  value={jobForm.hiringPipelineId}
+                  onValueChange={(value) =>
+                    setJobForm({ ...jobForm, hiringPipelineId: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select pipeline" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pipelines &&
+                      pipelines.length > 0 &&
+                      pipelines.map((pipeline) => (
+                        <SelectItem key={pipeline.id} value={pipeline.id}>
+                          <div className="flex flex-col">
+                            <span>{pipeline.name}</span>
+                            {pipeline.description && (
+                              <span className="text-xs text-gray-500 truncate max-w-sm">
+                                {pipeline.description}
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {pipelines && pipelines.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    No active pipelines found. Please create a pipeline first.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="keywords">Keywords * (comma-separated)</Label>
+                <Input
+                  id="keywords"
+                  value={keywordsInput}
+                  onChange={(e) => handleKeywordsChange(e.target.value)}
+                  onBlur={handleKeywordsBlur}
+                  placeholder="e.g., React, JavaScript, Frontend"
+                />
+                <p className="text-xs text-gray-600 mt-1">
+                  Enter relevant skills or keywords separated by commas.
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="conditions">
+                  Critical Conditions * (comma-separated)
+                </Label>
+                <Input
+                  id="conditions"
+                  value={conditionsInput}
+                  onChange={(e) => handleConditionsChange(e.target.value)}
+                  onBlur={handleConditionsBlur}
+                  placeholder="e.g., Next.js, AWS, 3+ years experience"
+                />
+                <p className="text-xs text-gray-600 mt-1">
+                  Must-have criteria for AI auto-screening and rejection.
+                </p>
+              </div>
+
               <div className="flex items-center space-x-3">
-                <Button onClick={postJob} className="flex-1">
-                  Post Job
+                <Button
+                  onClick={() => postJob(JobStatus.ACTIVE)}
+                  className="flex-1"
+                  disabled={postJobMutation.isPending}
+                >
+                  {postJobMutation.isPending ? "Posting..." : "Publish Job"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => postJob(JobStatus.DRAFT)}
+                  className="flex-1"
+                  disabled={postJobMutation.isPending}
+                >
+                  Save as Draft
                 </Button>
                 <Button
                   variant="outline"
@@ -326,9 +480,9 @@ const PostJobPage = () => {
                 <div className="space-y-4">
                   <div className="flex items-start space-x-4">
                     <Avatar className="h-16 w-16">
-                      <AvatarImage src={userCompany?.logo} />
+                      <AvatarImage src={userOrganization?.logoFile?.url} />
                       <AvatarFallback>
-                        {userCompany?.name?.charAt(0)}
+                        {userOrganization?.name?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
 
@@ -337,7 +491,7 @@ const PostJobPage = () => {
                         {jobForm.title || "Job Title"}
                       </h3>
                       <p className="text-lg text-gray-700">
-                        {userCompany?.name || "Company Name"}
+                        {userOrganization?.name || "Organization Name"}
                       </p>
 
                       <div className="flex items-center space-x-4 mt-2 text-gray-600">
@@ -369,6 +523,32 @@ const PostJobPage = () => {
                       </p>
                     )}
                   </div>
+
+                  {jobForm.keywords.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <h4 className="text-lg font-medium w-full mb-2">
+                        Keywords
+                      </h4>
+                      {jobForm.keywords.map((keyword, index) => (
+                        <Badge key={index} variant="outline">
+                          {keyword}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {jobForm.conditions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <h4 className="text-lg font-medium w-full mb-2 text-red-600">
+                        Critical Conditions (Must-Have)
+                      </h4>
+                      {jobForm.conditions.map((condition, index) => (
+                        <Badge key={index} variant="destructive">
+                          {condition}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
