@@ -9,7 +9,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Users, Calendar } from "lucide-react";
+import {
+  ArrowLeft,
+  Edit,
+  Users,
+  Calendar,
+  XCircle,
+  Trash2,
+} from "lucide-react";
 import {
   DragDropContext,
   Droppable,
@@ -38,7 +45,7 @@ export default function JobDetail() {
   const [columns, setColumns] = useState<Record<string, Application[]>>({});
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { data: job } = useQuery({
+  const { data: job, isLoading: isJobLoading } = useQuery({
     queryKey: ["job", jobId],
     queryFn: async () => {
       return await getCandidateJobById(jobId);
@@ -46,7 +53,7 @@ export default function JobDetail() {
     enabled: !!jobId,
   });
 
-  const { data: pipeline } = useQuery({
+  const { data: pipeline, isLoading: isPipelineLoading } = useQuery({
     queryKey: ["pipeline", jobId],
     queryFn: async () => {
       return getPipelineByJobId(jobId);
@@ -98,10 +105,11 @@ export default function JobDetail() {
     if (applications) {
       const grouped: Record<string, Application[]> = {};
       applications.forEach((app) => {
-        if (!grouped[app.currentStageKey]) {
-          grouped[app.currentStageKey] = [];
+        const stageKey = app.currentStageKey || "initial";
+        if (!grouped[stageKey]) {
+          grouped[stageKey] = [];
         }
-        grouped[app.currentStageKey].push(app);
+        grouped[stageKey].push(app);
       });
       setColumns(grouped);
     }
@@ -114,7 +122,7 @@ export default function JobDetail() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Job not found
           </h2>
-          <Button onClick={() => navigate("/jobs")}>
+          <Button onClick={() => navigate(`/company/${companyId}/jobs`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Jobs
           </Button>
@@ -123,13 +131,19 @@ export default function JobDetail() {
     );
   }
 
+  if (isJobLoading || isPipelineLoading) {
+    return (
+      <div className="p-8 text-center text-gray-500">
+        Loading Job Details...
+      </div>
+    );
+  }
+
   const onDragEnd = (result: DropResult) => {
     const { source, destination } = result;
 
     if (!destination) return;
-    if (source.droppableId === destination.droppableId) {
-      return;
-    }
+    if (source.droppableId === destination.droppableId) return;
 
     const destinationCol = (pipeline.stages || []).find(
       (stage) => stage.key === destination.droppableId
@@ -139,8 +153,10 @@ export default function JobDetail() {
       .filter((t) => t.fromStageKey === source.droppableId)
       .map((t) => t.toStageKey);
 
-    if (!destinationCol || !sourceTransitions.includes(destinationCol.key))
+    if (!destinationCol || !sourceTransitions.includes(destinationCol.key)) {
+      toast.error("Invalid move: Stage transition not allowed.");
       return;
+    }
 
     const sourceColumn = Array.from(columns[source.droppableId] || []);
 
@@ -170,6 +186,13 @@ export default function JobDetail() {
     );
   };
 
+  const handleRejectAll = (stageKey: string) => {
+    console.log(`Rejecting all candidates in stage: ${stageKey}`);
+    toast.info(
+      `Tính năng Reject All cho stage ${stageKey} sẽ được bổ sung sau.`
+    );
+  };
+
   const getStageColor = (type: string) => {
     switch (type) {
       case "sourcing":
@@ -190,56 +213,31 @@ export default function JobDetail() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(`/company/${companyId}/jobs`)}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Jobs
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-2xl">{job.title}</CardTitle>
-              <CardDescription className="mt-2">
-                {job?.organization?.name} • {job.type} • {job.salary}
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              {job.status === JobStatus.ACTIVE && (
-                <Badge className="bg-green-500">Active</Badge>
-              )}
-              {job.status === JobStatus.DRAFT && (
-                <Badge className="bg-yellow-500">Draft</Badge>
-              )}
-              {job.status === JobStatus.CLOSED && (
-                <Badge className="bg-red-500">Closed</Badge>
-              )}
+    <div className="max-w-[1600px] mx-auto p-6 space-y-6 font-sans bg-gray-50">
+      {/* Job Header */}
+      <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
+        <CardHeader className="p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/company/${companyId}/jobs`)}
+              className="text-xs font-bold text-gray-500 hover:text-gray-900 uppercase"
+            >
+              <ArrowLeft className="h-3 w-3 mr-1" />
+              Back to Jobs
+            </Button>
+            <div className="flex gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() =>
                   navigate(`/company/${companyId}/jobs/${jobId}/edit-job`)
                 }
+                className="text-xs font-bold text-gray-700 h-8 hover:bg-gray-100"
               >
-                <Edit className="h-4 w-4 mr-2" />
+                <Edit className="h-3 w-3 mr-2" />
                 Edit Job
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => closeJobMutation.mutate()}
-                disabled={
-                  closeJobMutation.isPending || job.status === JobStatus.CLOSED
-                }
-              >
-                Close Job
               </Button>
               {job.status === JobStatus.DRAFT && (
                 <Button
@@ -247,114 +245,172 @@ export default function JobDetail() {
                   size="sm"
                   onClick={() => publishJobMutation.mutate()}
                   disabled={publishJobMutation.isPending}
+                  className="text-xs font-bold bg-[#0EA5E9] hover:bg-[#0284c7] h-8"
                 >
                   Publish Job
                 </Button>
               )}
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => closeJobMutation.mutate()}
+                disabled={
+                  closeJobMutation.isPending || job.status === JobStatus.CLOSED
+                }
+                className="text-xs font-bold h-8"
+              >
+                Close Job
+              </Button>
+              {job.status === JobStatus.ACTIVE && (
+                <Badge className="bg-green-500 font-bold text-xs ml-2">
+                  Active
+                </Badge>
+              )}
+              {job.status === JobStatus.DRAFT && (
+                <Badge className="bg-yellow-500 font-bold text-xs ml-2">
+                  Draft
+                </Badge>
+              )}
+              {job.status === JobStatus.CLOSED && (
+                <Badge className="bg-red-500 font-bold text-xs ml-2">
+                  Closed
+                </Badge>
+              )}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-6 text-sm">
+        {/* Job Details */}
+        <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div className="mb-4 md:mb-0">
+            <div className="flex items-center gap-3 mb-1">
+              <CardTitle className="text-xl font-bold text-gray-900">
+                {job.title}
+              </CardTitle>
+            </div>
+            <CardDescription className="text-sm text-gray-500">
+              {job?.organization?.name} • {job.type} • {job.salary}
+            </CardDescription>
+          </div>
+          <div className="flex gap-4 text-sm text-gray-700">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>{job.applications} applications</span>
+              <Users className="h-4 w-4 text-[#0EA5E9]" />
+              <span className="font-semibold">
+                {applications?.length || 0} applications
+              </span>
             </div>
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+              <Calendar className="h-4 w-4 text-gray-400" />
               <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         </CardContent>
-      </Card>
+      </div>
+      {/* Kanban Board */}
       {pipeline && (
         <div>
-          <h2 className="text-2xl font-bold mb-4">Recruitment Pipeline</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">
+            Recruitment Pipeline
+          </h2>
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-4">
+            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
               {pipeline.stages.map((stage) => (
                 <div key={stage.key} className="flex-shrink-0 w-80">
-                  <div className="mb-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${getStageColor(
-                          stage.type
-                        )}`}
-                      />
-                      <h3 className="font-semibold">{stage.name}</h3>
-                      <Badge variant="secondary" className="ml-auto">
+                  {/* Column Header */}
+                  <div className="p-3 mb-3 rounded-t-xl border border-gray-200 bg-white shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-3 h-3 rounded-full ${getStageColor(
+                            stage.type
+                          )}`}
+                        />
+                        <h3 className="font-bold text-sm text-gray-900">
+                          {stage.name}
+                        </h3>
+                      </div>
+                      <Badge className="bg-gray-100 text-gray-600 font-bold text-xs">
                         {columns[stage.key]?.length || 0}
                       </Badge>
                     </div>
+                    {stage.key !== "hired" && stage.key !== "rejected" && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-6 px-2 text-[10px] font-bold"
+                        onClick={() => handleRejectAll(stage.key)}
+                      >
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Reject All
+                      </Button>
+                    )}
                   </div>
-
                   <Droppable droppableId={stage.key}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`bg-muted/50 rounded-lg p-3 min-h-[500px] ${
-                          snapshot.isDraggingOver ? "bg-accent/50" : ""
+                        className={`bg-gray-100/50 rounded-b-xl p-3 min-h-[500px] border-x border-b border-gray-200 ${
+                          snapshot.isDraggingOver ? "bg-blue-100/50" : ""
                         }`}
                       >
-                        {(columns[stage.key] || []).map(
-                          (application, index) => {
-                            return (
-                              <Draggable
-                                key={application.id}
-                                draggableId={application.id}
-                                index={index}
-                              >
-                                {(provided, snapshot) => (
-                                  <Card
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={`mb-3 cursor-move ${
-                                      snapshot.isDragging ? "shadow-lg" : ""
-                                    }`}
-                                    onClick={() =>
-                                      navigate(
-                                        `/company/${companyId}/jobs/${jobId}/applications/${application.id}`
-                                      )
-                                    }
-                                  >
-                                    <CardContent className="p-4">
-                                      <div className="space-y-2">
-                                        <h4 className="font-medium">
-                                          {application?.candidateSnapshot
-                                            ?.name ||
-                                            application?.candidate?.firstName +
-                                              " " +
-                                              application?.candidate?.lastName}
-                                        </h4>
-                                        <p className="text-sm text-muted-foreground">
-                                          {
-                                            application?.candidateSnapshot
-                                              ?.currentTitle
-                                          }
-                                        </p>
-                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                          <span>
-                                            Applied {application.appliedDate}
-                                          </span>
-                                          {application.matchingScore && (
-                                            <Badge
-                                              variant="outline"
-                                              className="text-xs"
-                                            >
-                                              {application.matchingScore}% match
-                                            </Badge>
-                                          )}
-                                        </div>
+                        {(columns[stage.key] || []).map((application, index) => {
+                          return (
+                            <Draggable
+                              key={application.id}
+                              draggableId={application.id}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <Card
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`mb-3 cursor-move border border-gray-200 hover:border-blue-400 transition-all bg-white shadow-sm ${
+                                    snapshot.isDragging ? "shadow-lg" : ""
+                                  }`}
+                                  onClick={() =>
+                                    navigate(
+                                      `/company/${companyId}/jobs/${jobId}/applications/${application.id}`
+                                    )
+                                  }
+                                >
+                                  <CardContent className="p-3">
+                                    <div className="space-y-1.5">
+                                      <h4 className="font-bold text-sm text-gray-900 truncate">
+                                        {application?.candidateSnapshot?.name ||
+                                          application?.candidate?.firstName +
+                                            " " +
+                                            application?.candidate?.lastName}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {
+                                          application?.candidateSnapshot
+                                            ?.currentTitle
+                                        }
+                                      </p>
+                                      <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                                        <span>
+                                          Applied{" "}
+                                          {new Date(
+                                            application.appliedDate
+                                          ).toLocaleDateString()}
+                                        </span>
+                                        {application.matchingScore && (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[10px] font-bold bg-blue-50 text-blue-700 border-blue-100 px-2 py-0.5 whitespace-nowrap"
+                                          >
+                                            {application.matchingScore}% match
+                                          </Badge>
+                                        )}
                                       </div>
-                                    </CardContent>
-                                  </Card>
-                                )}
-                              </Draggable>
-                            );
-                          }
-                        )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+                            </Draggable>
+                          );
+                        })}
                         {provided.placeholder}
                       </div>
                     )}

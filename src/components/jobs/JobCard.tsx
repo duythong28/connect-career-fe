@@ -3,15 +3,28 @@ import {
   MapPin,
   DollarSign,
   Clock,
-  CheckCircle,
+  CheckCircle2 as CheckCircle, // Dùng CheckCircle2 để nhất quán với SimplifyPage
   Heart,
+  Globe2,
+  Briefcase,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { JobType, JobTypeLabel } from "@/api/types/jobs.types";
 import ApplyJobDialog from "../candidate/applications/ApplyJobDialog";
+import React from "react";
+
+// Component button theo style Simplify
+const SimplifyButton = ({ children, className = '', ...props }: React.ComponentPropsWithoutRef<'button'>) => (
+    <button
+        className={`bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold py-2.5 rounded-lg shadow-sm transition-colors ${className}`}
+        {...props}
+    >
+        {children}
+    </button>
+);
+
 
 export default function JobCard({
   job,
@@ -28,119 +41,131 @@ export default function JobCard({
   onView: () => void;
   onApply: () => void;
 }) {
+  const companyName = job?.organization?.name || job.companyName || "Unknown";
+  // Dựa vào mã cũ, sử dụng job?.name?.charAt(0) cho fallback. Tuy nhiên dùng Initials sẽ đẹp hơn theo Simplify UI.
+  const logoInitials = (companyName.match(/\b\w/g) || []).join('').toUpperCase().substring(0, 2) || (job?.title?.charAt(0) || "CO"); 
+
   const salary =
     job.salary ||
-    (job.salaryMin && job.salaryMax
-      ? `${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()} ${
-          job.salaryCurrency || ""
+    (job.salaryDetails?.minAmount && job.salaryDetails?.maxAmount
+      ? `${job.salaryDetails.minAmount.toLocaleString()} - ${job.salaryDetails.maxAmount.toLocaleString()} ${
+          job.salaryDetails.currency || ""
         }`
-      : "");
+      : job.salaryMin && job.salaryMax
+      ? `${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()} ${job.salaryCurrency || ""}`
+      : ""); // Giữ logic salary cũ + thêm logic SalaryDetails từ types.ts
 
   const date = job.createdAt
     ? new Date(job.createdAt).toLocaleDateString()
-    : "";
-
+    : "N/A";
+  
+  const jobType = JobTypeLabel[job.type as JobType] || job.type;
+  const JobTypeIcon = job.type === JobType.REMOTE ? Globe2 : Briefcase; // Thêm icon cho UI Simplify
+  
   return (
-    <Card className="border border-gray-200 hover:shadow-md transition-shadow rounded-xl overflow-hidden w-full">
+    <Card className="border border-gray-200 hover:shadow-lg transition-shadow rounded-xl overflow-hidden w-full">
       <CardContent className="p-4 sm:p-6 w-full min-w-0">
-        {/* First row: logo + title/company (mobile: 2col grid, desktop: flex) */}
-        <div className="grid grid-cols-[48px_1fr] gap-3 items-center sm:flex sm:gap-5">
-          <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border border-gray-200">
-            <AvatarImage
-              src={job?.organization?.logoFile?.url || job.companyLogo}
-              alt={job?.organization?.name || job.companyName}
-            />
-            <AvatarFallback>{job?.name?.charAt(0)}</AvatarFallback>
-          </Avatar>
-          {/* Add min-w-0 here */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between flex-1 min-w-0">
-            <div className="min-w-0">
-              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 truncate">
-                {job.title}
-              </h3>
-              <p className="text-sm sm:text-base text-gray-700 truncate">
-                {job?.organization?.name || job.companyName}
-              </p>
+        <div className="flex items-start justify-between">
+            {/* Logo, Title, Company: UI Simplify, Logic cũ */}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+                <Avatar className="w-12 h-12 rounded-lg shadow-sm flex-shrink-0">
+                    <AvatarImage
+                        src={job?.organization?.logoFile?.url || job.companyLogo}
+                        alt={companyName}
+                    />
+                    <AvatarFallback className="bg-blue-600 text-white font-bold text-lg rounded-lg">
+                        {logoInitials}
+                    </AvatarFallback>
+                </Avatar>
+                
+                <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 truncate hover:text-blue-600 transition-colors">
+                        {job.title}
+                    </h3>
+                    <p className="text-sm text-gray-700 truncate mt-0.5">
+                        {companyName}
+                    </p>
+                </div>
             </div>
-            <div className="flex items-center gap-2 mt-2 sm:mt-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onSave}
-                aria-label="Save job"
-                className="rounded-full p-1"
-              >
-                <Heart
-                  className={`h-5 w-5 md:h-4 md:w-4 ${
-                    isSaved ? "fill-red-500 text-red-500" : ""
-                  }`}
-                />
-              </Button>
-              <Badge
-                variant="outline"
-                className="capitalize border border-blue-400 bg-blue-50 text-blue-700 text-xs md:text-sm px-2 py-0.5"
-              >
-                {JobTypeLabel[job.type as JobType] || job.type}
-              </Badge>
-            </div>
-          </div>
-        </div>
-        {/* Info row: min-w-0 and overflow-x-auto */}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600 mt-3 mb-2">
-          <div className="flex items-center min-w-0">
-            <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span>{job.location}</span>
-          </div>
-          <div className="flex items-center min-w-0">
-            <DollarSign className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span>{salary}</span>
-          </div>
-          <div className="flex items-center min-w-0">
-            <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span>{date}</span>
-          </div>
-        </div>
-        {/* Description */}
-        <div className="mb-2">
-          <p className="text-gray-700 text-xs sm:text-sm md:text-base line-clamp-2">
-            {job.summary ||
-              job.description.replace(/[#*]/g, "").substring(0, 150)}
-            ...
-          </p>
-        </div>
-        {/* Keywords */}
-        <div className="flex flex-wrap gap-1 mb-2">
-          {job.keywords.slice(0, 5).map((keyword: string) => (
-            <Badge
-              key={keyword}
-              variant="outline"
-              className="text-[11px] border border-gray-300 bg-gray-100 text-gray-700 px-2 py-0.5"
-            >
-              {keyword}
-            </Badge>
-          ))}
-        </div>
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
-          <div className="flex items-center gap-2 text-xs md:text-sm text-gray-500">
-            <span className="flex items-center">
-              <Users className="h-4 w-4 mr-1" />
-              {job.applications} applicants
-            </span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-1 w-full sm:w-auto">
-            <div className="w-full sm:w-auto">
-              <ApplyJobDialog jobId={job?.id ?? ""} />
-            </div>
+
+            {/* Save Button: DÙNG HÀM onSave CŨ */}
             <button
-              type="button"
-              onClick={onView}
-              className="mt-1 sm:mt-0 text-blue-600 hover:underline text-sm font-medium px-2 py-1 transition"
-              style={{ width: "fit-content", alignSelf: "center" }}
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onSave(); }} 
+                aria-label="Unsave job"
+                className="p-2 ml-4 rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
             >
-              View Details
+                <Heart
+                    className={`h-5 w-5 ${
+                        isSaved ? "fill-red-500 text-red-500" : "" // DÙNG PROPS CŨ
+                    }`}
+                />
             </button>
-          </div>
+        </div>
+        
+        {/* Info row: Badges/Tags (UI: Simplify, Logic cũ) */}
+        <div className="flex flex-wrap gap-2 text-xs text-gray-600 mt-4 mb-3 border-b border-gray-100 pb-3">
+             {/* Job Type Badge */}
+            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold flex items-center gap-1">
+                <JobTypeIcon size={10} /> {jobType}
+            </span>
+             {/* Location Badge */}
+            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded font-bold flex items-center gap-1">
+                <MapPin size={10} /> {job.location}
+            </span>
+            {/* Salary Badge */}
+            {salary && (
+                <span className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold flex items-center gap-1">
+                    <DollarSign size={10} /> {salary}
+                </span>
+            )}
+             {/* Applied/Posted Date Badge */}
+            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded font-bold flex items-center gap-1">
+                <Clock size={10} /> {date}
+            </span>
+        </div>
+        
+        {/* Description */}
+        <div className="mb-4">
+            <p className="text-gray-700 text-sm leading-relaxed line-clamp-2">
+                {job.summary ||
+                  (job.description.replace(/[#*]/g, "").substring(0, 150) + "...")}
+            </p>
+        </div>
+        
+        {/* Keywords */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+            {job.keywords && job.keywords.slice(0, 5).map((keyword: string) => ( // Dùng slice(0, 5) như cũ
+                <Badge
+                    key={keyword}
+                    variant="outline"
+                    className="text-xs border border-gray-300 bg-gray-50 text-gray-700 px-3 py-1 rounded-full font-medium"
+                >
+                    {keyword}
+                </Badge>
+            ))}
+        </div>
+        
+        {/* Actions (UI: Simplify, Logic: Cũ) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
+                <Users className="h-4 w-4 mr-1" />
+                <span>{job.applications} applicants</span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 w-full sm:w-auto">
+                <div className="w-full sm:w-auto">
+                    <ApplyJobDialog jobId={job?.id ?? ""} />
+                </div>
+                {/* NÚT GỌI onView: Vẫn giữ nguyên logic cũ */}
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onView(); }}
+                    className="mt-1 sm:mt-0 text-blue-600 hover:underline text-sm font-bold w-full sm:w-auto p-2 transition"
+                    style={{ width: "fit-content", alignSelf: "center" }} // Giữ style cũ
+                >
+                    View Details
+                </button>
+            </div>
         </div>
       </CardContent>
     </Card>
