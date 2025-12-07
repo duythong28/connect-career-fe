@@ -84,3 +84,12 @@ export interface ApplicationDetailed {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface UsersListResponse {
+  people: {
+    items: UserResponse[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+}

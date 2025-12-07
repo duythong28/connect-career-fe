@@ -81,3 +81,10 @@ export interface InterviewFeedback {
   weaknesses?: string[];
   recommendation?: Recommendation;
 }
+
+export interface CompanyInterviewResponse {
+  total: number;
+  data: InterviewResponse[];
+  page: number;
+  limit: number;
+}
