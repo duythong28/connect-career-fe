@@ -55,6 +55,7 @@ export interface RefundRequest {
   userId: string;
   amount: number;
   reason: string;
+  paymentTransactionId : string;
 }
 
 export interface Refund {
