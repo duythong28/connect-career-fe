@@ -1,4 +1,5 @@
 import axios from "../client/axios";
+import { CompanyInterviewResponse, InterviewResponse } from "../types/interviews.types";
 import {
   Organization,
   OrganizationFilters,
@@ -70,6 +71,19 @@ const getHiringEffectivenessSummary = async (
   return response.data;
 };
 
+const getInterviewsByCompanyId = async ({
+  organizationId,
+  query,
+}: {
+  organizationId: string;
+  query?: { startDate: string; endDate: string };
+}): Promise<CompanyInterviewResponse> => {
+  const response = await axios.get(`${API_URL}/${organizationId}/interviews`,{
+    params: query,
+  });
+  return response.data;
+};
+
 export {
   getOrganizations,
   getOrganizationById,
@@ -79,4 +93,5 @@ export {
   getMyOrganizations,
   getHiringEffectiveness,
   getHiringEffectivenessSummary,
+  getInterviewsByCompanyId,
 };

@@ -30,8 +30,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useOrganization } from "@/context/OrganizationContext";
 import { useAuth } from "@/hooks/useAuth";
+import { Edit, Trash2, Mail, Users, Check } from "lucide-react";
 
-// Enum-to-label mapping for status
 const statusLabel: Record<string, string> = {
   active: "Active",
   invited: "Invited",
@@ -39,7 +39,7 @@ const statusLabel: Record<string, string> = {
 };
 
 export default function OrganizationMembersPage() {
-  const { companyId } = useParams();
+  const { jobId, companyId } = useParams();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("");
   const [inviteMessage, setInviteMessage] = useState("");
@@ -53,7 +53,6 @@ export default function OrganizationMembersPage() {
   );
   const isOwner = myMembership?.role?.name === "owner";
 
-  // Fetch members, roles, invitations
   const { data: members = [], refetch: refetchMembers } = useQuery<
     OrganizationMember[]
   >({
@@ -76,7 +75,6 @@ export default function OrganizationMembersPage() {
     enabled: !!companyId,
   });
 
-  // Invite mutation
   const inviteMutation = useMutation({
     mutationFn: (data: InviteMemberDTO) =>
       inviteOrganizationMember(companyId!, data),
@@ -90,7 +88,6 @@ export default function OrganizationMembersPage() {
     onError: () => toast({ title: "Failed to invite", variant: "destructive" }),
   });
 
-  // Change member role mutation
   const changeRoleMutation = useMutation({
     mutationFn: ({ memberId, roleId }: { memberId: string; roleId: string }) =>
       changeOrganizationMemberRole(companyId!, memberId, { roleId }),
@@ -104,7 +101,6 @@ export default function OrganizationMembersPage() {
       toast({ title: "Failed to update role", variant: "destructive" }),
   });
 
-  // Remove member mutation
   const removeMemberMutation = useMutation({
     mutationFn: (memberId: string) =>
       removeOrganizationMember(companyId!, memberId),
@@ -139,101 +135,141 @@ export default function OrganizationMembersPage() {
     }
   };
 
-  // Responsive highlight area
+  const handleSaveRole = (memberId: string, newRoleId: string | null) => {
+    const roleToSave = newRoleId || editingRoleId;
+
+    if (
+      roleToSave &&
+      roleToSave !== members.find((m) => m.id === memberId)?.role.id
+    ) {
+      handleRoleChange(memberId, roleToSave);
+    } else {
+      setEditingMemberId(null);
+      setEditingRoleId(null);
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      {/* Highlight area */}
-      <div className="rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 p-6 mb-8 shadow-sm">
-        <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-blue-900 mb-2">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 font-sans bg-gray-50 min-h-screen">
+      <div className="border-b border-gray-200 pb-4 mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">
           Organization Members
         </h1>
-        <p className="text-sm sm:text-base md:text-lg text-blue-700">
+        <p className="text-sm text-gray-500 mt-1">
           Manage your team, roles, and invitations here.
         </p>
       </div>
 
-      {/* Invite Member */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Invite Member</CardTitle>
+      <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl">
+        <CardHeader className="border-b border-gray-100 p-4">
+          <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+            <Mail className="h-5 w-5 text-[#0EA5E9]" />
+            Invite New Member
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form
-            className="flex flex-col gap-4 sm:flex-row sm:items-end"
-            onSubmit={handleInvite}
-          >
-            <Input
-              type="email"
-              placeholder="Email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              required
-              className="text-base"
-              disabled={!isOwner}
-            />
-            <Select value={inviteRole} onValueChange={setInviteRole}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem key={role.id} value={role.id}>
-                    {role.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Message (optional)"
-              value={inviteMessage}
-              onChange={(e) => setInviteMessage(e.target.value)}
-              className="text-base"
-            />
-            <Button
-              type="submit"
-              disabled={inviteMutation.isPending}
-              className="w-full sm:w-auto"
+        <CardContent className="p-4">
+          {isOwner ? (
+            <form
+              className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
+              onSubmit={handleInvite}
             >
-              Invite
-            </Button>
-          </form>
+              <div className="md:col-span-1">
+                <Input
+                  type="email"
+                  placeholder="Email Address"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                  className="border-gray-300 h-10"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <Select
+                  value={inviteRole}
+                  onValueChange={setInviteRole}
+                  disabled={!isOwner}
+                >
+                  <SelectTrigger className="border-gray-300 h-10">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-1">
+                <Input
+                  placeholder="Message (optional)"
+                  value={inviteMessage}
+                  onChange={(e) => setInviteMessage(e.target.value)}
+                  className="border-gray-300 h-10"
+                  disabled={!isOwner}
+                />
+              </div>
+              <div className="md:col-span-1">
+                <Button
+                  type="submit"
+                  disabled={
+                    inviteMutation.isPending ||
+                    !isOwner ||
+                    !inviteRole ||
+                    !inviteEmail
+                  }
+                  className="w-full bg-[#0EA5E9] hover:bg-[#0284c7] font-bold h-10"
+                >
+                  Send Invitation
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium">
+              You do not have permission (Owner role required) to invite new
+              members.
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Members Table */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Members</CardTitle>
+      <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl">
+        <CardHeader className="border-b border-gray-100 p-4">
+          <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+            <Users className="h-5 w-5 text-[#0EA5E9]" />
+            Team Members
+          </CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto p-0">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b">
-                <th className="py-2">Avatar</th>
-                <th className="py-2">Name</th>
-                <th className="py-2">Email</th>
-                <th className="py-2">Role</th>
-                <th className="py-2">Status</th>
-                <th className="py-2">Actions</th>
+              <tr className="border-b text-xs font-bold text-gray-600 uppercase bg-gray-50">
+                <th className="py-3 px-4 w-12"></th>
+                <th className="py-3 px-4 min-w-[120px]">Name</th>
+                <th className="py-3 px-4 min-w-[150px]">Email</th>
+                <th className="py-3 px-4 min-w-[150px]">Role</th>
+                <th className="py-3 px-4 w-20">Status</th>
+                <th className="py-3 px-4 w-32">Actions</th>
               </tr>
             </thead>
             <tbody>
               {members.map((member) => (
                 <tr
                   key={member.id}
-                  className="align-top border-b last:border-0"
+                  className="align-middle border-b last:border-0 hover:bg-gray-50/50"
                 >
-                  <td className="py-2">
-                    <Avatar className="h-8 w-8">
+                  <td className="py-3 px-4">
+                    <Avatar className="h-9 w-9">
                       <AvatarImage src={member.user.avatarUrl || undefined} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-gray-200 text-xs font-bold">
                         {member.user.fullName
                           ? member.user.fullName[0]
                           : member.user.email[0]}
                       </AvatarFallback>
                     </Avatar>
                   </td>
-                  <td className="py-2 min-w-[120px]">
+                  <td className="py-3 px-4 text-sm font-semibold text-gray-800">
                     <div className="truncate">
                       {member.user.fullName ||
                         [member.user.firstName, member.user.lastName]
@@ -242,16 +278,18 @@ export default function OrganizationMembersPage() {
                         member.user.username}
                     </div>
                   </td>
-                  <td className="py-2">{member.user.email}</td>
-                  <td className="py-2 min-w-[100px]">
+                  <td className="py-3 px-4 text-sm text-gray-600">
+                    {member.user.email}
+                  </td>
+                  <td className="py-3 px-4">
                     {editingMemberId === member.id ? (
-                      <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="flex gap-2 items-center">
                         <Select
                           value={editingRoleId || member.role.id}
                           onValueChange={setEditingRoleId}
-                          disabled={changeRoleMutation.isPending}
+                          disabled={changeRoleMutation.isPending || !isOwner}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-32 h-9 text-xs border-gray-300">
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
@@ -262,41 +300,17 @@ export default function OrganizationMembersPage() {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            if (
-                              editingRoleId &&
-                              editingRoleId !== member.role.id
-                            ) {
-                              handleRoleChange(member.userId, editingRoleId);
-                            } else {
-                              setEditingMemberId(null);
-                              setEditingRoleId(null);
-                            }
-                          }}
-                          disabled={changeRoleMutation.isPending || !isOwner}
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            setEditingMemberId(null);
-                            setEditingRoleId(null);
-                          }}
-                        >
-                          Cancel
-                        </Button>
                       </div>
                     ) : (
-                      <Badge variant="outline" className="capitalize">
+                      <Badge
+                        variant="outline"
+                        className="capitalize text-gray-800 font-medium"
+                      >
                         {member.role?.name}
                       </Badge>
                     )}
                   </td>
-                  <td className="py-2">
+                  <td className="py-3 px-4">
                     <Badge
                       variant={
                         member.status === "active"
@@ -305,32 +319,62 @@ export default function OrganizationMembersPage() {
                           ? "secondary"
                           : "destructive"
                       }
-                      className="capitalize"
+                      className={`capitalize font-bold ${
+                        member.status === "active"
+                          ? "bg-green-500 hover:bg-green-600"
+                          : ""
+                      }`}
                     >
                       {statusLabel[member.status] || member.status}
                     </Badge>
                   </td>
-                  <td className="py-2">
-                    {editingMemberId === member.id ? null : (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
+                  <td className="py-3 px-4">
+                    {editingMemberId === member.id ? (
+                      <div className="flex gap-1 items-center">
                         <Button
-                          size="sm"
-                          variant="outline"
+                          size="icon"
+                          onClick={() =>
+                            handleSaveRole(member.id, editingRoleId)
+                          }
+                          disabled={changeRoleMutation.isPending || !isOwner}
+                          className="h-8 w-8 p-0 bg-[#0EA5E9] hover:bg-[#0284c7] text-white"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingMemberId(null);
+                            setEditingRoleId(null);
+                          }}
+                          className="h-8 w-8 p-0 text-gray-700 hover:bg-gray-200"
+                        >
+                          <span className="text-xl leading-none">×</span>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           onClick={() => {
                             setEditingMemberId(member.id);
                             setEditingRoleId(member.role.id);
                           }}
                           disabled={!isOwner}
+                          className="h-8 w-8 p-1 text-gray-500 hover:text-[#0EA5E9]"
                         >
-                          Edit Role
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
-                          size="sm"
-                          variant="destructive"
+                          size="icon"
+                          variant="ghost"
                           onClick={() => handleRemoveMember(member.userId)}
                           disabled={removeMemberMutation.isPending || !isOwner}
+                          className="h-8 w-8 p-1 text-red-500 hover:text-red-700"
                         >
-                          Remove
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     )}
@@ -342,57 +386,73 @@ export default function OrganizationMembersPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">
+      <Card className="border border-gray-200 shadow-sm rounded-xl">
+        <CardHeader className="border-b border-gray-100 p-4">
+          <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+            <Mail className="h-5 w-5 text-[#0EA5E9]" />
             Pending Invitations
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2">Email</th>
-                  <th className="py-2">Role</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Token</th>
-                  <th className="py-2">Created At</th>
+        <CardContent className="overflow-x-auto p-0">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b text-xs font-bold text-gray-600 uppercase bg-gray-50">
+                <th className="py-3 px-4 min-w-[150px]">Email</th>
+                <th className="py-3 px-4 min-w-[100px]">Role</th>
+                <th className="py-3 px-4 w-20">Status</th>
+                <th className="py-3 px-4 min-w-[200px]">Token</th>
+                <th className="py-3 px-4 min-w-[120px]">Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invitations.map((invite) => (
+                <tr
+                  key={invite.id}
+                  className="border-b last:border-0 hover:bg-gray-50/50"
+                >
+                  <td className="py-3 px-4 text-sm text-gray-600">
+                    {invite.email}
+                  </td>
+                  <td className="py-3 px-4">
+                    <Badge
+                      variant="outline"
+                      className="text-gray-800 font-medium"
+                    >
+                      {invite.role?.name}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-4 capitalize">
+                    <Badge
+                      variant={
+                        invite.status === "pending"
+                          ? "secondary"
+                          : invite.status === "accepted"
+                          ? "default"
+                          : "destructive"
+                      }
+                      className={`capitalize font-bold ${
+                        invite.status === "accepted"
+                          ? "bg-green-500 hover:bg-green-600"
+                          : ""
+                      }`}
+                    >
+                      {invite.status}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="break-all text-xs font-mono text-gray-500">
+                      {invite.token}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-xs text-gray-500">
+                    {invite.createdAt
+                      ? new Date(invite.createdAt).toLocaleDateString()
+                      : "-"}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {invitations.map((invite) => (
-                  <tr key={invite.id} className="border-b last:border-0">
-                    <td className="py-2">{invite.email}</td>
-                    <td className="py-2">
-                      <Badge variant="outline">{invite.role?.name}</Badge>
-                    </td>
-                    <td className="py-2 capitalize">
-                      <Badge
-                        variant={
-                          invite.status === "pending"
-                            ? "secondary"
-                            : invite.status === "accepted"
-                            ? "default"
-                            : "destructive"
-                        }
-                      >
-                        {invite.status}
-                      </Badge>
-                    </td>
-                    <td className="py-2">
-                      <span className="break-all text-xs">{invite.token}</span>
-                    </td>
-                    <td className="py-2">
-                      {invite.createdAt
-                        ? new Date(invite.createdAt).toLocaleString()
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </CardContent>
       </Card>
     </div>
