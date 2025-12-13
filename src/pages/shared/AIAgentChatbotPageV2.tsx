@@ -22,13 +22,12 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { aiAgentAPI, ConversationMessage } from "@/api/endpoints/ai-agent.api";
+import { aiAgentAPI, ConversationMessage, AttachmentInput } from "@/api/endpoints/ai-agent.api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
 
-// --- Types ---
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -36,6 +35,7 @@ interface Message {
   agent?: string;
   intent?: string;
   suggestions?: string[];
+  attachments?: AttachmentInput[];
   metadata?: {
     executionTime?: number;
     confidence?: number;
@@ -46,6 +46,7 @@ interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   isError?: boolean;
+  isSystem?: boolean;
 }
 
 export interface ChatSession {
@@ -58,7 +59,7 @@ export interface ChatSession {
 
 // --- Component ---
 export default function AIAgentChatPageV2() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -69,6 +70,8 @@ export default function AIAgentChatPageV2() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentInput[]>([]);
+  const streamBufferRef = useRef("");
 
   // Derive current session ID from URL
   const currentSessionId = searchParams.get("session");
@@ -116,30 +119,28 @@ export default function AIAgentChatPageV2() {
         agent: (msgRecord.agent as string) || (msgRecord.agentName as string),
         intent: msgRecord.intent as string,
         suggestions: (msgRecord.suggestions as string[]) || [],
+        attachments: (msgRecord.attachments as AttachmentInput[])
+          || (msgRecord.metadata && (msgRecord.metadata as Record<string, unknown>).attachments as AttachmentInput[])
+          || [],
         metadata: msgRecord.metadata as Message['metadata'],
         timestamp,
       };
     });
   }, []);
+  
 
   // Load conversation history
   const loadHistory = useCallback(async (sessionId: string) => {
     setIsLoading(true);
     try {
       const history = await aiAgentAPI.getConversationHistory(sessionId);
-      
-      let messagesArray: ConversationMessage[] | Record<string, unknown>[] = [];
-      
-      if (Array.isArray(history)) {
-        messagesArray = history as ConversationMessage[];
-      } else if (history && typeof history === 'object') {
-        const historyObj = history as unknown as Record<string, unknown>;
-        if ('messages' in historyObj && Array.isArray(historyObj.messages)) {
-          messagesArray = historyObj.messages as ConversationMessage[];
-        } else {
-          messagesArray = [history as unknown as ConversationMessage];
-        }
-      }
+      const historyObj = history as unknown as Record<string, unknown>;
+      const messagesArray: ConversationMessage[] | Record<string, unknown>[] =
+        Array.isArray(historyObj?.messages)
+          ? (historyObj.messages as ConversationMessage[])
+          : Array.isArray(history)
+          ? (history as ConversationMessage[])
+          : [];
 
       const formatted = formatMessages(messagesArray);
       setMessages(formatted);
@@ -164,9 +165,10 @@ export default function AIAgentChatPageV2() {
           const title = (sRecord.title as string) || "New Conversation";
           
           return {
-            id: (sRecord.sessionId as string) || (sRecord.id as string) || '',
+            id: (sRecord.id as string) || (sRecord.sessionId as string) || '',
             title,
             timestamp: new Date(
+              (sRecord.updatedAt as string) ||
               (sRecord.lastMessageAt as string) || 
               (sRecord.createdAt as string) || 
               new Date().toISOString()
@@ -227,84 +229,138 @@ export default function AIAgentChatPageV2() {
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
-  const handleSendMessage = async (text: string = input) => {
-    if (!text.trim() || !currentSessionId || isLoading) return;
+  // --- FIXED SEND MESSAGE LOGIC ---
+  const handleSendMessage = async (textOverride?: string) => {
+    // 1. Determine message text
+    const messageText = typeof textOverride === 'string' ? textOverride : input;
+    if (!messageText.trim()) return;
 
-    const messageText = text;
-    setInput("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    // 2. Generate Unique IDs (Fixes "Duplicate Key" error)
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(7);
+    const botMsgId = `${timestamp}-bot-${randomSuffix}`;
+    const userMsgId = `${timestamp}-user-${randomSuffix}`;
+    
+    // [CRITICAL] Reset the stream buffer for the new message
+    streamBufferRef.current = ""; 
 
-    // Optimistic UI Update
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: messageText,
-      timestamp: new Date(),
+    // 3. Update UI immediately (Optimistic update)
+    const userMsg: Message = { 
+        id: userMsgId, 
+        role: 'user', 
+        content: messageText, 
+        attachments: pendingAttachments,
+        timestamp: new Date()
     };
-
-    const botMsgId = (Date.now() + 1).toString();
-    const botMsg: Message = {
-      id: botMsgId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-      isStreaming: true,
-    };
-
-    setMessages(prev => [...prev, userMsg, botMsg]);
+    
+    setMessages(prev => [
+      ...prev, 
+      userMsg,
+      { 
+          id: botMsgId, 
+          role: 'assistant', 
+          content: '', // Start empty, will fill via stream
+          isStreaming: true, 
+          suggestions: [],
+          timestamp: new Date()
+      }
+    ]);
+    
+    setInput(""); 
     setIsLoading(true);
 
     try {
       await aiAgentAPI.sendChatMessageStream(
         currentSessionId,
         messageText,
-        undefined,
-        // onChunk
-        (chunk: string) => {
-          setMessages(prev => prev.map(m => 
-            m.id === botMsgId 
-              ? { ...m, content: m.content + chunk } 
-              : m
-          ));
-        },
-        // onComplete
-        (fullMessage: string, agent?: string, suggestions?: string[]) => {
-          setMessages(prev => prev.map(m => 
-            m.id === botMsgId 
-              ? { 
-                  ...m, 
-                  isStreaming: false,
-                  content: fullMessage,
-                  agent,
-                  suggestions,
-                } 
-              : m
-          ));
-          setIsLoading(false);
+        { attachments: pendingAttachments, searchEnabled: true },
 
-          // Update session title if first message
-          if (messages.length === 0) {
-            setSessions(prev => prev.map(s => 
-              s.id === currentSessionId 
-                ? { ...s, title: messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "") } 
-                : s
-            ));
+        // --- ON CHUNK RECEIVED ---
+        (chunkRaw: string) => {
+          try {
+            // A. Clean up SSE prefix if present (e.g., "data: {...}")
+            let cleanChunk = chunkRaw;
+            if (typeof chunkRaw === 'string' && chunkRaw.startsWith('data: ')) {
+               cleanChunk = chunkRaw.replace('data: ', '').trim();
+            }
+            if (!cleanChunk) return; // Skip empty keep-alive packets
+
+            // B. Parse JSON
+            const data = typeof cleanChunk === 'string' ? JSON.parse(cleanChunk) : cleanChunk;
+
+            // C. Append content to Buffer (Ref is always up-to-date)
+            if (data.type === 'chunk' && data.content) {
+              streamBufferRef.current += data.content;
+              
+              // D. Update State from Buffer
+              // We use streamBufferRef.current instead of 'prev + chunk' to guarantee order and completeness
+              setMessages(prev => prev.map(m => 
+                m.id === botMsgId 
+                  ? { ...m, content: streamBufferRef.current } 
+                  : m
+              ));
+            }
+          } catch (e) {
+            console.warn("Stream chunk parse error, attempting as plain text:", e);
+            // Fallback for non-JSON chunks
+            if (typeof chunkRaw === 'string') {
+               streamBufferRef.current += chunkRaw;
+               setMessages(prev => prev.map(m => 
+                m.id === botMsgId ? { ...m, content: streamBufferRef.current } : m
+               ));
+            }
           }
         },
-        // onError
-        (error: Error) => {
+
+        // --- ON COMPLETE ---
+        (fullMessageRaw: string, metadata?: Record<string, unknown>) => {
+          // [CRITICAL] Use the buffer as the final source of truth.
+          // 'fullMessageRaw' from the API might be just a "Done" signal or metadata, causing the text to vanish if used directly.
+          const finalContent = streamBufferRef.current; 
+
+          setMessages(prev => prev.map(m => {
+            if (m.id === botMsgId) {
+               return { 
+                  ...m, 
+                  isStreaming: false,
+                  content: finalContent, // Ensure we keep the text we just streamed
+                  agent: metadata?.agent as string | undefined,
+                  suggestions: (metadata?.suggestions as string[]) || m.suggestions,
+               };
+            }
+            return m;
+          }));
+
+          setIsLoading(false);
+          setPendingAttachments([]);
+
+          // Safe Session Title Update
+          setSessions(prev => prev.map(s => {
+            const isDefaultTitle = !s.title || s.title === "New Conversation" || s.title.startsWith("Session ");
+            if (s.id === currentSessionId && isDefaultTitle) {
+              const newTitle = messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "");
+              return { ...s, title: newTitle };
+            }
+            return s;
+          }));
+        },
+
+        // --- ON ERROR ---
+        (_error: Error) => {
+          console.error(_error);
           setMessages(prev => prev.map(m => 
             m.id === botMsgId 
-              ? { ...m, isStreaming: false, isError: true, content: m.content + "\n\n[Error: Failed to generate response]" } 
+              ? { ...m, isStreaming: false, isError: true, content: streamBufferRef.current || "Error generating response." } 
               : m
           ));
           setIsLoading(false);
         }
       );
     } catch (error) {
+      console.error("Setup error", error);
       setMessages(prev => prev.map(m => 
         m.id === botMsgId 
-          ? { ...m, isStreaming: false, isError: true, content: m.content + "\n\n[Error: Failed to send message]" } 
+          ? { ...m, isStreaming: false, isError: true, content: "Failed to send message." } 
           : m
       ));
       setIsLoading(false);
@@ -317,22 +373,16 @@ export default function AIAgentChatPageV2() {
 
     setIsLoading(true);
     try {
-      const data = await aiAgentAPI.uploadFile(currentSessionId, file, "User uploaded file");
-      
+      const attachment = await aiAgentAPI.uploadAttachment(file);
+      setPendingAttachments(prev => [...prev, attachment]);
       setMessages(prev => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "user",
-          content: `📎 Uploaded: ${file.name}`,
+          content: `📎 Attached: ${file.name}`,
           timestamp: new Date(),
           metadata: { fileName: file.name, mimeType: file.type },
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: data.success ? `I've received ${file.name}. How would you like me to analyze it?` : "Failed to upload file.",
-          timestamp: new Date(),
         },
       ]);
     } catch (error) {
@@ -599,9 +649,34 @@ export default function AIAgentChatPageV2() {
                         )}
                       >
                         {msg.role === 'assistant' ? (
-                          <Markdown content={msg.content} className="prose-sm prose-blue max-w-none" />
+                          msg.content?.trim()
+                            ? <Markdown content={msg.content} className="prose-sm prose-blue max-w-none" />
+                            : (
+                                <div className="flex items-center gap-1 text-gray-400 text-sm">
+                                  <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                  <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                  <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></span>
+                                  <span>Thinking...</span>
+                                </div>
+                              )
                         ) : (
                           <div className="whitespace-pre-wrap">{msg.content}</div>
+                        )}
+
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {msg.attachments.map((att, i) => (
+                              <a
+                                key={i}
+                                href={att.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100 transition"
+                              >
+                                📎 {att.name || att.url}
+                              </a>
+                            ))}
+                          </div>
                         )}
                         
                         {/* Media Metadata */}
@@ -737,7 +812,20 @@ export default function AIAgentChatPageV2() {
                   )}
                 </button>
               </div>
-              
+
+              {pendingAttachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3 text-xs text-gray-600">
+                  {pendingAttachments.map((att, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full"
+                    >
+                      📎 {att.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               <p className="text-[10px] text-gray-400 text-center mt-2 font-medium">
                 AI can make mistakes. Verify important information.
               </p>

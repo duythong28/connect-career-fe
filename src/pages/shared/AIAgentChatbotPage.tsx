@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { aiAgentAPI, ConversationMessage } from "@/api/endpoints/ai-agent.api";
+import { aiAgentAPI, ConversationMessage, AttachmentInput } from "@/api/endpoints/ai-agent.api";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
@@ -24,8 +24,10 @@ interface Message {
   content: string;
   agent?: string;
   suggestions?: string[];
+  attachments?: AttachmentInput[];
   timestamp: Date;
   isSystem?: boolean;
+  isStreaming?: boolean;
   error?: boolean;
 }
 
@@ -48,6 +50,7 @@ export default function AIAgentChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentInput[]>([]);
 
   // Derive current session ID from URL to ensure persistence across refreshes
   const currentSessionId = searchParams.get("session");
@@ -98,6 +101,9 @@ export default function AIAgentChatPage() {
           content,
           agent: (msgRecord.agent as string) || (msgRecord.agentName as string),
           suggestions: (msgRecord.suggestions as string[]) || [],
+          attachments: (msgRecord.attachments as AttachmentInput[]) 
+            || (msgRecord.metadata && (msgRecord.metadata as Record<string, unknown>).attachments as AttachmentInput[])
+            || [],
           timestamp,
         };
     });
@@ -108,20 +114,14 @@ export default function AIAgentChatPage() {
     try {
       setIsLoading(true);
       const history = await aiAgentAPI.getConversationHistory(sessionId);
-      
-      let messagesArray: ConversationMessage[] | Record<string, unknown>[] = [];
-      
-      // Robust handling of backend response formats
-      if (Array.isArray(history)) {
-        messagesArray = history as ConversationMessage[];
-      } else if (history && typeof history === 'object') {
-        const historyObj = history as unknown as Record<string, unknown>;
-        if ('messages' in historyObj && Array.isArray(historyObj.messages)) {
-          messagesArray = historyObj.messages as ConversationMessage[];
-        } else {
-          messagesArray = [history as unknown as ConversationMessage]; // Treat as single message
-        }
-      }
+
+      const historyObj = history as Record<string, unknown>;
+      const messagesArray: ConversationMessage[] | Record<string, unknown>[] =
+        Array.isArray(historyObj?.messages)
+          ? (historyObj.messages as ConversationMessage[])
+          : Array.isArray(history)
+          ? (history as ConversationMessage[])
+          : [];
 
       const formatted = formatMessages(messagesArray);
       setMessages(formatted);
@@ -157,9 +157,10 @@ export default function AIAgentChatPage() {
           }
 
           return {
-            id: (sRecord.sessionId as string) || (sRecord.id as string) || '',
+            id: (sRecord.id as string) || (sRecord.sessionId as string) || '',
             title,
             timestamp: new Date(
+              (sRecord.updatedAt as string) ||
               (sRecord.lastMessageAt as string) || 
               (sRecord.createdAt as string) || 
               new Date().toISOString()
@@ -249,7 +250,7 @@ export default function AIAgentChatPage() {
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userInput, timestamp: new Date() },
-      { role: "assistant", content: "", timestamp: new Date() } // Placeholder
+      { role: "assistant", content: "", timestamp: new Date(), isStreaming: true } // Placeholder
     ]);
 
     setIsLoading(true);
@@ -258,30 +259,33 @@ export default function AIAgentChatPage() {
       await aiAgentAPI.sendChatMessageStream(
         currentSessionId,
         userInput,
-        undefined,
+        { attachments: pendingAttachments, searchEnabled: true },
         (chunk: string) => {
           setMessages((prev) => {
             const newMsgs = [...prev];
             const last = newMsgs[newMsgs.length - 1];
             if (last && last.role === "assistant") {
               last.content += chunk;
+              last.isStreaming = true;
             }
             return newMsgs;
           });
         },
-        (fullMessage, agent, suggestions) => {
+        (fullMessage, metadata) => {
             setMessages((prev) => {
                 const newMsgs = [...prev];
                 const last = newMsgs[newMsgs.length - 1];
                 if (last && last.role === "assistant") {
                   last.content = fullMessage;
-                  last.agent = agent;
-                  last.suggestions = suggestions;
+                  last.agent = metadata?.agent as string | undefined;
+                  last.suggestions = (metadata?.suggestions as string[]) || last.suggestions;
+                  last.isStreaming = false;
               }
               return newMsgs;
             });
             setIsLoading(false);
             refreshTitleIfNew(userInput, currentSessionId);
+            setPendingAttachments([]);
         },
         (error) => {
              console.error(error);
@@ -301,6 +305,7 @@ export default function AIAgentChatPage() {
         if (last && last.role === "assistant") {
             last.content = "Sorry, I encountered an error processing your request.";
             last.error = true;
+            last.isStreaming = false;
         }
         return newMsgs;
     });
@@ -329,13 +334,12 @@ export default function AIAgentChatPage() {
 
     setIsLoading(true);
     try {
-      const data = await aiAgentAPI.uploadFile(currentSessionId, file, "User uploaded file");
-      
-      // Add system message
+      const attachment = await aiAgentAPI.uploadAttachment(file);
+      setPendingAttachments(prev => [...prev, attachment]);
+      // Surface a system message showing attachment ready
       setMessages(prev => [
-          ...prev, 
-          { role: "user", content: `📎 Uploaded: ${file.name}`, isSystem: true, timestamp: new Date() },
-          { role: "assistant", content: data.success ? "File received. Analyzing..." : "Upload failed.", timestamp: new Date() }
+        ...prev,
+        { role: "user", content: `📎 Attached: ${file.name}`, isSystem: true, timestamp: new Date() },
       ]);
     } catch (error) {
       console.error(error);
@@ -454,9 +458,33 @@ export default function AIAgentChatPage() {
                                                 : "bg-gray-50 text-gray-900 rounded-tl-sm"
                                     )}>
                                         {msg.role === "assistant" && !msg.isSystem ? (
-                                            <Markdown content={msg.content} className="prose-sm sm:prose-base prose-blue max-w-none" />
+                                            msg.content?.trim()
+                                              ? <Markdown content={msg.content} className="prose-sm sm:prose-base prose-blue max-w-none" />
+                                              : (
+                                                  <div className="flex items-center gap-1 text-gray-400 text-sm">
+                                                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                                    <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></span>
+                                                    <span>Thinking...</span>
+                                                  </div>
+                                                )
                                         ) : (
                                             <div className="whitespace-pre-wrap">{msg.content}</div>
+                                        )}
+                                        {msg.attachments && msg.attachments.length > 0 && (
+                                          <div className="flex flex-wrap gap-2 mt-3">
+                                            {msg.attachments.map((att, i) => (
+                                              <a
+                                                key={i}
+                                                href={att.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100 transition"
+                                              >
+                                                📎 {att.name || att.url}
+                                              </a>
+                                            ))}
+                                          </div>
                                         )}
                                     </div>
 
@@ -540,6 +568,15 @@ export default function AIAgentChatPage() {
                             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
                         </button>
                      </form>
+                     {pendingAttachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3 text-xs text-gray-600">
+                            {pendingAttachments.map((att, i) => (
+                                <span key={i} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 rounded-full">
+                                    📎 {att.name}
+                                </span>
+                            ))}
+                        </div>
+                     )}
                      <p className="text-[10px] text-gray-400 text-center mt-2 font-medium">AI can make mistakes. Verify important info.</p>
                 </div>
             </div>
