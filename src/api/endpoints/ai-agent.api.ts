@@ -1,6 +1,11 @@
 import axios from "../client";
+import {
+  createFileEntity,
+  getSignUrl,
+  uploadFile as persistUploadedFile,
+} from "./files.api";
 
-const API_URL = "/ai-agent";
+const API_URL = "/chat";
 
 export interface CreateSessionResponse {
   sessionId: string;
@@ -12,277 +17,236 @@ export interface ChatMessage {
   suggestions?: string[];
 }
 
-export interface UploadFileResponse {
-  success: boolean;
-  message?: string;
-}
-
 export interface ChatSession {
   id: string;
   title?: string;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface ConversationMessage {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   agent?: string;
   timestamp: string;
+  metadata?: Record<string, unknown>;
+  attachments?: AttachmentInput[];
 }
 
 export interface ConversationHistory {
   messages: ConversationMessage[];
 }
 
+export interface AttachmentInput {
+  type: string;
+  name: string;
+  mimeType: string;
+  url: string;
+}
+
+export interface ChatRequestOptions {
+  attachments?: AttachmentInput[];
+  metadata?: Record<string, unknown>;
+  searchEnabled?: boolean;
+  clickedSuggestionId?: string | null;
+  manualRetryAttempts?: number;
+}
+
 export const aiAgentAPI = {
   // Create a new chat session
   createChatSession: async (): Promise<CreateSessionResponse> => {
-    const response = await axios.post(`${API_URL}/chats`);
-    return response.data.data || response.data;
+    const response = await axios.post(`${API_URL}/sessions`);
+    const data = response.data?.data ?? response.data;
+    return {
+      sessionId: data?.sessionId || data?.id,
+    };
   },
 
-  // Send a chat message
-  sendChatMessage: async (
-    sessionId: string,
-    message: string,
-    metadata?: Record<string, any>
-  ): Promise<ChatMessage> => {
-    const response = await axios.post(
-      `${API_URL}/chats/${sessionId}/messages`,
-      {
-        message,
-        metadata,
-      }
-    );
-    return response.data.data || response.data;
-  },
-
+  // Stream a chat message (SSE)
   sendChatMessageStream: async (
     sessionId: string,
-    message: string,
-    metadata: Record<string, any> | undefined,
+    content: string,
+    options: ChatRequestOptions | undefined,
     onChunk: (chunk: string) => void,
-    onComplete: (fullMessage: string, agent?: string, suggestions?: string[]) => void,
+    onComplete: (fullMessage: string, metadata?: Record<string, unknown>) => void,
     onError: (error: Error) => void
   ): Promise<void> => {
     try {
       const accessToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('accessToken='))
-        ?.split('=')[1];
+        .split("; ")
+        .find((row) => row.startsWith("accessToken="))
+        ?.split("=")[1];
 
-      const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/";
-      const url = `${baseURL}${API_URL}/chats/${sessionId}/messages/stream`;
-      
+      const baseURL =
+        (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/").replace(
+          /\/$/,
+          ""
+        );
+      const url = `${baseURL}${API_URL}/sessions/${sessionId}/stream`;
+
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          message,
-          metadata,
+          content,
+          attachments: options?.attachments ?? [],
+          metadata: options?.metadata ?? {},
+          search_enabled: options?.searchEnabled ?? true,
+          clicked_suggestion_id: options?.clickedSuggestionId ?? null,
+          manual_retry_attempts: options?.manualRetryAttempts ?? 0,
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Streaming error:', response.status, errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error ${response.status}: ${errorText}`);
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullMessage = '';
-      let agent: string | undefined;
-      let suggestions: string[] | undefined;
-      let chunkBuffer = ''; // Buffer chunks for batching
-      let rafId: number | null = null;
-
       if (!reader) {
-        throw new Error('No reader available');
+        throw new Error("No reader available");
       }
 
-      // Function to flush buffered chunks
-      const flushChunks = () => {
-        if (chunkBuffer) {
-          onChunk(chunkBuffer);
-          chunkBuffer = '';
-        }
-        rafId = null;
-      };
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullMessage = "";
+      let finalMetadata: Record<string, unknown> | undefined;
 
       while (true) {
         const { done, value } = await reader.read();
-        
         if (done) {
-          // Flush any remaining chunks
-          if (chunkBuffer) {
-            onChunk(chunkBuffer);
-            chunkBuffer = '';
-          }
           break;
         }
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
 
         for (const line of lines) {
           if (!line.trim()) continue;
-          
-          if (line.startsWith('data: ')) {
-            try {
-              const jsonStr = line.slice(6).trim();
-              if (!jsonStr) continue;
-              
-              const data = JSON.parse(jsonStr);
-              
-              if (data.type === 'chunk' && data.content) {
-                fullMessage += data.content;
-                // Batch chunks together for smoother updates
-                chunkBuffer += data.content;
-                
-                // Schedule update on next animation frame (batches multiple chunks)
-                if (!rafId) {
-                  rafId = requestAnimationFrame(flushChunks);
-                }
-              } else if (data.type === 'complete') {
-                // Flush any pending chunks before completion
-                if (chunkBuffer) {
-                  onChunk(chunkBuffer);
-                  chunkBuffer = '';
-                }
-                agent = data.agent;
-                suggestions = data.suggestions;
-              } else if (data.type === 'error') {
-                throw new Error(data.error || 'Streaming error');
-              } else if (data.content) {
-                fullMessage += data.content;
-                chunkBuffer += data.content;
-                if (!rafId) {
-                  rafId = requestAnimationFrame(flushChunks);
-                }
+          if (!line.startsWith("data:")) continue;
+
+          const payloadStr = line.slice(5).trim();
+          if (!payloadStr) continue;
+
+          try {
+            const event = JSON.parse(payloadStr);
+            const { type, data } = event;
+            const payload = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
+            const nested = (payload.data && typeof payload.data === "object" ? payload.data : {}) as Record<string, unknown>;
+
+            if (type === "chunk") {
+              const content = (payload.content as string) || (nested.content as string);
+              if (content) {
+                fullMessage += content;
+                onChunk(content);
               }
-            } catch (e) {
-              if (line.trim() && !line.startsWith('data:')) {
-                fullMessage += line;
-                chunkBuffer += line;
-                if (!rafId) {
-                  rafId = requestAnimationFrame(flushChunks);
-                }
+            } else if (type === "complete") {
+              const metaSource = payload.metadata || payload || {};
+              const meta = { ...(metaSource as Record<string, unknown>) };
+
+              // Capture any final content sent on the complete event
+              const completeContent =
+                (payload.content as string) ||
+                (nested.content as string);
+              if (completeContent) {
+                fullMessage += completeContent;
+                onChunk(completeContent);
               }
+
+              // Preserve suggestions/agent if they come top-level or nested
+              const suggestions = (payload.suggestions as unknown) || (nested.suggestions as unknown);
+              const agent = (payload.agent as unknown) || (nested.agent as unknown);
+              if (suggestions && !(meta as Record<string, unknown>).suggestions) {
+                (meta as Record<string, unknown>).suggestions = suggestions;
+              }
+              if (agent && !(meta as Record<string, unknown>).agent) {
+                (meta as Record<string, unknown>).agent = agent;
+              }
+
+              finalMetadata = meta;
+            } else if (type === "error") {
+              throw new Error((payload.error as string) || "Streaming error");
             }
-          } else if (line.trim()) {
-            try {
-              const data = JSON.parse(line);
-              if (data.content) {
-                fullMessage += data.content;
-                chunkBuffer += data.content;
-                if (!rafId) {
-                  rafId = requestAnimationFrame(flushChunks);
-                }
-              }
-            } catch {
-              fullMessage += line;
-              chunkBuffer += line;
-              if (!rafId) {
-                rafId = requestAnimationFrame(flushChunks);
-              }
-            }
+          } catch (e) {
+            // Fallback: surface raw text even if JSON parse fails
+            fullMessage += payloadStr;
+            onChunk(payloadStr);
           }
         }
       }
 
-      // Process any remaining buffer
-      if (buffer.trim() && buffer.startsWith('data: ')) {
-        try {
-          const data = JSON.parse(buffer.slice(6).trim());
-          if (data.type === 'complete') {
-            agent = data.agent;
-            suggestions = data.suggestions;
-          }
-        } catch (e) {
-          // Ignore parse errors
-        }
-      }
-
-      onComplete(fullMessage, agent, suggestions);
+      onComplete(fullMessage, finalMetadata);
     } catch (error) {
       onError(error instanceof Error ? error : new Error(String(error)));
     }
   },
-  // Upload a file for analysis
-  uploadFile: async (
-    sessionId: string,
-    file: File,
-    context?: string
-  ): Promise<UploadFileResponse> => {
-    // Convert file to base64
-    const base64Content = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remove data URL prefix (e.g., "data:image/png;base64,")
-        const base64 = result.split(",")[1] || result;
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
 
-    // Determine file type
-    const fileType = file.type || "application/octet-stream";
-    const fileName = file.name;
-
-    const response = await axios.post(
-      `${API_URL}/chats/${sessionId}/media`,
-      {
-        content: base64Content,
-        type: fileType,
-        fileName: fileName,
-        metadata: context ? { context } : undefined,
-      }
-    );
-    return response.data.data || response.data;
+  // Get prompt suggestions
+  getPromptSuggestions: async () => {
+    const response = await axios.get(`${API_URL}/prompt-suggestions`);
+    const data = response.data?.data ?? response.data;
+    return data?.suggestions ?? data;
   },
 
-  // Get suggestions for a session
-  getSuggestions: async (sessionId: string): Promise<string[]> => {
-    const response = await axios.get(
-      `${API_URL}/chats/${sessionId}/suggestions`
-    );
-    return response.data.data?.suggestions || response.data.suggestions || [];
-  },
-
-  // Get all chat sessions for the current user
-  getChatSessions: async (limit: number = 50): Promise<ChatSession[]> => {
-    const response = await axios.get(`${API_URL}/chats`, {
-      params: { limit },
+  // Get all chat sessions (search endpoint)
+  getChatSessions: async (
+    limit: number = 50,
+    offset: number = 0,
+    searchTerm?: string
+  ): Promise<ChatSession[]> => {
+    const response = await axios.post(`${API_URL}/sessions/search`, {
+      limit,
+      offset,
+      search_term: searchTerm,
     });
-    return response.data.data || response.data;
+    const data = response.data?.data ?? response.data;
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.sessions)) return data.sessions;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
   },
 
   // Get conversation history for a specific session
   getConversationHistory: async (
     sessionId: string
   ): Promise<ConversationHistory> => {
-    const response = await axios.get(
-      `${API_URL}/chats/${sessionId}/history`
-    );
-    return response.data.data || response.data;
+    const response = await axios.get(`${API_URL}/sessions/${sessionId}`);
+    return response.data?.data ?? response.data;
   },
 
-  // Get recent conversations across all sessions
-  getRecentConversations: async (
-    limit: number = 20
-  ): Promise<ConversationMessage[]> => {
-    const response = await axios.get(`${API_URL}/chats/recent`, {
-      params: { limit },
+  // Upload a file and return attachment payload for chat
+  uploadAttachment: async (
+    file: File
+  ): Promise<AttachmentInput> => {
+    const signed = await getSignUrl();
+    const uploadResult = await createFileEntity({
+      signature: signed.signature,
+      timestamp: signed.timestamp,
+      cloud_name: signed.cloudName,
+      api_key: signed.apiKey,
+      public_id: signed.publicId,
+      folder: signed.folder || "",
+      resourceType: signed.resourceType || "",
+      fileId: signed.fileId || "",
+      file,
     });
-    return response.data.data || response.data;
+
+    const persisted = await persistUploadedFile({
+      fileId: signed.fileId,
+      data: uploadResult,
+    });
+
+    return {
+      type: "file",
+      name: file.name,
+      mimeType: file.type || "application/octet-stream",
+      url: persisted?.secureUrl || persisted?.url,
+    } as AttachmentInput;
   },
 };
