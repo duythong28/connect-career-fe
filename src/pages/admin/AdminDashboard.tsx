@@ -661,10 +661,6 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </div>
-       {/* Floating Feedback Button */}
-       <button className="fixed bottom-6 right-6 bg-[#0EA5E9] text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-[#0284c7] flex items-center gap-2 z-50">
-           <MessageSquare size={16}/> Feedback
-       </button>
     </div>
   );
 };

@@ -1,12 +1,6 @@
 // Cập nhật Header.tsx
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Briefcase,
-  Menu,
-  User,
-  LogOut,
-  HelpCircle,
-} from "lucide-react";
+import { Briefcase, Menu, User, LogOut, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
@@ -95,14 +89,11 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-x-4">
           {user ? (
             <>
-              <NotificationBell onGoToNotifications={handleGoToNotifications} />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <HelpCircle size={20} />
-              </Button>
+              {user?.roles?.[0]?.name !== "admin" && (
+                <NotificationBell
+                  onGoToNotifications={handleGoToNotifications}
+                />
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="p-0 h-auto">

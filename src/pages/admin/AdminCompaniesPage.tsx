@@ -319,7 +319,6 @@ const AdminCompaniesPage = () => {
                       >
                         <TableCell className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            {/* CẤU TRÚC GỐC */}
                             <Avatar className="w-10 h-10 rounded-full overflow-hidden shrink-0">
                               <AvatarImage
                                 src={
@@ -332,7 +331,6 @@ const AdminCompaniesPage = () => {
                                 {org.name?.charAt(0) || "C"}
                               </AvatarFallback>
                             </Avatar>
-                            {/* KẾT THÚC CẤU TRÚC GỐC */}
 
                             <div>
                               <p className="font-bold text-gray-900 text-sm">
@@ -380,7 +378,6 @@ const AdminCompaniesPage = () => {
                               onClick={() =>
                                 handleStatusChange(org.id, org.isActive)
                               }
-                              // Áp dụng style SimplifyPage
                               className={`
                                 ${
                                   org.isActive
