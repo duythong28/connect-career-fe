@@ -184,7 +184,7 @@ export default function ApplyJobDialog({ jobId }: Props) {
              {/* ĐÃ XÓA NÚT ĐÓNG TÙY CHỈNH. CHỈ GIỮ NÚT ĐÓNG MẶC ĐỊNH CỦA SHADCN (Được render bên ngoài khối này) */}
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-8 overflow-y-auto custom-scrollbar flex-1">
+          <form id="apply-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-8 overflow-y-auto custom-scrollbar flex-1">
             <div>
               {/* Cập nhật Label UI */}
               <Label className="text-xs font-bold text-gray-700 uppercase mb-3 block">

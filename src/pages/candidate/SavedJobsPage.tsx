@@ -150,10 +150,6 @@ const SavedJobsPage = () => {
           )}
         </div>
       </div>
-       {/* Floating Feedback Button (UI: Simplify) */}
-        <button className="fixed bottom-6 right-6 bg-[#0EA5E9] text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg hover:bg-[#0284c7] flex items-center gap-2 z-50">
-            <MessageSquare size={16}/> Feedback
-        </button>
     </div>
   );
 };

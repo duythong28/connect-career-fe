@@ -3,13 +3,14 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { 
-    Briefcase, GraduationCap, BookOpen, ShieldCheck, Award, Plus, Pencil, Trash2, Calendar, User, MapPin, Mail, Phone, Linkedin, Github, Globe, X, Save, FileText
+    Briefcase, GraduationCap,  Plus, Pencil, Trash2, Calendar, User, MapPin, Mail, Phone, Linkedin, Github, Globe,
+    X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { CandidateProfile } from "@/api/types/candidates.types";
 import RenderMarkDown from "@/components/shared/RenderMarkDown";
