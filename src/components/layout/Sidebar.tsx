@@ -15,13 +15,11 @@ import {
   Users,
   CheckCircle,
   AlertTriangle,
-  DollarSign,
   CreditCard,
-  TrendingUp,
   Flag,
   Wallet,
   Sparkles,
-  Mic
+  Mic,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
@@ -68,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     { title: "My Wallet", url: "/candidate/wallet", icon: Wallet },
     { title: "My Reports", url: ROUTES.CANDIDATE.MY_REPORTS, icon: Flag },
     {
-      title: "AI Assistant",  
+      title: "AI Assistant",
       url: ROUTES.CANDIDATE.AI_AGENT_CHATBOT,
       icon: Sparkles,
     },
@@ -76,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       title: "AI Mock Interview", // Add this
       url: ROUTES.CANDIDATE.AI_MOCK_INTERVIEW,
       icon: Mic,
-    }
+    },
   ];
 
   const getCompanyMenuItems = (id: string): MenuItem[] => [
@@ -140,28 +138,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       url: ROUTES.ADMIN.COMPANIES,
       icon: Building2,
     },
-    { title: "Content Management", url: ROUTES.ADMIN.CONTENT, icon: FileText },
     { title: "Job Management", url: ROUTES.ADMIN.JOBS, icon: CheckCircle },
-
     {
       title: "Reports & Violations",
       url: ROUTES.ADMIN.REPORTS,
       icon: AlertTriangle,
     },
-    {
-      title: "Revenue Management",
-      url: ROUTES.ADMIN.REVENUE,
-      icon: DollarSign,
-    },
-    // { title: "Refunds", url: ROUTES.ADMIN.REFUNDS, icon: CreditCard },
-    { title: "Analytics", url: ROUTES.ADMIN.ANALYTICS, icon: TrendingUp },
-    { title: "Wallet Management", url: "/admin/wallets", icon: Wallet }, // Add this line
-    { title: "Refund Management", url: "/admin/refunds", icon: CreditCard }, // Add this line
+    { title: "Wallet Management", url: "/admin/wallets", icon: Wallet },
+    { title: "Refund Management", url: "/admin/refunds", icon: CreditCard },
   ];
 
   const getMenuItems = (): MenuItem[] => {
     if (!user) return [];
-    if (user.username === "admin") return getAdminMenuItems();
+    if (user?.roles?.[0]?.name === "admin") return getAdminMenuItems();
     if (
       currentPath.startsWith("/company/") &&
       companyId &&
@@ -176,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
 
   const getMenuTitle = (isMyCompanyPage: boolean): string => {
     if (!user) return "";
-    if (user.username === "admin") return "Admin Panel";
+    if (user?.roles?.[0]?.name === "admin") return "Admin Panel";
     if (isMyCompanyPage) return "Company Management";
     return "Candidate Dashboard";
   };
@@ -193,232 +182,165 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
 
   if (!user) return null;
 
+  const renderMenuLinks = (isMobileView: boolean) => {
+    return menuItems.map((item) => {
+      const isActive = currentPath === item.url;
+      const LinkContent = (
+        <Link
+          key={item.url}
+          to={item.url}
+          className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-150 ease-in-out
+            ${
+              isActive
+                ? "bg-blue-600 text-white shadow-md"
+                : "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+            }
+            focus:outline-none focus:ring-2 focus:ring-blue-500/50
+          `}
+          aria-current={isActive ? "page" : undefined}
+        >
+          <item.icon
+            className="mr-3 h-5 w-5 flex-shrink-0"
+            aria-hidden="true"
+          />
+          <span className="truncate">{item.title}</span>
+        </Link>
+      );
+
+      return isMobileView ? (
+        <SheetClose asChild key={item.url}>
+          {LinkContent}
+        </SheetClose>
+      ) : (
+        LinkContent
+      );
+    });
+  };
+
+  const renderSwitchViewLinks = (isMobileView: boolean) => {
+    const candidateViewLink = (
+      <Link
+        to={ROUTES.JOBS}
+        className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
+          ${
+            currentPath.startsWith("/candidate") &&
+            currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION &&
+            currentPath !== ROUTES.CANDIDATE.JOIN_ORGANIZATION
+              ? "bg-green-500 text-white shadow-md"
+              : "text-gray-700 hover:text-green-600 hover:bg-green-50"
+          }
+        `}
+      >
+        <User className="mr-3 h-4 w-4" />
+        Candidate View
+      </Link>
+    );
+
+    const createOrgLink = (
+      <Link
+        to={ROUTES.CANDIDATE.CREATE_ORGANIZATION}
+        className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
+          ${
+            currentPath.startsWith(ROUTES.CANDIDATE.CREATE_ORGANIZATION)
+              ? "bg-green-500 text-white shadow-md"
+              : "text-gray-700 hover:text-green-600 hover:bg-green-50"
+          }
+        `}
+      >
+        <User className="mr-3 h-4 w-4" />
+        Create Organization
+      </Link>
+    );
+
+    const joinOrgLink = (
+      <Link
+        to={ROUTES.CANDIDATE.JOIN_ORGANIZATION}
+        className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
+            ${
+              currentPath.startsWith(ROUTES.CANDIDATE.JOIN_ORGANIZATION)
+                ? "bg-green-500 text-white shadow-md"
+                : "text-gray-700 hover:text-green-600 hover:bg-green-50"
+            }
+          `}
+      >
+        <User className="mr-3 h-4 w-4" />
+        Join Organization
+      </Link>
+    );
+
+    const organizationLinks =
+      myOrganizations &&
+      myOrganizations.map((org) => (
+        <Link
+          key={org.organization.id}
+          to={`/company/${org.organization.id}/dashboard`}
+          className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
+            ${
+              currentPath.startsWith(`/company/${org.organization.id}`)
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-gray-700 hover:text-indigo-600 hover:bg-indigo-50"
+            }
+          `}
+        >
+          <Building2 className="mr-3 h-4 w-4" />
+          {org.organization.name} View
+        </Link>
+      ));
+
+    const switcherView = (
+      <div className="mt-auto pt-6 border-t border-gray-200">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          Switch View
+        </p>
+        <div className="flex flex-col gap-y-1">
+          {isMobileView ? (
+            <>
+              <SheetClose asChild>{candidateViewLink}</SheetClose>
+              <SheetClose asChild>{createOrgLink}</SheetClose>
+              <SheetClose asChild>{joinOrgLink}</SheetClose>
+            </>
+          ) : (
+            <>
+              {candidateViewLink}
+              {createOrgLink}
+              {joinOrgLink}
+            </>
+          )}
+          {organizationLinks}
+        </div>
+      </div>
+    );
+
+    return switcherView;
+  };
+
   // Sidebar content for desktop (NO SheetClose)
   const desktopSidebarContent = (
     <nav className="flex flex-col h-full">
-      <div className="mb-6">
-        <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+      <div className="mb-8">
+        <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">
           {menuTitle}
         </h2>
-        {user.role !== "admin" && (
-          <p className="text-sm md:text-base text-gray-500 mt-1">
-            {isMyCompanyPage
-              ? "Manage your company and jobs"
-              : "Manage your profile and applications"}
-          </p>
-        )}
       </div>
       <div className="flex-1 flex flex-col gap-y-1">
-        {menuItems.map((item) => {
-          const isActive = currentPath === item.url;
-          return (
-            <Link
-              key={item.url}
-              to={item.url}
-              className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                ${
-                  isActive
-                    ? "bg-primary/90 text-primary-foreground shadow"
-                    : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                }
-                focus:outline-none focus:ring-2 focus:ring-primary/40
-              `}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <item.icon
-                className="mr-3 h-5 w-5 flex-shrink-0"
-                aria-hidden="true"
-              />
-              <span className="truncate">{item.title}</span>
-            </Link>
-          );
-        })}
+        {renderMenuLinks(false)}
       </div>
-      {user.role !== "admin" && (
-        <div className="mt-auto pt-6 border-t border-gray-100">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-            Switch View
-          </p>
-          <div className="flex flex-col gap-y-1">
-            <Link
-              to={ROUTES.JOBS}
-              className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                ${
-                  currentPath.startsWith("/candidate") &&
-                  currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION &&
-                  currentPath !== ROUTES.CANDIDATE.JOIN_ORGANIZATION
-                    ? "bg-blue-50 text-blue-700 border border-blue-200"
-                    : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                }
-              `}
-            >
-              <User className="mr-3 h-4 w-4" />
-              Candidate View
-            </Link>
-            <Link
-              to={ROUTES.CANDIDATE.CREATE_ORGANIZATION}
-              className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                ${
-                  currentPath.startsWith(ROUTES.CANDIDATE.CREATE_ORGANIZATION)
-                    ? "bg-blue-50 text-blue-700 border border-blue-200"
-                    : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                }
-              `}
-            >
-              <User className="mr-3 h-4 w-4" />
-              Create Organization
-            </Link>
-            <Link
-              to={ROUTES.CANDIDATE.JOIN_ORGANIZATION}
-              className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                  ${
-                    currentPath.startsWith(ROUTES.CANDIDATE.JOIN_ORGANIZATION)
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                  }
-                `}
-            >
-              <User className="mr-3 h-4 w-4" />
-              Join Organization
-            </Link>
-            {myOrganizations &&
-              myOrganizations.map((org) => (
-                <Link
-                  key={org.organization.id}
-                  to={`/company/${org.organization.id}/dashboard`}
-                  className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-          ${
-            currentPath.startsWith(`/company/${org.organization.id}`)
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "text-gray-700 hover:text-primary hover:bg-gray-100"
-          }
-        `}
-                >
-                  <Building2 className="mr-3 h-4 w-4" />
-                  {org.organization.name} View
-                </Link>
-              ))}
-          </div>
-        </div>
-      )}
+      {user?.roles?.[0]?.name !== "admin" && renderSwitchViewLinks(false)}
     </nav>
   );
 
   // Sidebar content for mobile (WITH SheetClose)
   const mobileSidebarContent = (
     <nav className="flex flex-col h-full">
-      <div className="mb-6">
-        <h2 className="text-xl md:text-2xl font-semibold text-gray-900">
+      <div className="mb-8">
+        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">
           {menuTitle}
         </h2>
-        {user.role !== "admin" && (
-          <p className="text-base md:text-lg text-gray-500 mt-1">
-            {currentPath.startsWith("/company")
-              ? "Manage your company and jobs"
-              : "Manage your profile and applications"}
-          </p>
-        )}
       </div>
       <div className="flex-1 flex flex-col gap-y-1">
-        {menuItems.map((item) => {
-          const isActive = currentPath === item.url;
-          return (
-            <SheetClose asChild key={item.url}>
-              <Link
-                to={item.url}
-                className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                  ${
-                    isActive
-                      ? "bg-primary/90 text-primary-foreground shadow"
-                      : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                  }
-                  focus:outline-none focus:ring-2 focus:ring-primary/40
-                `}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <item.icon
-                  className="mr-3 h-5 w-5 flex-shrink-0"
-                  aria-hidden="true"
-                />
-                <span className="truncate">{item.title}</span>
-              </Link>
-            </SheetClose>
-          );
-        })}
+        {renderMenuLinks(true)}
       </div>
-      {user.role !== "admin" && (
-        <div className="mt-auto pt-6 border-t border-gray-100">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-            Switch View
-          </p>
-          <div className="flex flex-col gap-y-1">
-            <SheetClose asChild>
-              <Link
-                to={ROUTES.JOBS}
-                className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                  ${
-                    currentPath.startsWith("/candidate") &&
-                    currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION &&
-                    currentPath !== ROUTES.CANDIDATE.JOIN_ORGANIZATION
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                  }
-                `}
-              >
-                <User className="mr-3 h-4 w-4" />
-                Candidate View
-              </Link>
-            </SheetClose>
-            <SheetClose asChild>
-              <Link
-                to={ROUTES.CANDIDATE.CREATE_ORGANIZATION}
-                className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                  ${
-                    currentPath.startsWith(ROUTES.CANDIDATE.CREATE_ORGANIZATION)
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                  }
-                `}
-              >
-                <User className="mr-3 h-4 w-4" />
-                Create Organization
-              </Link>
-            </SheetClose>
-            <SheetClose asChild>
-              <Link
-                to={ROUTES.CANDIDATE.JOIN_ORGANIZATION}
-                className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-                  ${
-                    currentPath.startsWith(ROUTES.CANDIDATE.JOIN_ORGANIZATION)
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
-                      : "text-gray-700 hover:text-primary hover:bg-gray-100"
-                  }
-                `}
-              >
-                <User className="mr-3 h-4 w-4" />
-                Join Organization
-              </Link>
-            </SheetClose>
-            {myOrganizations &&
-              myOrganizations.map((org) => (
-                <Link
-                  key={org.organization.id}
-                  to={`/company/${org.organization.id}/dashboard`}
-                  className={`flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors
-          ${
-            currentPath.startsWith(`/company/${org.organization.id}`)
-              ? "bg-green-50 text-green-700 border border-green-200"
-              : "text-gray-700 hover:text-primary hover:bg-gray-100"
-          }
-        `}
-                >
-                  <Building2 className="mr-3 h-4 w-4" />
-                  {org.organization.name} View
-                </Link>
-              ))}
-          </div>
-        </div>
-      )}
+      {user?.roles?.[0]?.name !== "admin" && renderSwitchViewLinks(true)}
     </nav>
   );
 
@@ -427,10 +349,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       {/* Desktop sidebar (no SheetClose) */}
       {!isMobile && open && (
         <aside
-          className="flex flex-col bg-white border-r border-gray-200 fixed left-0 top-[4.5rem] w-64 z-40 h-[calc(100vh-4.5rem)]"
+          // Simplified background and border style for a cleaner look
+          className="flex flex-col bg-gray-50 border-r border-gray-200 fixed left-0 top-[4.5rem] w-64 z-40 h-[calc(100vh-4.5rem)]"
           aria-label="Sidebar"
         >
-          <div className="p-6 overflow-y-auto h-full">
+          <div className="p-4 overflow-y-auto h-full">
             {desktopSidebarContent}
           </div>
         </aside>
@@ -440,9 +363,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
         <Sheet open={open} onOpenChange={onOpenChange}>
           <SheetContent
             side="left"
-            className="p-0 w-64 h-screen overflow-y-auto"
+            // Adjusted padding and background for mobile sheet
+            className="p-0 w-64 h-screen overflow-y-auto bg-white"
           >
-            <div className="p-6">{mobileSidebarContent}</div>
+            <div className="p-4">{mobileSidebarContent}</div>
           </SheetContent>
         </Sheet>
       )}

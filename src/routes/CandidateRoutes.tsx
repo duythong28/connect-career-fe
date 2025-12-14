@@ -10,7 +10,6 @@ import MockInterviewCreator from "@/components/candidate/ai-mock-interview";
 import MessagePage from "@/pages/shared/MessagePage";
 import CandidateApplicationDetailPage from "@/pages/candidate/CandidateApplicationDetailPage";
 import CvImprovenentPage from "@/pages/candidate/CVImprovementPage";
-import Cv2 from "@/pages/candidate/Cv2";
 import AIMockInterviewsPage from "@/pages/candidate/AIMockInterviewsPage";
 import StartAIMockInterviewPage from "@/pages/candidate/StartAIMockInterviewPage";
 import CallDetailPage from "@/pages/candidate/CallDetailPage";
@@ -19,12 +18,14 @@ import MyReportsPage from "@/pages/shared/MyReportsPage";
 import OrganizationJoinPage from "@/pages/public/OrganizationJoinPage";
 import UserWalletPage from "@/pages/shared/UserWalletPage";
 import AIAgentChatPageV2 from "@/pages/shared/AIAgentChatbotPageV2";
+import { NotificationsPage } from "@/pages/shared/NotificationsPage";
 
 export const CandidateRoutes = () => {
   return (
     <Routes>
       <Route index element={<CandidateDashboard />} />
       <Route path="dashboard" element={<CandidateDashboard />} />
+      <Route path="notifications" element={<NotificationsPage />} />
       <Route path="applications" element={<CandidateApplicationsPage />} />
       <Route
         path="applications/:applicationId"
@@ -38,13 +39,11 @@ export const CandidateRoutes = () => {
       <Route path="my-reports" element={<MyReportsPage />} />
       <Route path="resume-improvement" element={<CvImprovenentPage />} />
       <Route path="create-organization" element={<CompanyProfilePage />} />
-      
       <Route path="ai-mock-interview" element={<AIMockInterviewsPage />} />
       <Route path="ai-mock-interview/create" element={<MockInterviewCreator />} />
       <Route path="ai-mock-interview/:interviewId" element={<StartAIMockInterviewPage />} />
       <Route path="ai-mock-interview/:interviewId/results" element={<InterviewDetailPage />} />
       <Route path="ai-mock-interview/:interviewId/call/:callId" element={<CallDetailPage />} />
-      
       <Route path="join-organization" element={<OrganizationJoinPage />} />
       <Route path="wallet" element={<UserWalletPage />} />
       <Route path="*" element={<NotFound />} />

@@ -52,18 +52,18 @@ const MockInterviewCreator = () => {
       console.log('Interview created successfully:', response);
 
       // Use sessionId from response to navigate to start interview page
-      if (response.sessionId) {
-        navigate(`/candidate/ai-mock-interview/${response.sessionId}`, {
-          state: {
-            sessionId: response.sessionId,
-            callId: response.callId,
-            questions: generatedQuestions,
-            config: config,
-          },
-        });
-      } else {
-        throw new Error('Session ID not found in response');
-      }
+      // if (response.sessionId) {
+      //   navigate(`/candidate/ai-mock-interview/${response.sessionId}`, {
+      //     state: {
+      //       sessionId: response.sessionId,
+      //       callId: response.callId,
+      //       questions: generatedQuestions,
+      //       config: config,
+      //     },
+      //   });
+      // } else {
+      //   throw new Error('Session ID not found in response');
+      // }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to create mock interview. Please try again.';
