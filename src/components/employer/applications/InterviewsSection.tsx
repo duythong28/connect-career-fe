@@ -18,6 +18,7 @@ import {
     InterviewResponse,
     Recommendation,
 } from "@/api/types/interviews.types";
+import { Button } from "@/components/ui/button";
 
 export default function InterviewsSection({
     interviews,
@@ -115,7 +116,7 @@ export default function InterviewsSection({
                                                 </Button>
                                             </>
                                         )}
-                                        {isCompleted && !feedback && (
+                                        {!feedback && (
                                             <Button size="sm" variant="default" onClick={() => onFeedback(interview)} className="bg-green-600 text-white hover:bg-green-700 text-xs font-bold h-8">
                                                 <MessageSquare className="h-4 w-4 mr-1" /> Add Feedback
                                             </Button>
@@ -136,9 +137,6 @@ export default function InterviewsSection({
                                 {feedback && (
                                     <div className="bg-gray-50 p-4 border-t border-gray-100">
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="font-bold text-sm text-gray-900 flex items-center gap-2">
-                                                <MessageSquare size={14} className="text-blue-500" /> Feedback
-                                            </span>
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-bold text-gray-900 bg-white px-2 py-1 rounded border border-gray-200">
                                                     {feedback.rating}/10

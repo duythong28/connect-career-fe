@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { DollarSign, Check, X, MessageSquare, Edit, Ban } from "lucide-react";
+import { DollarSign, Check, X, MessageSquare, Edit, Ban, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { OfferResponse, OfferStatus, OfferStatusLabel } from "@/api/types/offers.types";
 
