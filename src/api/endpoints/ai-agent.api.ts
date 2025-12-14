@@ -119,9 +119,7 @@ export const aiAgentAPI = {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
+        if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
@@ -136,47 +134,68 @@ export const aiAgentAPI = {
 
           try {
             const event = JSON.parse(payloadStr);
-            const { type, data } = event;
-            const payload = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
-            const nested = (payload.data && typeof payload.data === "object" ? payload.data : {}) as Record<string, unknown>;
+            const eventType = event.type as string;
 
-            if (type === "chunk") {
-              const content = (payload.content as string) || (nested.content as string);
-              if (content) {
-                fullMessage += content;
-                onChunk(content);
+            if (eventType === "thinking") {
+              // Handle thinking type - REPLACE (not concat)
+              const thinkingContent = event.messages?.content as string;
+              if (thinkingContent) {
+                onChunk(JSON.stringify({
+                  type: "thinking",
+                  content: thinkingContent,
+                  replace: true,
+                }));
               }
-            } else if (type === "complete") {
-              const metaSource = payload.metadata || payload || {};
-              const meta = { ...(metaSource as Record<string, unknown>) };
+            } else if (eventType === "chunk") {
+              // Handle chunk type - array of messages
+              const messages = (event.messages || []) as Record<string, unknown>[];
+              
+              for (const msg of messages) {
+                const msgRecord = msg as Record<string, unknown>;
+                const msgContent = msgRecord.content as string;
+                const metadata = msgRecord.metadata as Record<string, unknown> || {};
+                const isThinking = metadata.isThinking === true;
 
-              // Capture any final content sent on the complete event
-              const completeContent =
-                (payload.content as string) ||
-                (nested.content as string);
+                if (msgContent) {
+                  if (isThinking) {
+                    // Thinking chunk - REPLACE (not concat)
+                    onChunk(JSON.stringify({
+                      type: "thinking",
+                      content: msgContent,
+                      replace: true,
+                    }));
+                  } else {
+                    // Response chunk - append to response
+                    fullMessage += msgContent;
+                    onChunk(JSON.stringify({
+                      type: "response",
+                      content: msgContent,
+                      replace: false,
+                    }));
+                  }
+                }
+              }
+            } else if (eventType === "complete") {
+              // Handle complete type - final response
+              const completeContent = event.messages?.content as string;
               if (completeContent) {
-                fullMessage += completeContent;
-                onChunk(completeContent);
+                fullMessage = completeContent;
               }
 
-              // Preserve suggestions/agent if they come top-level or nested
-              const suggestions = (payload.suggestions as unknown) || (nested.suggestions as unknown);
-              const agent = (payload.agent as unknown) || (nested.agent as unknown);
-              if (suggestions && !(meta as Record<string, unknown>).suggestions) {
-                (meta as Record<string, unknown>).suggestions = suggestions;
-              }
-              if (agent && !(meta as Record<string, unknown>).agent) {
-                (meta as Record<string, unknown>).agent = agent;
-              }
+              finalMetadata = (event.messages?.metadata as Record<string, unknown>) || event.metadata || {};
 
-              finalMetadata = meta;
-            } else if (type === "error") {
-              throw new Error((payload.error as string) || "Streaming error");
+              // Emit complete marker
+              onChunk(JSON.stringify({
+                type: "complete",
+                content: fullMessage,
+                metadata: finalMetadata,
+              }));
+            } else if (eventType === "error") {
+              throw new Error(event.data?.error as string || "Streaming error");
             }
           } catch (e) {
-            // Fallback: surface raw text even if JSON parse fails
-            fullMessage += payloadStr;
-            onChunk(payloadStr);
+            console.error("Parse error:", e, "Line:", payloadStr);
+            // Continue processing other lines
           }
         }
       }

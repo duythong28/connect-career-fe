@@ -14,7 +14,7 @@ import PipelineTemplates from "@/pages/employer/PipelineTemplates";
 import ApplicationDetail from "@/pages/employer/ApplicationDetail";
 import MessagePage from "@/pages/shared/MessagePage";
 import OrganizationMembersPage from "@/pages/employer/OrganizationMembersPage";
-import AIAgentChatPage from "@/pages/shared/AIAgentChatbotPage";
+import AIAgentChatPageV2 from "@/pages/shared/AIAgentChatbotPageV2";
 export const EmployerRoutes = () => {
   return (
     <Routes>
@@ -28,7 +28,7 @@ export const EmployerRoutes = () => {
       <Route path="interviews" element={<EmployerInterviewsPage />} />
       <Route path="members" element={<OrganizationMembersPage />} />
       <Route path="messages" element={<MessagePage />} />
-      <Route path="chatbot" element={<AIAgentChatPage />} />
+      <Route path="chatbot" element={<AIAgentChatPageV2 />} />
       <Route path="analytics" element={<EmployerAnalyticsPage />} />
       <Route path="profile" element={<RecruiterProfilePage />} />
       <Route path="settings" element={<SubscriptionPage />} />

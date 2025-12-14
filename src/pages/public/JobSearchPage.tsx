@@ -278,9 +278,9 @@ export default function JobSearchPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans flex flex-col">
+    <div className="h-full overflow-hidden bg-[#F8F9FB] font-sans flex flex-col">
       {/* --- Filter Bar (Simplify Design) --- */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-4 sm:px-6 py-4 shadow-sm">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm">
         <div className="max-w-[1600px] mx-auto">
             <div className="mb-4">
                  <h1 className="text-xl font-bold text-gray-900">Search All Jobs</h1>
@@ -422,7 +422,7 @@ export default function JobSearchPage() {
       </div>
 
       {/* --- Main Content Split View --- */}
-      <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6 flex gap-6 overflow-hidden h-[calc(100vh-140px)]">
+      <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6 flex gap-6 overflow-hidden min-h-0">
         
         {/* Left Column: Job List */}
         <div className="w-full lg:w-[400px] flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm flex-shrink-0">
