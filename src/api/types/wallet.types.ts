@@ -39,8 +39,7 @@ export interface TopUpRequest {
 }
 
 export interface TopUpResponse {
-  paymentId: string;
-  redirectUrl: string;
+  paymentUrl: string;
   expiresAt: string;
 }
 
