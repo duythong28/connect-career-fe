@@ -1,19 +1,34 @@
-export interface WalletBalance {
+export interface WalletTransaction {
   id: string;
-  user: {
-    id: string;
-    email: string;
-    username: string;
-    fullName: string | null;
-    avatarUrl: string | null;
-    status: string;
-    // add other fields as needed
+  type: "credit" | "debit";
+  amount: number;
+  currency: string;
+  balanceBefore: number;
+  balanceAfter: number;
+  status: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface WalletStatistics {
+  totalCredits: {
+    total: string;
   };
-  userId: string;
-  creditBalance: string; // string from API
+  totalDebits: {
+    total: string;
+  };
+  totalSpent: {
+    total: string | null;
+  };
+}
+
+export interface WalletBalance {
   balance: number;
   currency: string;
-  updatedAt: string;
+  walletId: string;
+  recentTransactions: WalletTransaction[];
+  recentUsageHistory: unknown[]; // Update type based on actual usage data
+  statistics: WalletStatistics;
 }
 
 export interface TopUpRequest {
@@ -27,20 +42,6 @@ export interface TopUpResponse {
   paymentId: string;
   redirectUrl: string;
   expiresAt: string;
-}
-
-export interface WalletTransaction {
-  id: string;
-  userId: string;
-  type: string;
-  amount: number;
-  currency: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  provider?: string;
-  paymentMethod?: string;
-  description?: string;
 }
 
 export interface WalletTransactionResponse {
