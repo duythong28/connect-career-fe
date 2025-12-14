@@ -1,14 +1,14 @@
 import axios from "../client/axios";
 import {
   BackOfficeUserStats,
-  BackOfficeDashboardStats,
   BackOfficePaginatedResponse,
   UpdateOrganizationStatusDto,
-  UpdateJobStatusDto,
   UserDetailsResponse,
   BackOfficeOrganizationsPaginatedResponse,
   BackOfficeOrganizationWithStats,
   BackOfficeJobsPaginatedResponse,
+  StatsPeriod,
+  BackOfficeDashboardStats,
 } from "../types/back-office.types";
 import { Job, JobStatus } from "../types/jobs.types";
 import { UserResponse, UserStatus } from "../types/users.types";
@@ -109,11 +109,14 @@ const updateJobStatus = async (
 };
 
 // Dashboard
-const getBackOfficeDashboardStats =
-  async (): Promise<BackOfficeDashboardStats> => {
-    const response = await axios.get(`back-office/stats`);
-    return response.data;
-  };
+const getBackOfficeDashboardStats = async (
+  period: StatsPeriod
+): Promise<BackOfficeDashboardStats> => {
+  const response = await axios.get(`back-office/stats`, {
+    params: { period },
+  });
+  return response.data;
+};
 
 export {
   getAllUsers,

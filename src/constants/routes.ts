@@ -10,6 +10,7 @@ export const ROUTES = {
 
   // Candidate routes
   CANDIDATE: {
+    NOTIFICATIONS: "/candidate/notifications",
     DASHBOARD: "/candidate/dashboard",
     APPLICATIONS: "/candidate/applications",
     INTERVIEWS: "/candidate/interviews",

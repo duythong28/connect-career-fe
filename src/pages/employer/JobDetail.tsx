@@ -15,7 +15,7 @@ import {
   Users,
   Calendar,
   XCircle,
-  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DragDropContext,
@@ -23,6 +23,14 @@ import {
   Draggable,
   DropResult,
 } from "@hello-pangea/dnd";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,18 +41,26 @@ import { getPipelineByJobId } from "@/api/endpoints/pipelines.api";
 import {
   getApplicationsByJob,
   updateApplicationStageForRecruiter,
+  bulkUpdateApplicationStatusForRecruiter,
 } from "@/api/endpoints/applications.api";
 import {
   Application,
   UpdateApplicationStageForRecruiterDto,
+  BulkUpdateApplicationDto,
 } from "@/api/types/applications.types";
 import { JobStatus } from "@/api/types/jobs.types";
 
 export default function JobDetail() {
   const { jobId, companyId } = useParams();
   const [columns, setColumns] = useState<Record<string, Application[]>>({});
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [stageToReject, setStageToReject] = useState<{
+    key: string;
+    name: string;
+  } | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
   const { data: job, isLoading: isJobLoading } = useQuery({
     queryKey: ["job", jobId],
     queryFn: async () => {
@@ -77,6 +93,22 @@ export default function JobDetail() {
       applicationId: string;
       data: UpdateApplicationStageForRecruiterDto;
     }) => updateApplicationStageForRecruiter(applicationId, data),
+  });
+
+  const bulkRejectMutation = useMutation({
+    mutationFn: (data: BulkUpdateApplicationDto) =>
+      bulkUpdateApplicationStatusForRecruiter(data),
+    onSuccess: () => {
+      toast.success(
+        `All candidates in ${stageToReject?.name} have been rejected`
+      );
+      queryClient.invalidateQueries({ queryKey: ["job-applications", jobId] });
+      setRejectDialogOpen(false);
+      setStageToReject(null);
+    },
+    onError: () => {
+      toast.error("Failed to reject candidates");
+    },
   });
 
   const closeJobMutation = useMutation({
@@ -186,11 +218,31 @@ export default function JobDetail() {
     );
   };
 
-  const handleRejectAll = (stageKey: string) => {
-    console.log(`Rejecting all candidates in stage: ${stageKey}`);
-    toast.info(
-      `Tính năng Reject All cho stage ${stageKey} sẽ được bổ sung sau.`
-    );
+  const handleRejectAllClick = (stageKey: string, stageName: string) => {
+    const applicationsInStage = columns[stageKey] || [];
+    if (applicationsInStage.length === 0) {
+      toast.info(`No candidates in ${stageName} stage to reject`);
+      return;
+    }
+    setStageToReject({ key: stageKey, name: stageName });
+    setRejectDialogOpen(true);
+  };
+
+  const handleConfirmRejectAll = () => {
+    if (!stageToReject) return;
+
+    const applicationsInStage = columns[stageToReject.key] || [];
+    const applicationIds = applicationsInStage.map((app) => app.id);
+
+    bulkRejectMutation.mutate({
+      applicationIds,
+      update: {
+        status: "rejected",
+        notes: "Moved to Rejected stage",
+        isShortlisted: false,
+        isFlagged: false,
+      },
+    });
   };
 
   const getStageColor = (type: string) => {
@@ -305,6 +357,7 @@ export default function JobDetail() {
           </div>
         </CardContent>
       </div>
+
       {/* Kanban Board */}
       {pipeline && (
         <div>
@@ -336,8 +389,14 @@ export default function JobDetail() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        className="h-6 px-2 text-[10px] font-bold"
-                        onClick={() => handleRejectAll(stage.key)}
+                        className="h-6 px-2 text-[10px] font-bold mt-2"
+                        onClick={() =>
+                          handleRejectAllClick(stage.key, stage.name)
+                        }
+                        disabled={
+                          !columns[stage.key] ||
+                          columns[stage.key].length === 0
+                        }
                       >
                         <XCircle className="h-3 w-3 mr-1" />
                         Reject All
@@ -353,64 +412,67 @@ export default function JobDetail() {
                           snapshot.isDraggingOver ? "bg-blue-100/50" : ""
                         }`}
                       >
-                        {(columns[stage.key] || []).map((application, index) => {
-                          return (
-                            <Draggable
-                              key={application.id}
-                              draggableId={application.id}
-                              index={index}
-                            >
-                              {(provided, snapshot) => (
-                                <Card
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`mb-3 cursor-move border border-gray-200 hover:border-blue-400 transition-all bg-white shadow-sm ${
-                                    snapshot.isDragging ? "shadow-lg" : ""
-                                  }`}
-                                  onClick={() =>
-                                    navigate(
-                                      `/company/${companyId}/jobs/${jobId}/applications/${application.id}`
-                                    )
-                                  }
-                                >
-                                  <CardContent className="p-3">
-                                    <div className="space-y-1.5">
-                                      <h4 className="font-bold text-sm text-gray-900 truncate">
-                                        {application?.candidateSnapshot?.name ||
-                                          application?.candidate?.firstName +
-                                            " " +
-                                            application?.candidate?.lastName}
-                                      </h4>
-                                      <p className="text-xs text-gray-500 truncate">
-                                        {
-                                          application?.candidateSnapshot
-                                            ?.currentTitle
-                                        }
-                                      </p>
-                                      <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-                                        <span>
-                                          Applied{" "}
-                                          {new Date(
-                                            application.appliedDate
-                                          ).toLocaleDateString()}
-                                        </span>
-                                        {application.matchingScore && (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-[10px] font-bold bg-blue-50 text-blue-700 border-blue-100 px-2 py-0.5 whitespace-nowrap"
-                                          >
-                                            {application.matchingScore}% match
-                                          </Badge>
-                                        )}
+                        {(columns[stage.key] || []).map(
+                          (application, index) => {
+                            return (
+                              <Draggable
+                                key={application.id}
+                                draggableId={application.id}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <Card
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className={`mb-3 cursor-move border border-gray-200 hover:border-blue-400 transition-all bg-white shadow-sm ${
+                                      snapshot.isDragging ? "shadow-lg" : ""
+                                    }`}
+                                    onClick={() =>
+                                      navigate(
+                                        `/company/${companyId}/jobs/${jobId}/applications/${application.id}`
+                                      )
+                                    }
+                                  >
+                                    <CardContent className="p-3">
+                                      <div className="space-y-1.5">
+                                        <h4 className="font-bold text-sm text-gray-900 truncate">
+                                          {application?.candidateSnapshot
+                                            ?.name ||
+                                            application?.candidate?.firstName +
+                                              " " +
+                                              application?.candidate?.lastName}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 truncate">
+                                          {
+                                            application?.candidateSnapshot
+                                              ?.currentTitle
+                                          }
+                                        </p>
+                                        <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
+                                          <span>
+                                            Applied{" "}
+                                            {new Date(
+                                              application.appliedDate
+                                            ).toLocaleDateString()}
+                                          </span>
+                                          {application.matchingScore && (
+                                            <Badge
+                                              variant="outline"
+                                              className="text-[10px] font-bold bg-blue-50 text-blue-700 border-blue-100 px-2 py-0.5 whitespace-nowrap"
+                                            >
+                                              {application.matchingScore}% match
+                                            </Badge>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  </CardContent>
-                                </Card>
-                              )}
-                            </Draggable>
-                          );
-                        })}
+                                    </CardContent>
+                                  </Card>
+                                )}
+                              </Draggable>
+                            );
+                          }
+                        )}
                         {provided.placeholder}
                       </div>
                     )}
@@ -421,6 +483,60 @@ export default function JobDetail() {
           </DragDropContext>
         </div>
       )}
+
+      {/* Reject All Confirmation Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Reject All
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Are you sure you want to reject all{" "}
+              <span className="font-semibold">
+                {stageToReject ? columns[stageToReject.key]?.length || 0 : 0}
+              </span>{" "}
+              candidate(s) in the{" "}
+              <span className="font-semibold">{stageToReject?.name}</span>{" "}
+              stage?
+              <br />
+              <br />
+              This action cannot be undone. All candidates will be moved to the
+              Rejected stage.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectDialogOpen(false);
+                setStageToReject(null);
+              }}
+              disabled={bulkRejectMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmRejectAll}
+              disabled={bulkRejectMutation.isPending}
+            >
+              {bulkRejectMutation.isPending ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Rejecting...
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Reject All
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

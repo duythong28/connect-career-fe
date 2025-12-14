@@ -2,6 +2,7 @@ import axios from "../client/axios";
 import {
   Application,
   ApplyJobDto,
+  BulkUpdateApplicationDto,
   GetMyApplicationsParams,
   MyApplicationsResponse,
   UpdateApplicationStageForRecruiterDto,
@@ -101,6 +102,13 @@ const getMyApplications = async (
   return response.data;
 };
 
+const bulkUpdateApplicationStatusForRecruiter = async (
+  data: BulkUpdateApplicationDto
+): Promise<any> => {
+  const response = await axios.put(`${BASE}/bulk-update`, data);
+  return response.data;
+};
+
 export {
   applyJob,
   getApplicationsNeedingAttention,
@@ -114,4 +122,5 @@ export {
   updateApplicationStageForRecruiter,
   updateApplicationByIdForRecruiter,
   getMyApplications,
+  bulkUpdateApplicationStatusForRecruiter,
 };
