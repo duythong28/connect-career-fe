@@ -7,22 +7,33 @@ import ProtectedRoute from "./ProtectedRoute";
 import { CandidateProfilePage } from "@/pages/public/CandidateProfilePage";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
 import SimplifyPage from "@/pages/public/SimplifyPage";
+import CandidateProfileCreationWizard from "@/components/candidate/profile/CandidateProfileCreationWizard";
 
 export const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/*" element={<PublicRoutes />} />
       <Route path="simpify" element={<SimplifyPage />} />
-
+      <Route
+        path="/candidate/create-profile-wizard"
+        element={
+          <ProtectedRoute allowedRoles={["user"]}>
+            <CandidateProfileCreationWizard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/candidate/profile/:candidateId"
-        element={<CandidateProfilePage />}
+        element={
+          <ProtectedRoute allowedRoles={["user"]}>
+            <CandidateProfilePage />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="company/:companyId/profile"
         element={<CompanyProfilePage />}
       />
-
       <Route
         path="/candidate/*"
         element={
@@ -31,7 +42,6 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/company/:companyId/*"
         element={
@@ -40,7 +50,6 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
       <Route
         path="/admin/*"
         element={

@@ -47,6 +47,7 @@ interface Message {
   isStreaming?: boolean;
   isError?: boolean;
   isSystem?: boolean;
+  isThinking?: boolean;
 }
 
 export interface ChatSession {
@@ -72,6 +73,7 @@ export default function AIAgentChatPageV2() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentInput[]>([]);
   const streamBufferRef = useRef("");
+  const thinkingBufferRef = useRef("");
 
   // Derive current session ID from URL
   const currentSessionId = searchParams.get("session");
@@ -229,143 +231,269 @@ export default function AIAgentChatPageV2() {
     if (window.innerWidth < 768) setIsSidebarOpen(false);
   };
 
-  // --- FIXED SEND MESSAGE LOGIC ---
-  const handleSendMessage = async (textOverride?: string) => {
-    // 1. Determine message text
-    const messageText = typeof textOverride === 'string' ? textOverride : input;
-    if (!messageText.trim()) return;
+  // --- FIXED SEND MESSAGE LOGIC WITH THINKING DISPLAY ---
+const handleSendMessage = async (textOverride?: string) => {
+  // 1. Determine message text
+  const messageText = typeof textOverride === 'string' ? textOverride : input;
+  if (!messageText.trim() || !currentSessionId) return;
 
-    // 2. Generate Unique IDs (Fixes "Duplicate Key" error)
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(7);
-    const botMsgId = `${timestamp}-bot-${randomSuffix}`;
-    const userMsgId = `${timestamp}-user-${randomSuffix}`;
-    
-    // [CRITICAL] Reset the stream buffer for the new message
-    streamBufferRef.current = ""; 
+  // 2. Generate Unique IDs
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(7);
+  const botMsgId = `${timestamp}-bot-${randomSuffix}`;
+  const thinkingMsgId = `${timestamp}-thinking-${randomSuffix}`;
+  const userMsgId = `${timestamp}-user-${randomSuffix}`;
+  
+  // 3. Reset the stream buffers
+  streamBufferRef.current = ""; 
+  thinkingBufferRef.current = "";
 
-    // 3. Update UI immediately (Optimistic update)
-    const userMsg: Message = { 
-        id: userMsgId, 
-        role: 'user', 
-        content: messageText, 
-        attachments: pendingAttachments,
-        timestamp: new Date()
-    };
-    
-    setMessages(prev => [
-      ...prev, 
-      userMsg,
-      { 
-          id: botMsgId, 
-          role: 'assistant', 
-          content: '', // Start empty, will fill via stream
-          isStreaming: true, 
-          suggestions: [],
-          timestamp: new Date()
-      }
-    ]);
-    
-    setInput(""); 
-    setIsLoading(true);
+  // 4. Add ONLY user message and thinking message
+  const userMsg: Message = { 
+      id: userMsgId, 
+      role: 'user', 
+      content: messageText, 
+      attachments: pendingAttachments,
+      timestamp: new Date()
+  };
+  
+  // 5. Add thinking message
+  const thinkingMsg: Message = {
+      id: thinkingMsgId,
+      role: 'assistant',
+      content: '',
+      isThinking: true,
+      isStreaming: true,
+      timestamp: new Date()
+  };
+  
+  // DON'T add botMsg yet - only add thinking
+  setMessages(prev => [...prev, userMsg, thinkingMsg]);
+  
+  setInput(""); 
+  setIsLoading(true);
 
-    try {
-      await aiAgentAPI.sendChatMessageStream(
-        currentSessionId,
-        messageText,
-        { attachments: pendingAttachments, searchEnabled: true },
+  try {
+    await aiAgentAPI.sendChatMessageStream(
+      currentSessionId,
+      messageText,
+      { attachments: pendingAttachments, searchEnabled: true },
 
-        // --- ON CHUNK RECEIVED ---
-        (chunkRaw: string) => {
-          try {
-            // A. Clean up SSE prefix if present (e.g., "data: {...}")
-            let cleanChunk = chunkRaw;
-            if (typeof chunkRaw === 'string' && chunkRaw.startsWith('data: ')) {
-               cleanChunk = chunkRaw.replace('data: ', '').trim();
-            }
-            if (!cleanChunk) return; // Skip empty keep-alive packets
-
-            // B. Parse JSON
-            const data = typeof cleanChunk === 'string' ? JSON.parse(cleanChunk) : cleanChunk;
-
-            // C. Append content to Buffer (Ref is always up-to-date)
-            if (data.type === 'chunk' && data.content) {
-              streamBufferRef.current += data.content;
+      // --- ON CHUNK RECEIVED ---
+      (chunkRaw: string) => {
+        try {
+          // Parse the chunk
+          const chunkData = JSON.parse(chunkRaw);
+          const chunkType = chunkData.type as string;
+          
+          if (chunkType === "thinking") {
+            // Replace thinking content (not concatenate)
+            const thinkingContent = chunkData.content as string;
+            thinkingBufferRef.current = thinkingContent; // Replace, not append
+            
+            setMessages(prev => prev.map(m => 
+              m.id === thinkingMsgId 
+                ? { ...m, content: thinkingBufferRef.current, isThinking: true } 
+                : m
+            ));
+          } else if (chunkType === "response") {
+            // Create botMsg on first response chunk
+            const responseContent = chunkData.content as string;
+            streamBufferRef.current += responseContent;
+            
+            setMessages(prev => {
+              // Check if botMsg already exists
+              const botMsgExists = prev.some(m => m.id === botMsgId);
               
-              // D. Update State from Buffer
-              // We use streamBufferRef.current instead of 'prev + chunk' to guarantee order and completeness
-              setMessages(prev => prev.map(m => 
-                m.id === botMsgId 
-                  ? { ...m, content: streamBufferRef.current } 
-                  : m
-              ));
-            }
-          } catch (e) {
-            console.warn("Stream chunk parse error, attempting as plain text:", e);
-            // Fallback for non-JSON chunks
-            if (typeof chunkRaw === 'string') {
-               streamBufferRef.current += chunkRaw;
-               setMessages(prev => prev.map(m => 
-                m.id === botMsgId ? { ...m, content: streamBufferRef.current } : m
-               ));
-            }
-          }
-        },
+              if (!botMsgExists) {
+                // Add botMsg for the first time
+                const botMsg: Message = {
+                  id: botMsgId,
+                  role: 'assistant',
+                  content: streamBufferRef.current,
+                  isStreaming: true,
+                  suggestions: [],
+                  timestamp: new Date()
+                };
+                return [...prev, botMsg];
+              } else {
+                // Update existing botMsg
+                return prev.map(m => 
+                  m.id === botMsgId 
+                    ? { ...m, content: streamBufferRef.current, isStreaming: true } 
+                    : m
+                );
+              }
+            });
+          } else if (chunkType === "complete") {
+            // Handle complete - replace thinking with final response
+            const completeContent = chunkData.content as string;
+            const metadata = chunkData.metadata as Record<string, unknown>;
 
-        // --- ON COMPLETE ---
-        (fullMessageRaw: string, metadata?: Record<string, unknown>) => {
-          // [CRITICAL] Use the buffer as the final source of truth.
-          // 'fullMessageRaw' from the API might be just a "Done" signal or metadata, causing the text to vanish if used directly.
-          const finalContent = streamBufferRef.current; 
-
-          setMessages(prev => prev.map(m => {
-            if (m.id === botMsgId) {
-               return { 
-                  ...m, 
+            // Update both messages: remove thinking, update bot with final content
+            setMessages(prev => {
+              const filtered = prev.filter(m => m.id !== thinkingMsgId); // Remove thinking message
+              
+              // Check if botMsg exists, if not create it
+              const botMsgExists = filtered.some(m => m.id === botMsgId);
+              
+              if (!botMsgExists) {
+                // Bot message doesn't exist yet, add it
+                const botMsg: Message = {
+                  id: botMsgId,
+                  role: 'assistant',
+                  content: completeContent,
                   isStreaming: false,
-                  content: finalContent, // Ensure we keep the text we just streamed
+                  agent: metadata?.agent as string,
+                  suggestions: (metadata?.suggestions as string[]) || [],
+                  timestamp: new Date()
+                };
+                return [...filtered, botMsg];
+              } else {
+                // Update existing bot message
+                return filtered.map(m => {
+                  if (m.id === botMsgId) {
+                    return {
+                      ...m,
+                      isStreaming: false,
+                      content: completeContent,
+                      isThinking: false,
+                      agent: metadata?.agent as string,
+                      suggestions: (metadata?.suggestions as string[]) || []
+                    };
+                  }
+                  return m;
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.warn("Chunk parse error:", e);
+        }
+      },
+
+      // --- ON COMPLETE ---
+      (_fullMessageRaw: string, metadata?: Record<string, unknown>) => {
+        // Final cleanup - ensure thinking is gone and response is finalized
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.id !== thinkingMsgId); // Remove thinking
+          
+          const botMsgExists = filtered.some(m => m.id === botMsgId);
+          
+          if (!botMsgExists) {
+            // Add bot message if it doesn't exist
+            const botMsg: Message = {
+              id: botMsgId,
+              role: 'assistant',
+              content: streamBufferRef.current,
+              isStreaming: false,
+              agent: metadata?.agent as string | undefined,
+              suggestions: (metadata?.suggestions as string[]) || [],
+              timestamp: new Date()
+            };
+            return [...filtered, botMsg];
+          } else {
+            // Update existing
+            return filtered.map(m => {
+              if (m.id === botMsgId) {
+                return {
+                  ...m,
+                  isStreaming: false,
+                  content: streamBufferRef.current,
+                  isThinking: false,
                   agent: metadata?.agent as string | undefined,
                   suggestions: (metadata?.suggestions as string[]) || m.suggestions,
-               };
-            }
-            return m;
-          }));
+                };
+              }
+              return m;
+            });
+          }
+        });
 
-          setIsLoading(false);
-          setPendingAttachments([]);
+        setIsLoading(false);
+        setPendingAttachments([]);
 
-          // Safe Session Title Update
-          setSessions(prev => prev.map(s => {
-            const isDefaultTitle = !s.title || s.title === "New Conversation" || s.title.startsWith("Session ");
-            if (s.id === currentSessionId && isDefaultTitle) {
-              const newTitle = messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "");
-              return { ...s, title: newTitle };
-            }
-            return s;
-          }));
-        },
+        // Update session title
+        setSessions(prev => prev.map(s => {
+          const isDefaultTitle = !s.title || s.title === "New Conversation" || s.title.startsWith("Session ");
+          if (s.id === currentSessionId && isDefaultTitle) {
+            const newTitle = messageText.slice(0, 30) + (messageText.length > 30 ? "..." : "");
+            return { ...s, title: newTitle };
+          }
+          return s;
+        }));
+      },
 
-        // --- ON ERROR ---
-        (_error: Error) => {
-          console.error(_error);
-          setMessages(prev => prev.map(m => 
-            m.id === botMsgId 
-              ? { ...m, isStreaming: false, isError: true, content: streamBufferRef.current || "Error generating response." } 
-              : m
-          ));
-          setIsLoading(false);
-        }
-      );
-    } catch (error) {
-      console.error("Setup error", error);
-      setMessages(prev => prev.map(m => 
-        m.id === botMsgId 
-          ? { ...m, isStreaming: false, isError: true, content: "Failed to send message." } 
-          : m
-      ));
-      setIsLoading(false);
-    }
-  };
+      // --- ON ERROR ---
+      (error: Error) => {
+        console.error(error);
+        setMessages(prev => {
+          const filtered = prev.filter(m => m.id !== thinkingMsgId); // Remove thinking on error
+          
+          const botMsgExists = filtered.some(m => m.id === botMsgId);
+          
+          if (!botMsgExists) {
+            // Add error message
+            const botMsg: Message = {
+              id: botMsgId,
+              role: 'assistant',
+              content: streamBufferRef.current || "Error generating response.",
+              isStreaming: false,
+              isError: true,
+              timestamp: new Date()
+            };
+            return [...filtered, botMsg];
+          } else {
+            return filtered.map(m => {
+              if (m.id === botMsgId) {
+                return { 
+                  ...m, 
+                  isStreaming: false, 
+                  isError: true, 
+                  content: streamBufferRef.current || "Error generating response." 
+                };
+              }
+              return m;
+            });
+          }
+        });
+        setIsLoading(false);
+      }
+    );
+  } catch (error) {
+    console.error("Setup error", error);
+    setMessages(prev => {
+      const filtered = prev.filter(m => m.id !== thinkingMsgId); // Remove thinking on setup error
+      
+      const botMsgExists = filtered.some(m => m.id === botMsgId);
+      
+      if (!botMsgExists) {
+        const botMsg: Message = {
+          id: botMsgId,
+          role: 'assistant',
+          content: "Failed to send message.",
+          isStreaming: false,
+          isError: true,
+          timestamp: new Date()
+        };
+        return [...filtered, botMsg];
+      } else {
+        return filtered.map(m => {
+          if (m.id === botMsgId) {
+            return { 
+              ...m, 
+              isStreaming: false, 
+              isError: true, 
+              content: "Failed to send message." 
+            };
+          }
+          return m;
+        });
+      }
+    });
+    setIsLoading(false);
+  }
+};
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -426,9 +554,9 @@ export default function AIAgentChatPageV2() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans flex flex-col">
-      {/* Header - Matching JobSearchPage style */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-4 sm:px-6 py-4 shadow-sm">
+    <div className="h-full overflow-hidden bg-[#F8F9FB] font-sans flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm ">
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -446,14 +574,13 @@ export default function AIAgentChatPageV2() {
                 <Bot className="w-5 h-5" />
               </div>
               <span className="font-bold text-gray-900 text-lg">AI Assistant</span>
-              <Badge className="bg-blue-50 text-[#0EA5E9] border-blue-200 text-xs font-bold">Beta</Badge>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Two Column Layout like JobSearchPage */}
-      <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6 flex gap-6 overflow-hidden h-[calc(100vh-140px)]">
+      {/* Main Content */}
+      <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6 flex gap-6 overflow-hidden min-h-0">
         
         {/* Left Column: Sessions List */}
         <div className={cn(
@@ -527,7 +654,7 @@ export default function AIAgentChatPageV2() {
 
         {/* Mobile Sidebar */}
         {isSidebarOpen && (
-          <div className="fixed left-0 top-[4.5rem] w-[400px] h-[calc(100vh-4.5rem)] z-30 lg:hidden bg-white border-r border-gray-200 shadow-lg flex flex-col">
+          <div className="fixed left-0 top-[4.5rem] w-[400px] min-h-0 z-30 lg:hidden bg-white border-r border-gray-200 shadow-lg flex flex-col">
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <span className="text-xs font-bold text-gray-500">Conversations</span>
               <button
@@ -580,7 +707,7 @@ export default function AIAgentChatPageV2() {
         <div className="hidden lg:flex flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex-col min-w-0 overflow-hidden">
           
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-6 py-2 custom-scrollbar">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-[#0EA5E9] to-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
@@ -620,147 +747,167 @@ export default function AIAgentChatPageV2() {
               </div>
             ) : (
               <div className="max-w-5xl mx-auto space-y-6">
-                {messages.map((msg, idx) => (
-                  <div 
-                    key={msg.id} 
-                    className={cn("flex gap-4", msg.role === 'user' ? 'justify-end' : 'justify-start')}
-                  >
-                    {/* Avatar */}
-                    {msg.role === 'assistant' && (
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0EA5E9] to-blue-600 flex items-center justify-center flex-shrink-0 text-white shadow-sm mt-1">
-                        <Sparkles className="w-5 h-5" />
-                      </div>
-                    )}
 
-                    {/* Message Bubble */}
-                    <div className={cn("flex flex-col max-w-[85%] lg:max-w-[75%]", msg.role === 'user' ? 'items-end' : 'items-start')}>
-                      
-                      {/* Agent Badge */}
-                      {msg.role === 'assistant' && renderAgentBadge(msg.agent, msg.intent)}
+{messages.map((msg, idx) => (
+  <div 
+    key={msg.id} 
+    className={cn("flex gap-4", msg.role === 'user' ? 'justify-end' : 'justify-start')}
+  >
+    {/* Avatar - ONLY show if not thinking, or if thinking (brain icon) */}
+    {msg.role === 'assistant' && msg.isThinking && (
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-sm mt-1 bg-gradient-to-br from-amber-500 to-orange-500 animate-pulse">
+        <BrainCircuit className="w-5 h-5" />
+      </div>
+    )}
 
-                      <div 
-                        className={cn(
-                          "relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm",
-                          msg.role === 'user' 
-                            ? 'bg-[#0EA5E9] text-white rounded-tr-sm' 
-                            : msg.isError 
-                              ? 'bg-red-50 text-red-800 border border-red-100 rounded-tl-sm'
-                              : 'bg-gray-50 text-gray-900 border border-gray-100 rounded-tl-sm'
-                        )}
-                      >
-                        {msg.role === 'assistant' ? (
-                          msg.content?.trim()
-                            ? <Markdown content={msg.content} className="prose-sm prose-blue max-w-none" />
-                            : (
-                                <div className="flex items-center gap-1 text-gray-400 text-sm">
-                                  <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                  <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                  <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></span>
-                                  <span>Thinking...</span>
-                                </div>
-                              )
-                        ) : (
-                          <div className="whitespace-pre-wrap">{msg.content}</div>
-                        )}
+    {msg.role === 'assistant' && !msg.isThinking && (
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-sm mt-1 bg-gradient-to-br from-[#0EA5E9] to-blue-600">
+        <Sparkles className="w-5 h-5" />
+      </div>
+    )}
 
-                        {msg.attachments && msg.attachments.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {msg.attachments.map((att, i) => (
-                              <a
-                                key={i}
-                                href={att.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100 transition"
-                              >
-                                📎 {att.name || att.url}
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Media Metadata */}
-                        {msg.metadata?.fileName && (
-                          <div className="mt-3 flex items-center gap-2 p-2 bg-black/5 rounded-lg text-xs">
-                            {msg.metadata.mimeType?.includes('image') ? <ImageIcon className="w-4 h-4"/> : <FileText className="w-4 h-4"/>}
-                            <span className="font-medium">{msg.metadata.fileName}</span>
-                          </div>
-                        )}
-                      </div>
+    {/* Thinking Message - ONLY show if thinking with smooth fade out */}
+    {msg.isThinking && (
+      <div className={cn(
+        "flex flex-col max-w-[85%] lg:max-w-[75%] items-start transition-all duration-300",
+        msg.isStreaming ? "opacity-100" : "opacity-0 pointer-events-none hidden"
+      )}>
+        <div className="relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm bg-amber-50 text-amber-900 border border-amber-100 rounded-tl-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+            <span className="text-xs font-semibold text-amber-700">Thinking...</span>
+          </div>
+          <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+        </div>
+      </div>
+    )}
 
-                      {/* Copy Button */}
-                      {msg.role === 'assistant' && !msg.isError && (
-                        <button
-                          onClick={() => copyToClipboard(msg.content, idx)}
-                          className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2"
-                        >
-                          {copiedIndex === idx ? (
-                            <>
-                              <Check className="w-3 h-3 text-green-500" /> Copied
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" /> Copy
-                            </>
-                          )}
-                        </button>
-                      )}
+    {/* Message Bubble - ONLY show if NOT thinking with smooth fade in */}
+    {!msg.isThinking && msg.role === 'assistant' && (
+      <div className={cn(
+        "flex flex-col max-w-[85%] lg:max-w-[75%] transition-all duration-500",
+        !msg.isStreaming && msg.content ? "opacity-100 animate-in fade-in slide-in-from-bottom-2" : "opacity-100"
+      )}>
+  
+        {/* Agent Badge */}
+        {renderAgentBadge(msg.agent, msg.intent)}
 
-                      {/* Suggestions Chips */}
-                      {msg.suggestions && msg.suggestions.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2 animate-in slide-in-from-top-2 duration-300">
-                          {msg.suggestions.map((s, i) => (
-                            <button
-                              key={i}
-                              onClick={() => {
-                                setInput(s);
-                                textareaRef.current?.focus();
-                              }}
-                              className="px-4 py-2 bg-white border border-[#0EA5E9] text-[#0EA5E9] text-xs font-bold rounded-lg hover:bg-blue-50 hover:border-blue-600 transition-colors flex items-center gap-1 shadow-sm"
-                            >
-                              {s} <ChevronRight className="w-3 h-3 opacity-50" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
+        <div 
+          className={cn(
+            "relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm",
+            msg.isError 
+              ? 'bg-red-50 text-red-800 border border-red-100 rounded-tl-sm'
+              : 'bg-gray-50 text-gray-900 border border-gray-100 rounded-tl-sm'
+          )}
+        >
+          {msg.content?.trim() ? (
+            // Markdown for response
+            <Markdown content={msg.content} className="prose-sm prose-blue max-w-none" />
+          ) : msg.isStreaming ? (
+            // Only show loading dots if still streaming
+            <div className="flex items-center gap-1 text-gray-400 text-sm">
+              <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></span>
+              <span>Generating...</span>
+            </div>
+          ) : null}
 
-                      {/* Timestamp */}
-                      <div className="mt-1 text-[10px] text-gray-400">
-                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {msg.metadata?.executionTime && (
-                          <span> • {msg.metadata.executionTime}ms</span>
-                        )}
-                      </div>
-                    </div>
+          {msg.attachments && msg.attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {msg.attachments.map((att, i) => (
+                <a
+                  key={i}
+                  href={att.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs border border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100 transition"
+                >
+                  📎 {att.name || att.url}
+                </a>
+              ))}
+            </div>
+          )}
+          
+          {/* Media Metadata */}
+          {msg.metadata?.fileName && (
+            <div className="mt-3 flex items-center gap-2 p-2 bg-black/5 rounded-lg text-xs">
+              {msg.metadata.mimeType?.includes('image') ? <ImageIcon className="w-4 h-4"/> : <FileText className="w-4 h-4"/>}
+              <span className="font-medium">{msg.metadata.fileName}</span>
+            </div>
+          )}
+        </div>
 
-                    {/* User Avatar */}
-                    {msg.role === 'user' && (
-                      <div className="w-10 h-10 rounded-xl bg-gray-200 flex items-center justify-center flex-shrink-0 border border-gray-300 mt-1">
-                        <User className="w-5 h-5 text-gray-600" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+        {/* Copy Button - only for non-thinking responses */}
+        {!msg.isError && msg.content && (
+          <button
+            onClick={() => copyToClipboard(msg.content, idx)}
+            className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2"
+          >
+            {copiedIndex === idx ? (
+              <>
+                <Check className="w-3 h-3 text-green-500" /> Copied
+              </>
+            ) : (
+              <>
+                <Copy className="w-3 h-3" /> Copy
+              </>
+            )}
+          </button>
+        )}
 
-                {isLoading && (
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0EA5E9] to-blue-600 flex items-center justify-center flex-shrink-0 animate-pulse">
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex items-center gap-1 pt-3">
-                      <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                      <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                      <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce"></span>
-                    </div>
-                  </div>
-                )}
+        {/* Suggestions Chips - only for non-thinking responses */}
+        {msg.suggestions && msg.suggestions.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2 animate-in slide-in-from-top-2 duration-300">
+            {msg.suggestions.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setInput(s);
+                  textareaRef.current?.focus();
+                }}
+                className="px-4 py-2 bg-white border border-[#0EA5E9] text-[#0EA5E9] text-xs font-bold rounded-lg hover:bg-blue-50 hover:border-blue-600 transition-colors flex items-center gap-1 shadow-sm"
+              >
+                {s} <ChevronRight className="w-3 h-3 opacity-50" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Timestamp */}
+        <div className="mt-1 text-[10px] text-gray-400">
+          {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {msg.metadata?.executionTime && (
+            <span> • {msg.metadata.executionTime}ms</span>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* User Message Bubble */}
+    {msg.role === 'user' && (
+      <>
+        <div className="flex flex-col max-w-[85%] lg:max-w-[75%] items-end">
+          <div className="relative px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm bg-[#0EA5E9] text-white rounded-tr-sm">
+            <div className="whitespace-pre-wrap">{msg.content}</div>
+          </div>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-gray-200 flex items-center justify-center flex-shrink-0 border border-gray-300 mt-1">
+          <User className="w-5 h-5 text-gray-600" />
+        </div>
+      </>
+    )}
+  </div>
+))}
+
+
                 <div ref={scrollRef} />
               </div>
             )}
           </div>
 
           {/* Input Area */}
-          <div className="p-6 bg-white border-t border-gray-100">
+          <div className="pt-2 px-6 bg-white border-t border-gray-100">
             <div className="max-w-5xl mx-auto">
               <div className="flex items-end gap-2 p-3 bg-gray-50 border border-gray-200 rounded-2xl focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-[#0EA5E9] transition-all shadow-sm">
                 
@@ -768,6 +915,7 @@ export default function AIAgentChatPageV2() {
                   onClick={() => fileInputRef.current?.click()}
                   className="p-2.5 text-gray-400 hover:text-[#0EA5E9] hover:bg-blue-50 rounded-xl transition-colors"
                   title="Upload File"
+                  disabled={isLoading}
                 >
                   <Paperclip className="w-5 h-5" />
                 </button>

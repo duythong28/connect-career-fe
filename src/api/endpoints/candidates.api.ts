@@ -28,12 +28,16 @@ const getCandidateJobsRelated = async () => {
   return response.data;
 };
 
-const updateMyProfile = async (data: any): Promise<CandidateProfile> => {
+const updateMyProfile = async (
+  data: Partial<CandidateProfile>
+): Promise<CandidateProfile> => {
   const response = await axios.patch(`${API_URL}/profiles/me`, data);
   return response.data;
 };
 
-const createMyProfile = async (data: any): Promise<CandidateProfile> => {
+const createMyProfile = async (
+  data: Partial<CandidateProfile>
+): Promise<CandidateProfile> => {
   const response = await axios.post(`${API_URL}/profiles`, data);
   return response.data;
 };

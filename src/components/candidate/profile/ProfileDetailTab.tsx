@@ -238,17 +238,29 @@ function ExperienceEditorModal({ initialData, onSubmit, onClose }: any) {
   );
 }
 
+const DEGREE_TYPES = [
+  { value: "high_school", label: "High School" },
+  { value: "associate", label: "Associate" },
+  { value: "bachelor", label: "Bachelor" },
+  { value: "master", label: "Master" },
+  { value: "doctorate", label: "Doctorate" },
+  { value: "certificate", label: "Certificate" },
+  { value: "diploma", label: "Diploma" },
+];
+
 // 3. Education Editor
 const educationSchema = z.object({
   id: z.string().optional(),
   institutionName: z.string().min(1, "Required"),
-  degreeType: z.string().min(1, "Required"),
+  degreeType: z.enum(["high_school", "associate", "bachelor", "master", "doctorate", "certificate", "diploma"], {
+    errorMap: () => ({ message: "Please select a degree type" }),
+  }),
   fieldOfStudy: z.string().min(1, "Required"),
   startDate: z.string().optional().nullable(),
   graduationDate: z.string().optional().nullable(),
 });
 function EducationEditorModal({ initialData, onSubmit, onClose }: any) {
-  const { control, handleSubmit, formState: { isSubmitting, errors } } = useForm({ resolver: zodResolver(educationSchema), defaultValues: initialData || {} });
+  const { control, handleSubmit, formState: { isSubmitting, errors } } = useForm({ resolver: zodResolver(educationSchema), defaultValues: initialData || { degreeType: "" } });
   return (
     <ModalOverlay title={initialData ? "Edit Education" : "Add Education"} icon={GraduationCap} onClose={onClose} onSave={handleSubmit(onSubmit)} isSubmitting={isSubmitting}>
         <InputGroup label="School / Institution" required error={errors.institutionName}>
@@ -259,7 +271,15 @@ function EducationEditorModal({ initialData, onSubmit, onClose }: any) {
         <div className="grid grid-cols-2 gap-4">
             <InputGroup label="Degree" required error={errors.degreeType}>
                 <Controller control={control} name="degreeType" render={({ field }) => (
-                    <Input {...field} placeholder="e.g. Bachelors" className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none h-auto"/>
+                    <select 
+                        {...field} 
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none h-auto bg-white"
+                    >
+                        <option value="">Select degree type</option>
+                        {DEGREE_TYPES.map(type => (
+                            <option key={type.value} value={type.value}>{type.label}</option>
+                        ))}
+                    </select>
                 )} />
             </InputGroup>
             <InputGroup label="Field of Study" required error={errors.fieldOfStudy}>
@@ -291,8 +311,32 @@ export default function ProfileDetailTab({ profileData, isMyProfile, editMode, u
 
   // Logic handlers
   const handleProfileSave = (payload: any) => { updateProfile(payload); setDialog({ type: null, open: false }); };
-  const handleExperienceSave = (data: any) => { const current = profileData.workExperiences ?? []; const newItem = { ...data, id: data.id || Math.random().toString(), organization: { name: data.organizationName } }; updateProfile({ workExperiences: data.id ? current.map(e => e.id === data.id ? newItem : e) : [...current, newItem] }); setDialog({ type: null, open: false }); };
-  const handleEducationSave = (data: any) => { const current = profileData.educations ?? []; const newItem = { ...data, id: data.id || Math.random().toString() }; updateProfile({ educations: data.id ? current.map(e => e.id === data.id ? newItem : e) : [...current, newItem] }); setDialog({ type: null, open: false }); };
+const handleExperienceSave = (data: any) => { 
+    const current = profileData.workExperiences ?? []; 
+    const { organizationName, ...rest } = data;
+    const newItem = { ...rest, organization: { name: organizationName } }; 
+    
+    if (data.id) {
+      // Editing existing item
+      updateProfile({ workExperiences: current.map(e => e.id === data.id ? newItem : e) });
+    } else {
+      // Creating new item - don't set id, let backend handle it
+      updateProfile({ workExperiences: [...current, newItem] });
+    }
+    setDialog({ type: null, open: false }); 
+  };
+  const handleEducationSave = (data: any) => { 
+    const current = profileData.educations ?? []; 
+    
+    if (data.id) {
+      // Editing existing item
+      updateProfile({ educations: current.map(e => e.id === data.id ? data : e) });
+    } else {
+      // Creating new item - don't set id, let backend handle it
+      updateProfile({ educations: [...current, data] });
+    }
+    setDialog({ type: null, open: false }); 
+  };
   const handleDelete = (section: keyof CandidateProfile, id: string) => { updateProfile({ [section]: (profileData[section] as any[]).filter((item: any) => item.id !== id) }); };
 
   return (

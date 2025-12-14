@@ -2,6 +2,7 @@ import * as React from "react";
 import Header from "./Header";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -17,23 +18,20 @@ export function AppLayout({ children }: AppLayoutProps) {
     if (!user) setSidebarOpen(false);
   }, [user]);
 
-  // return <div className="min-h-screen bg-gray-50">{children}</div>;
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
       <Header
         onSidebarToggle={() => setSidebarOpen((open) => !open)}
         sidebarOpen={sidebarOpen}
         user={user}
       />
       {user && <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />}
-      <div className="flex min-h-screen flex-row pt-[4.5rem] w-full">
+      <div className="flex-1 mt-[4.5rem] flex flex-row overflow-hidden">
         <main
-          className={`flex-1 min-w-0 transition-all duration-200
-    ${user && sidebarOpen ? "sm:ml-64" : ""}
-    text-base
-  `}
-          tabIndex={-1}
+          className={cn(
+            "flex-1 min-w-0 overflow-y-auto transition-all duration-200 text-base",
+            user && sidebarOpen ? "sm:ml-64" : ""
+          )}
         >
           {children}
         </main>
