@@ -217,3 +217,16 @@ export const ApplicationStatusLabel: Record<ApplicationStatus, string> = {
   [ApplicationStatus.HIRED]: "Hired",
   [ApplicationStatus.REJECTED]: "Rejected",
 };
+
+
+
+export interface BulkUpdateApplicationDto {
+  applicationIds: string[];
+  update: {
+    status?: string;
+    notes?: string;
+    isShortlisted?: boolean;
+    isFlagged?: boolean;
+    priority?: number;
+  };
+}

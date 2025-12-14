@@ -1,5 +1,12 @@
-import { Link } from "react-router-dom";
-import { Briefcase, Menu, User, LogOut, Settings } from "lucide-react";
+// Cập nhật Header.tsx
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Briefcase,
+  Menu,
+  User,
+  LogOut,
+  HelpCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
@@ -16,6 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "./NotificationBell";
 
 interface HeaderProps {
   onSidebarToggle: () => void;
@@ -23,7 +31,12 @@ interface HeaderProps {
   user: any;
 }
 
-const Header: React.FC<HeaderProps> = ({ onSidebarToggle, sidebarOpen, user }) => {
+const Header: React.FC<HeaderProps> = ({
+  onSidebarToggle,
+  sidebarOpen,
+  user,
+}) => {
+  const navigate = useNavigate();
   const { mutate: logoutMutate, isPending: isLoggingOut } = useMutation({
     mutationFn: logout,
     onSuccess: () => {
@@ -55,6 +68,10 @@ const Header: React.FC<HeaderProps> = ({ onSidebarToggle, sidebarOpen, user }) =
     logoutMutate();
   };
 
+  const handleGoToNotifications = () => {
+    navigate(ROUTES.CANDIDATE.NOTIFICATIONS);
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 fixed top-0 left-0 right-0 z-50 shadow-sm">
       <div className="flex items-center justify-between">
@@ -72,56 +89,60 @@ const Header: React.FC<HeaderProps> = ({ onSidebarToggle, sidebarOpen, user }) =
           )}
           <Link to="/" className="flex items-center gap-x-2">
             <Briefcase className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold tracking-tight">ConnectCareer</span>
+            <span className="text-2xl font-bold tracking-tight">Career</span>
           </Link>
         </div>
         <div className="flex items-center gap-x-4">
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="p-0 h-auto">
-                  <div className="flex items-center gap-x-2">
-                    <Avatar>
-                      <AvatarImage src={user.avatar} />
-                      <AvatarFallback>
-                        {user.firstName?.charAt(0) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-base font-medium hidden sm:inline-block">
-                      {user.firstName}
-                    </span>
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  {user.firstName}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={ROUTES.CANDIDATE.PROFILE}>
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="text-red-600 focus:text-red-700"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <>
+              <NotificationBell onGoToNotifications={handleGoToNotifications} />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <HelpCircle size={20} />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="p-0 h-auto">
+                    <div className="flex items-center gap-x-2">
+                      <Avatar>
+                        <AvatarImage src={user.avatar} />
+                        <AvatarFallback>
+                          {user.firstName?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-base font-medium hidden sm:inline-block">
+                        {user.firstName}
+                      </span>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {user.firstName}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={ROUTES.CANDIDATE.PROFILE}>
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="text-red-600 focus:text-red-700"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
           ) : (
             <div className="flex items-center gap-x-2">
               <Button variant="outline" asChild size="sm" className="text-base">

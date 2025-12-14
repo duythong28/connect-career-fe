@@ -43,11 +43,67 @@ export interface BackOfficeOrganizationsPaginatedResponse {
 }
 
 export interface BackOfficeDashboardStats {
-  totalUsers: number;
-  totalOrganizations: number;
-  totalJobs: number;
-  totalApplications: number;
-  [key: string]: number;
+  overview: {
+    totalUsers: number;
+    totalOrganizations: number;
+    totalJobs: number;
+    totalApplications: number;
+    totalRecruiters: number;
+    totalCandidates: number;
+    activeJobs: number;
+    activeRecruiters: number;
+  };
+  growth: {
+    newUsers: number;
+    newOrganizations: number;
+    newJobs: number;
+    newApplications: number;
+    growthRate: {
+      users: number;
+      organizations: number;
+      jobs: number;
+    };
+  };
+  activity: {
+    jobsPosted: number;
+    applicationsReceived: number;
+    interviewsScheduled: number;
+    offersSent: number;
+    hires: number;
+  };
+  topPerformers: {
+    topOrganizations: {
+      id: string;
+      name: string;
+      jobsPosted: number;
+      hires: number;
+    }[];
+    topRecruiters: {
+      id: string;
+      name: string | null;
+      email: string;
+      organizations: number;
+      hires: number;
+    }[];
+  };
+  trends: {
+    usersByPeriod: {
+      period: string;
+      count: number;
+    }[];
+    jobsByPeriod: {
+      period: string;
+      count: number;
+    }[];
+    applicationsByPeriod: {
+      period: string;
+      count: number;
+    }[];
+  };
+  period: {
+    startDate: string;
+    endDate: string;
+  };
 }
 
 export interface UpdateOrganizationStatusDto {
@@ -104,4 +160,14 @@ export interface BackOfficeJobsPaginatedResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+
+export enum StatsPeriod {
+  TODAY = 'today',
+  WEEK = 'week',
+  MONTH = 'month',
+  QUARTER = 'quarter',
+  YEAR = 'year',
+  ALL_TIME = 'all_time',
 }
