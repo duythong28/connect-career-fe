@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "./NotificationBell";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   onSidebarToggle: () => void;
@@ -67,8 +68,13 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 fixed top-0 left-0 right-0 z-50 shadow-sm">
-      <div className="flex items-center justify-between">
+    <header className="bg-card/80 backdrop-blur-md border-b border-border px-4 sm:px-6 py-5 fixed top-0 left-0 right-0 z-50 shadow-sm">
+      <div
+        className={cn(
+          "flex items-center justify-between",
+          user ? "" : "container-custom"
+        )}
+      >
         <div className="flex items-center gap-x-4">
           {user && (
             <Button
@@ -82,8 +88,12 @@ const Header: React.FC<HeaderProps> = ({
             </Button>
           )}
           <Link to="/" className="flex items-center gap-x-2">
-            <Briefcase className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold tracking-tight">Career</span>
+            <img
+              src="/career48.png"
+              alt="Logo"
+              className="w-8 h-8 object-contain"
+            />
+            <span className="text-2xl font-bold tracking-tight">CareerHub</span>
           </Link>
         </div>
         <div className="flex items-center gap-x-4">
@@ -115,13 +125,20 @@ const Header: React.FC<HeaderProps> = ({
                     <User className="h-4 w-4" />
                     {user.firstName}
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to={ROUTES.CANDIDATE.PROFILE}>
-                      <User className="h-4 w-4 mr-2" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
+                  {user?.roles?.[0]?.name !== "admin" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link
+                          to={`/candidate/profile/${user.candidateProfileId}`}
+                        >
+                          <User className="h-4 w-4 mr-2" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
@@ -136,10 +153,10 @@ const Header: React.FC<HeaderProps> = ({
             </>
           ) : (
             <div className="flex items-center gap-x-2">
-              <Button variant="outline" asChild size="sm" className="text-base">
+              <Button variant="ghost" asChild size="sm" className="text-base">
                 <Link to="/login">Sign In</Link>
               </Button>
-              <Button asChild size="sm" className="text-base">
+              <Button variant="default" asChild size="sm" className="text-base">
                 <Link to="/signup">Sign Up</Link>
               </Button>
             </div>

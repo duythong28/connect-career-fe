@@ -40,9 +40,13 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => (
     {/* Left Panel */}
     <div className="hidden lg:flex lg:w-1/2 bg-[#F0F9FF] flex-col justify-center p-16 relative overflow-hidden">
       <div className="max-w-md z-10">
-        <div className="flex items-center gap-2 text-blue-600 font-bold text-2xl mb-12">
-          <div className="w-8 h-8 bg-blue-600 rounded-md transform rotate-12"></div>
-          Career
+        <div className="flex items-center gap-2 text-black font-bold text-2xl mb-12">
+          <img
+            src="/career48.png"
+            alt="Logo"
+            className="w-8 h-8 object-contain"
+          />
+          CareerHub
         </div>
         <h1 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
           Apply to jobs in 1-click.
