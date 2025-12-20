@@ -56,26 +56,6 @@ const getCandidateJobStats = async () => {
   return response.data;
 };
 
-// const getCandidateJobLatest = async () => {
-//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/latest`);
-//   return response.data;
-// };
-
-// const getCandidateJobsByLocation = async () => {
-//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/location`);
-//   return response.data;
-// };
-
-// const getCandidateJobsByKeyword = async () => {
-//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/keyword`);
-//   return response.data;
-// };
-
-// const getCandidateJobSearchByKeyword = async () => {
-//   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/search/keyword`);
-//   return response.data;
-// };
-
 const getCandidateJobsByOrganization = async ({
   id,
   limit,
@@ -167,11 +147,7 @@ const generateJobDescription = async (
 export {
   getCandidateJobs,
   getCandidateJobStats,
-  // getCandidateJobLatest,
   getFeaturedJobs,
-  // getCandidateJobsByLocation,
-  // getCandidateJobsByKeyword,
-  // getCandidateJobSearchByKeyword,
   getCandidateJobsByOrganization,
   getCandidateSimilarJobs,
   getCandidateJobById,
