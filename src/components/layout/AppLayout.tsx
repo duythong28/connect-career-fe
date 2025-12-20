@@ -3,6 +3,7 @@ import Header from "./Header";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import Footer from "../landing/Footer";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -34,6 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
         >
           {children}
+          <Footer />
         </main>
       </div>
     </div>
