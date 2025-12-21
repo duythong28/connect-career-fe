@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,18 +27,24 @@ const DEFAULT_PARAMS: GetMyApplicationsParams = {
   sortOrder: "DESC",
 };
 
-// --- EmptyStateCard Component (Restyled) ---
+// --- EmptyStateCard Component ---
 function EmptyStateCard({ onBrowse }: { onBrowse: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 bg-white border border-gray-200 rounded-xl text-center shadow-sm">
-      <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-        <FileText className="h-6 w-6 text-gray-400" />
+    <div className="flex flex-col items-center justify-center py-16 bg-card border border-border rounded-3xl text-center shadow-sm animate-fade-in">
+      <div className="w-16 h-16 bg-secondary/50 rounded-full flex items-center justify-center mb-6">
+        <FileText className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h3 className="text-sm font-bold text-gray-900 mb-1">No applications yet</h3>
-      <p className="text-xs text-gray-500 mb-6">
+      <h3 className="text-xl font-bold text-foreground mb-2">No applications yet</h3>
+      <p className="text-muted-foreground mb-8 text-sm max-w-xs mx-auto">
         Start applying to jobs to see them here.
       </p>
-      <Button onClick={onBrowse} className="bg-[#0EA5E9] hover:bg-[#0284c7] font-bold text-xs">Browse Jobs</Button>
+      {/* Hero/Special CTA style for the primary action in empty state */}
+      <Button 
+        onClick={onBrowse} 
+        className="bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] text-primary-foreground font-bold py-6 px-8 rounded-xl shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5 transition-all duration-300"
+      >
+        Browse Jobs
+      </Button>
     </div>
   );
 }
@@ -82,21 +88,30 @@ const CandidateApplicationsPage = () => {
   if (!user) return null;
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">Loading...</div>;
+    return (
+        // PRESERVE: Original background color
+        <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
+            <div className="flex flex-col items-center gap-3">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                <p className="text-muted-foreground font-medium">Loading...</p>
+            </div>
+        </div>
+    );
   }
 
   return (
+    // PRESERVE: Original background color
     <div className="min-h-screen bg-[#F8F9FB] px-4 py-8 font-sans">
-      <div className="max-w-[1200px] mx-auto">
+      <div className="max-w-[1200px] mx-auto animate-fade-in">
         
-        {/* Clean Header */}
-        <div className="mb-6">
-           <h1 className="text-2xl font-bold text-gray-900">My Applications</h1>
-           <p className="text-sm text-gray-500 mt-1">Track and manage your job applications.</p>
+        {/* Header */}
+        <div className="mb-8">
+           <h1 className="text-3xl font-bold text-foreground tracking-tight">My Applications</h1>
+           <p className="text-muted-foreground mt-2 text-lg">Track and manage your job applications.</p>
         </div>
 
         {/* Filter Bar */}
-        <div className="mb-6">
+        <div className="mb-8">
           <FilterBar
             params={params}
             setParams={setParams}
@@ -111,7 +126,7 @@ const CandidateApplicationsPage = () => {
         </div>
 
         {/* Application List */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {applications.length > 0 ? (
             applications.map((application) => (
               <ApplicationCard
@@ -129,7 +144,7 @@ const CandidateApplicationsPage = () => {
 
         {/* Pagination */}
         {applicationsResponse && (applicationsResponse.total > 0) && (
-          <div className="pt-6 pb-10">
+          <div className="pt-8 pb-12 flex justify-center">
             <SmartPagination
               page={currentPage}
               totalPages={totalPages}

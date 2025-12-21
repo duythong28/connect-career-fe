@@ -33,19 +33,19 @@ export default function FilterDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-full p-6">
+      <DialogContent className="max-w-md w-full p-6 bg-card border border-border rounded-3xl shadow-xl animate-fade-in">
         <DialogHeader className="p-4 pb-0 sm:p-0">
-          <DialogTitle>Filters</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-foreground">Filters</DialogTitle>
         </DialogHeader>
         <form
-          className="space-y-4 mt-4"
+          className="space-y-5 mt-4"
           onSubmit={(e) => {
             e.preventDefault();
             onOpenChange(false);
           }}
         >
           <div>
-            <Label>Status</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Status</Label>
             <Select
               value={params.status ?? "all"}
               onValueChange={(value) =>
@@ -56,7 +56,7 @@ export default function FilterDialog({
                 }))
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -70,7 +70,7 @@ export default function FilterDialog({
             </Select>
           </div>
           <div>
-            <Label>Has Interviews</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Has Interviews</Label>
             <Select
               value={
                 params.hasInterviews === undefined
@@ -92,7 +92,7 @@ export default function FilterDialog({
                 }))
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -103,7 +103,7 @@ export default function FilterDialog({
             </Select>
           </div>
           <div>
-            <Label>Has Offers</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Has Offers</Label>
             <Select
               value={
                 params.hasOffers === undefined
@@ -125,7 +125,7 @@ export default function FilterDialog({
                 }))
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -136,7 +136,7 @@ export default function FilterDialog({
             </Select>
           </div>
           <div>
-            <Label>Awaiting Response</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Awaiting Response</Label>
             <Select
               value={
                 params.awaitingResponse === undefined
@@ -158,7 +158,7 @@ export default function FilterDialog({
                 }))
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -169,7 +169,7 @@ export default function FilterDialog({
             </Select>
           </div>
           <div>
-            <Label>Sort By</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Sort By</Label>
             <Select
               value={params.sortBy ?? "appliedDate"}
               onValueChange={(value) =>
@@ -180,7 +180,7 @@ export default function FilterDialog({
                 }))
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -190,7 +190,7 @@ export default function FilterDialog({
             </Select>
           </div>
           <div>
-            <Label>Order</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Order</Label>
             <Select
               value={params.sortOrder ?? "DESC"}
               onValueChange={(value) =>
@@ -201,7 +201,7 @@ export default function FilterDialog({
                 }))
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue placeholder="Order" />
               </SelectTrigger>
               <SelectContent>
@@ -211,7 +211,7 @@ export default function FilterDialog({
             </Select>
           </div>
           <DialogClose asChild>
-            <Button type="submit" className="w-full mt-2">
+            <Button type="submit" variant="default" className="w-full mt-4 rounded-xl font-bold h-11">
               Apply Filters
             </Button>
           </DialogClose>

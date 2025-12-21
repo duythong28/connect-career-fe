@@ -23,7 +23,7 @@ function App() {
               <AppLayout>
                 <AppRoutes />
               </AppLayout>
-              <ChatIcon />
+              {/* <ChatIcon /> */}
               <ChatSearchModal />
               <ChatBoxManager />
               <CallManager />

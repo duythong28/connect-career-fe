@@ -58,20 +58,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     { title: "Interviews", url: ROUTES.CANDIDATE.INTERVIEWS, icon: Calendar },
     { title: "Saved Jobs", url: ROUTES.CANDIDATE.SAVED_JOBS, icon: Heart },
     { title: "Messages", url: ROUTES.CANDIDATE.MESSAGES, icon: MessageCircle },
+    { title: "My Wallet", url: "/candidate/wallet", icon: Wallet },
+    { title: "My Reports", url: ROUTES.CANDIDATE.MY_REPORTS, icon: Flag },
     {
-      title: "Imrpove Resume",
+      title: "AI Improve Resume",
       url: ROUTES.CANDIDATE.RESUME_IMPROVEMENT,
       icon: Brain,
     },
-    { title: "My Wallet", url: "/candidate/wallet", icon: Wallet },
-    { title: "My Reports", url: ROUTES.CANDIDATE.MY_REPORTS, icon: Flag },
     {
       title: "AI Assistant",
       url: ROUTES.CANDIDATE.AI_AGENT_CHATBOT,
       icon: Sparkles,
     },
     {
-      title: "AI Mock Interview", // Add this
+      title: "AI Mock Interview",
       url: ROUTES.CANDIDATE.AI_MOCK_INTERVIEW,
       icon: Mic,
     },
@@ -189,18 +189,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
         <Link
           key={item.url}
           to={item.url}
-          className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-150 ease-in-out
+          // Updated styling using CSS variables and primary colors
+          className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out
             ${
               isActive
-                ? "bg-blue-600 text-white shadow-md"
-                : "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
             }
-            focus:outline-none focus:ring-2 focus:ring-blue-500/50
+            focus:outline-none focus:ring-2 focus:ring-primary/20
           `}
           aria-current={isActive ? "page" : undefined}
         >
           <item.icon
-            className="mr-3 h-5 w-5 flex-shrink-0"
+            className={`mr-3 h-5 w-5 flex-shrink-0 ${
+              isActive ? "text-primary-foreground" : "text-current"
+            }`}
             aria-hidden="true"
           />
           <span className="truncate">{item.title}</span>
@@ -218,18 +221,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
   };
 
   const renderSwitchViewLinks = (isMobileView: boolean) => {
+    const linkBaseClass = `flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-colors duration-200 ease-in-out`;
+
+    // Unified "Active" state style using Brand Primary instead of Green/Indigo
+    const activeClass = "bg-primary text-primary-foreground shadow-sm";
+    const inactiveClass =
+      "text-muted-foreground hover:text-primary hover:bg-primary/10";
+
     const candidateViewLink = (
       <Link
         to={ROUTES.JOBS}
-        className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
-          ${
-            currentPath.startsWith("/candidate") &&
-            currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION &&
-            currentPath !== ROUTES.CANDIDATE.JOIN_ORGANIZATION
-              ? "bg-green-500 text-white shadow-md"
-              : "text-gray-700 hover:text-green-600 hover:bg-green-50"
-          }
-        `}
+        className={`${linkBaseClass} ${
+          currentPath.startsWith("/candidate") &&
+          currentPath !== ROUTES.CANDIDATE.CREATE_ORGANIZATION &&
+          currentPath !== ROUTES.CANDIDATE.JOIN_ORGANIZATION
+            ? activeClass
+            : inactiveClass
+        }`}
       >
         <User className="mr-3 h-4 w-4" />
         Candidate View
@@ -239,15 +247,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     const createOrgLink = (
       <Link
         to={ROUTES.CANDIDATE.CREATE_ORGANIZATION}
-        className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
-          ${
-            currentPath.startsWith(ROUTES.CANDIDATE.CREATE_ORGANIZATION)
-              ? "bg-green-500 text-white shadow-md"
-              : "text-gray-700 hover:text-green-600 hover:bg-green-50"
-          }
-        `}
+        className={`${linkBaseClass} ${
+          currentPath.startsWith(ROUTES.CANDIDATE.CREATE_ORGANIZATION)
+            ? activeClass
+            : inactiveClass
+        }`}
       >
-        <User className="mr-3 h-4 w-4" />
+        <Plus className="mr-3 h-4 w-4" />
         Create Organization
       </Link>
     );
@@ -255,15 +261,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     const joinOrgLink = (
       <Link
         to={ROUTES.CANDIDATE.JOIN_ORGANIZATION}
-        className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
-            ${
-              currentPath.startsWith(ROUTES.CANDIDATE.JOIN_ORGANIZATION)
-                ? "bg-green-500 text-white shadow-md"
-                : "text-gray-700 hover:text-green-600 hover:bg-green-50"
-            }
-          `}
+        className={`${linkBaseClass} ${
+          currentPath.startsWith(ROUTES.CANDIDATE.JOIN_ORGANIZATION)
+            ? activeClass
+            : inactiveClass
+        }`}
       >
-        <User className="mr-3 h-4 w-4" />
+        <Users className="mr-3 h-4 w-4" />
         Join Organization
       </Link>
     );
@@ -274,22 +278,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
         <Link
           key={org.organization.id}
           to={`/company/${org.organization.id}/dashboard`}
-          className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out
-            ${
-              currentPath.startsWith(`/company/${org.organization.id}`)
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-gray-700 hover:text-indigo-600 hover:bg-indigo-50"
-            }
-          `}
+          className={`${linkBaseClass} ${
+            currentPath.startsWith(`/company/${org.organization.id}`)
+              ? activeClass
+              : inactiveClass
+          }`}
         >
           <Building2 className="mr-3 h-4 w-4" />
-          {org.organization.name} View
+          {org.organization.name}
         </Link>
       ));
 
     const switcherView = (
-      <div className="mt-auto pt-6 border-t border-gray-200">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+      <div className="mt-auto pt-6 border-t border-border">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-4">
           Switch View
         </p>
         <div className="flex flex-col gap-y-1">
@@ -314,11 +316,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     return switcherView;
   };
 
-  // Sidebar content for desktop (NO SheetClose)
+  // Sidebar content for desktop
   const desktopSidebarContent = (
-    <nav className="flex flex-col h-full">
-      <div className="mb-8">
-        <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">
+    <nav className="flex flex-col h-full animate-fade-in">
+      <div className="mb-8 px-2">
+        <h2 className="text-xl font-bold text-foreground tracking-tight">
           {menuTitle}
         </h2>
       </div>
@@ -329,11 +331,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     </nav>
   );
 
-  // Sidebar content for mobile (WITH SheetClose)
+  // Sidebar content for mobile
   const mobileSidebarContent = (
-    <nav className="flex flex-col h-full">
-      <div className="mb-8">
-        <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+    <nav className="flex flex-col h-full animate-fade-in">
+      <div className="mb-8 px-2">
+        <h2 className="text-2xl font-bold text-foreground tracking-tight">
           {menuTitle}
         </h2>
       </div>
@@ -346,25 +348,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
 
   return (
     <>
-      {/* Desktop sidebar (no SheetClose) */}
+      {/* Desktop sidebar */}
       {!isMobile && open && (
         <aside
-          // Simplified background and border style for a cleaner look
-          className="flex flex-col bg-gray-50 border-r border-gray-200 fixed left-0 top-[4.5rem] w-64 z-40 h-[calc(100vh-4.5rem)]"
+          // Replaced hardcoded hex colors with CSS variables (bg-background, border-border)
+          className="flex flex-col bg-background border-r border-border fixed left-0 top-[4.5rem] w-64 z-40 h-[calc(100vh-4.5rem)] transition-all duration-300 ease-in-out"
           aria-label="Sidebar"
         >
-          <div className="p-4 overflow-y-auto h-full">
+          <div className="p-4 overflow-y-auto h-full scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
             {desktopSidebarContent}
           </div>
         </aside>
       )}
-      {/* Mobile sidebar (Sheet with SheetClose) */}
+
+      {/* Mobile sidebar */}
       {isMobile && (
         <Sheet open={open} onOpenChange={onOpenChange}>
           <SheetContent
             side="left"
-            // Adjusted padding and background for mobile sheet
-            className="p-0 w-64 h-screen overflow-y-auto bg-white"
+            // Replaced hardcoded bg-white with bg-background
+            className="p-0 w-64 h-screen overflow-y-auto bg-background border-r border-border"
           >
             <div className="p-4">{mobileSidebarContent}</div>
           </SheetContent>

@@ -67,7 +67,6 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen">
-      {/* <Header /> */}
       <div>
         <Hero />
         <Stats />
