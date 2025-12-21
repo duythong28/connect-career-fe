@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, Search, MessageSquare } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,19 +11,9 @@ import {
 import { SavedJob, SavedJobsResponse } from "@/api/types/jobs.types";
 import JobCard from "@/components/jobs/JobCard";
 import { SmartPagination } from "@/components/shared/SmartPagination";
+import { Button } from "@/components/ui/button";
 
 const PAGE_SIZE = 20;
-
-// Component button theo style Simplify
-const SimplifyButton = ({ children, className = '', ...props }: React.ComponentPropsWithoutRef<'button'>) => (
-    <button
-        className={`bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold py-2.5 rounded-lg shadow-sm transition-colors ${className}`}
-        {...props}
-    >
-        {children}
-    </button>
-);
-
 
 const SavedJobsPage = () => {
   const navigate = useNavigate();
@@ -80,9 +70,9 @@ const SavedJobsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FB] px-2 sm:px-4 py-8">
+      <div className="min-h-screen bg-[#F8F9FB] px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <p className="text-gray-500">Loading saved jobs...</p>
+          <p className="text-muted-foreground">Loading saved jobs...</p>
         </div>
       </div>
     );
@@ -90,22 +80,27 @@ const SavedJobsPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F8F9FB] px-2 sm:px-4 py-8">
+      <div className="min-h-screen bg-[#F8F9FB] px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <p className="text-red-600 font-bold">Failed to load saved jobs.</p>
+          <p className="text-destructive font-bold">
+            Failed to load saved jobs.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] px-2 sm:px-4 py-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] px-4 py-8 font-sans animate-fade-in">
       <div className="max-w-[1400px] mx-auto">
-        
-        {/* Header (UI Simplify, Logic Cũ) */}
-        <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Saved Jobs</h1>
-            <p className="text-gray-500 text-sm">Jobs you've bookmarked for later</p>
+        {/* Header (UI: Standard, Logic: Preserved) */}
+        <div className="mb-8 text-center sm:text-left">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Saved Jobs
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Jobs you've bookmarked for later
+          </p>
         </div>
 
         <div className="space-y-4">
@@ -115,7 +110,7 @@ const SavedJobsPage = () => {
                 <JobCard
                   key={saved.id}
                   job={saved.job}
-                  isApplied={false} 
+                  isApplied={false}
                   isSaved={true}
                   onSave={() => handleUnsave(saved.id)} // GIỮ NGUYÊN LOGIC CŨ
                   onView={() => navigate(`/jobs/${saved.job.id}`)} // GIỮ NGUYÊN LOGIC CŨ
@@ -132,19 +127,24 @@ const SavedJobsPage = () => {
               </div>
             </>
           ) : (
-            // Nội dung khi không có job (UI: Simplify, Logic cũ)
-            <Card className="rounded-xl border border-gray-200 shadow-sm">
-              <CardContent className="p-12 text-center bg-white">
-                <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">
+            // Nội dung khi không có job (UI: Standard Card, Logic: Preserved)
+            <Card className="rounded-3xl border-border shadow-sm bg-card">
+              <CardContent className="p-12 text-center">
+                <div className="bg-secondary/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Heart className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-3">
                   No saved jobs
                 </h3>
-                <p className="text-gray-600 mb-6 text-sm">
+                <p className="text-muted-foreground mb-8 text-sm max-w-sm mx-auto">
                   Save jobs you're interested in to access them quickly later.
                 </p>
-                <SimplifyButton onClick={() => navigate("/jobs")}>
-                    Browse Jobs
-                </SimplifyButton>
+                <Button
+                  onClick={() => navigate("/jobs")}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-8 rounded-xl shadow-sm"
+                >
+                  Browse Jobs
+                </Button>
               </CardContent>
             </Card>
           )}

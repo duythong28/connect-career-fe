@@ -239,6 +239,30 @@
   .str-chat__container--chatbox .str-chat__message-list-notifications {
     position: static;
   }
+  html,
+  body,
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #babec2 transparent; /* Thumb color / Track color */
+  }
+
+  /* Webkit (Chrome/Safari) Scrollbar customization */
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+  }
 }
 
 /* 5. Utilities Layer (Helpers, Gradients, Shadows) */

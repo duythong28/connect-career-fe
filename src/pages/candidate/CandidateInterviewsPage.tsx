@@ -234,7 +234,7 @@ const InterviewListItem = ({
     <Card
       key={interview.id}
       className={`cursor-pointer hover:border-primary/50 transition-all border border-border shadow-sm rounded-2xl ${
-        isPastInterview ? "opacity-75 bg-secondary/30" : "bg-card"
+        isPastInterview ? "opacity-75 bg-card" : "bg-card"
       }`}
       onClick={() => setSelectedInterview(interview)}
     >
@@ -637,14 +637,14 @@ const CandidateInterviewsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-6 flex items-center justify-center">
+      <div className="min-h-screen p-6 flex items-center justify-center">
           <div className="text-center text-muted-foreground font-medium">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6 animate-fade-in">
+    <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
         <div className="mb-10 border-b border-border pb-6">
           <div className="flex items-center justify-between">
