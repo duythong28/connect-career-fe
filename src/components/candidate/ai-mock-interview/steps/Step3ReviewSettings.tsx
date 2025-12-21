@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Check, Sparkles, Loader, AlertCircle, Zap } from 'lucide-react';
+import { Check, Sparkles, Loader, AlertCircle, Zap, Edit2, Trash2, Plus, Save, X } from 'lucide-react';
 import { MockInterviewConfig } from '../types';
-import { } from '@/api/endpoints/ai-mock-interview.api';
 import { InterviewQuestion } from '@/api/types/ai-mock-interview.types';
 import { aiMockInterviewAPI } from '@/api/endpoints/ai-mock-interview.api';
 
@@ -21,6 +20,15 @@ const Step3ReviewSettings: React.FC<Step3ReviewSettingsProps> = ({
   const [questionsGenerated, setQuestionsGenerated] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<InterviewQuestion[]>([]);
   const [description, setDescription] = useState<string>('');
+  const [editingQuestionIndex, setEditingQuestionIndex] = useState<number | null>(null);
+  const [editedQuestions, setEditedQuestions] = useState<InterviewQuestion[]>([]);
+  const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+  const [newQuestion, setNewQuestion] = useState({ 
+    question: '', 
+    order: 0, 
+    timeLimit: undefined as number | undefined,
+    askedAt: new Date().toISOString()
+  });
 
   const handleGenerateQuestions = async () => {
     setLoading(true);
@@ -30,8 +38,11 @@ const Step3ReviewSettings: React.FC<Step3ReviewSettingsProps> = ({
       const response = await aiMockInterviewAPI.generateQuestions(config);
 
       setGeneratedQuestions(response.questions);
+      setEditedQuestions(response.questions);
       setDescription(response.description);
       setQuestionsGenerated(true);
+      setEditingQuestionIndex(null);
+      setIsAddingQuestion(false);
 
       if (onQuestionsGenerated) {
         onQuestionsGenerated(response.questions, response.description);
@@ -44,6 +55,74 @@ const Step3ReviewSettings: React.FC<Step3ReviewSettingsProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuestionEdit = (index: number) => {
+    setEditingQuestionIndex(index);
+  };
+
+  const handleQuestionSave = (index: number) => {
+    setEditingQuestionIndex(null);
+    const updated = [...editedQuestions];
+    if (onQuestionsGenerated) {
+      onQuestionsGenerated(updated, description);
+    }
+    setGeneratedQuestions(updated);
+  };
+
+  const handleQuestionCancel = () => {
+    setEditingQuestionIndex(null);
+    setEditedQuestions([...generatedQuestions]);
+  };
+
+  const handleQuestionDelete = (index: number) => {
+    if (window.confirm('Are you sure you want to delete this question?')) {
+      const updated = editedQuestions
+        .filter((_, i) => i !== index)
+        .map((q, i) => ({ ...q, order: i + 1 }));
+      setEditedQuestions(updated);
+      setGeneratedQuestions(updated);
+      if (onQuestionsGenerated) {
+        onQuestionsGenerated(updated, description);
+      }
+    }
+  };
+
+  const handleQuestionChange = (index: number, field: keyof InterviewQuestion, value: string | number | undefined) => {
+    const updated = [...editedQuestions];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditedQuestions(updated);
+  };
+
+  const handleAddQuestion = () => {
+    if (newQuestion.question.trim()) {
+      const updated = [...editedQuestions, { 
+        ...newQuestion, 
+        order: editedQuestions.length + 1 
+      }];
+      setEditedQuestions(updated);
+      setGeneratedQuestions(updated);
+      setNewQuestion({ 
+        question: '', 
+        order: updated.length + 1, 
+        timeLimit: undefined,
+        askedAt: new Date().toISOString()
+      });
+      setIsAddingQuestion(false);
+      if (onQuestionsGenerated) {
+        onQuestionsGenerated(updated, description);
+      }
+    }
+  };
+
+  const handleCancelAddQuestion = () => {
+    setIsAddingQuestion(false);
+    setNewQuestion({ 
+      question: '', 
+      order: editedQuestions.length + 1, 
+      timeLimit: undefined,
+      askedAt: new Date().toISOString()
+    });
   };
 
   return (
@@ -118,15 +197,22 @@ const Step3ReviewSettings: React.FC<Step3ReviewSettingsProps> = ({
           </div>
         )}
 
-        {questionsGenerated && generatedQuestions.length > 0 ? (
+        {questionsGenerated && editedQuestions.length > 0 ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center">
                 <Check className="w-5 h-5 text-green-600 mr-2" />
                 <span className="text-sm font-medium text-green-700">
-                  {generatedQuestions.length} questions generated successfully!
+                  {editedQuestions.length} questions generated successfully!
                 </span>
               </div>
+              <button
+                onClick={() => setIsAddingQuestion(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Question
+              </button>
             </div>
 
             {description && (
@@ -137,26 +223,144 @@ const Step3ReviewSettings: React.FC<Step3ReviewSettingsProps> = ({
               </div>
             )}
 
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {generatedQuestions.map((question, index) => (
-                <div key={index} className="p-3 bg-white border border-gray-200 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="flex items-center justify-center w-7 h-7 bg-indigo-100 text-indigo-600 rounded-full font-bold text-sm flex-shrink-0">
-                      {question.order}
+            <div className="space-y-2 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+              {editedQuestions.map((question, index) => (
+                <div 
+                  key={index} 
+                  className="p-4 bg-white border-2 border-gray-200 rounded-lg hover:border-indigo-300 transition-colors"
+                >
+                  {editingQuestionIndex === index ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
+                          Question {question.order}
+                        </span>
+                      </div>
+                      <textarea
+                        value={question.question}
+                        onChange={(e) => handleQuestionChange(index, 'question', e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                        rows={3}
+                        placeholder="Enter your question..."
+                      />
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-gray-600">Time Limit (seconds):</label>
+                          <input
+                            type="number"
+                            value={question.timeLimit || ''}
+                            onChange={(e) => handleQuestionChange(index, 'timeLimit', e.target.value ? parseInt(e.target.value) : undefined)}
+                            className="w-20 p-1.5 border border-gray-300 rounded text-sm"
+                            placeholder="Optional"
+                            min="0"
+                          />
+                        </div>
+                        <div className="flex gap-2 ml-auto">
+                          <button
+                            onClick={() => handleQuestionSave(index)}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm transition-colors"
+                          >
+                            <Save className="w-4 h-4" />
+                            Save
+                          </button>
+                          <button
+                            onClick={handleQuestionCancel}
+                            className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{question.question}</p>
-                      <div className="flex gap-2 mt-2">
-                        {question.timeLimit && (
-                          <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
-                            {question.timeLimit}s limit
-                          </span>
-                        )}
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-7 h-7 bg-indigo-100 text-indigo-600 rounded-full font-bold text-sm flex-shrink-0">
+                        {question.order}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{question.question}</p>
+                        <div className="flex gap-2 mt-2">
+                          {question.timeLimit && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
+                              {question.timeLimit}s limit
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleQuestionEdit(index)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Edit question"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleQuestionDelete(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete question"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* Add New Question Form */}
+              {isAddingQuestion && (
+                <div className="p-4 bg-indigo-50 border-2 border-indigo-200 rounded-lg">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
+                        New Question {editedQuestions.length + 1}
+                      </span>
+                      <button
+                        onClick={handleCancelAddQuestion}
+                        className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <textarea
+                      value={newQuestion.question}
+                      onChange={(e) => setNewQuestion({ ...newQuestion, question: e.target.value })}
+                      className="w-full p-3 border border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                      rows={3}
+                      placeholder="Enter your question..."
+                    />
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-600">Time Limit (seconds):</label>
+                        <input
+                          type="number"
+                          value={newQuestion.timeLimit || ''}
+                          onChange={(e) => setNewQuestion({ ...newQuestion, timeLimit: e.target.value ? parseInt(e.target.value) : undefined })}
+                          className="w-20 p-1.5 border border-gray-300 rounded text-sm"
+                          placeholder="Optional"
+                          min="0"
+                        />
+                      </div>
+                      <div className="flex gap-2 ml-auto">
+                        <button
+                          onClick={handleAddQuestion}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add
+                        </button>
+                        <button
+                          onClick={handleCancelAddQuestion}
+                          className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm transition-colors"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
 
             <button
@@ -210,7 +414,7 @@ const Step3ReviewSettings: React.FC<Step3ReviewSettingsProps> = ({
         <div className="flex items-start">
           <Sparkles className="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
           <div className="text-sm text-blue-900">
-            <span className="font-bold">AI is ready!</span> Generate questions to preview them before creating your interview session.
+            <span className="font-bold">AI is ready!</span> Generate questions to preview them before creating your interview session. You can edit, delete, or add new questions after generation.
           </div>
         </div>
       </div>

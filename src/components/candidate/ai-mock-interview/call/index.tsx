@@ -3,16 +3,21 @@ import {
   AlarmClockIcon,
   XCircleIcon,
   CheckCircleIcon,
+  Mic,
+  Volume2,
+  User,
+  Bot,
+  ArrowLeft,
+  HelpCircle,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { isLightColor, testEmail } from "@/lib/utils";
-import { AIMockInterviewConfiguration, SubmitFeedbackRequest } from "@/api/types/ai-mock-interview.types";
+import { AIMockInterviewConfiguration } from "@/api/types/ai-mock-interview.types";
 import { RetellWebClient } from "retell-client-js-sdk";
-import { FeedbackForm } from "./FeedbackForm";
 import { TabSwitchWarning, useTabSwitchPrevention } from "./useTabSwitchPrevention";
 import {
   AlertDialog,
@@ -28,6 +33,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { aiMockInterviewAPI } from "@/api/endpoints/ai-mock-interview.api";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { Markdown } from "@/components/ui/markdown";
 
 type CallProps = {
   interview: AIMockInterviewConfiguration;
@@ -38,11 +46,11 @@ type transcriptType = {
   content: string;
 };
 
-// Create a single instance of RetellWebClient
 const webClient = new RetellWebClient();
 
 export default function Call({ interview }: CallProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [lastInterviewerResponse, setLastInterviewerResponse] = useState<string>("");
   const [lastUserResponse, setLastUserResponse] = useState<string>("");
   const [activeTurn, setActiveTurn] = useState<string>("");
@@ -50,13 +58,8 @@ export default function Call({ interview }: CallProps) {
   const [isStarted, setIsStarted] = useState(false);
   const [isEnded, setIsEnded] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
-  const [email, setEmail] = useState<string>("");
-  const [name, setName] = useState<string>("");
-  const [isValidEmail, setIsValidEmail] = useState<boolean>(false);
   const [callId, setCallId] = useState<string>("");
   const { tabSwitchCount } = useTabSwitchPrevention();
-  const [isFeedbackSubmitted, setIsFeedbackSubmitted] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [interviewerImg, setInterviewerImg] = useState("");
   const [interviewTimeDuration, setInterviewTimeDuration] = useState<string>("1");
   const [time, setTime] = useState(0);
@@ -66,7 +69,6 @@ export default function Call({ interview }: CallProps) {
 
   const lastUserResponseRef = useRef<HTMLDivElement | null>(null);
 
-  // Fetch interviewer image
   const { data: interviewers } = useQuery({
     queryKey: ["interviewers"],
     queryFn: async () => {
@@ -121,26 +123,15 @@ export default function Call({ interview }: CallProps) {
   }, [isCalling, time, currentTimeDuration, interviewTimeDuration]);
 
   useEffect(() => {
-    if (testEmail(email)) {
-      setIsValidEmail(true);
-    } else {
-      setIsValidEmail(false);
-    }
-  }, [email]);
-
-  useEffect(() => {
     if (isEnded && callId && !analysisComplete) {
       const handleCallEnded = async () => {
         try {
-          // 1. Update response status (mark as ended)
           await aiMockInterviewAPI.updateResponseStatus(callId, {
             isEnded: true,
           });
 
-          // 2. Wait a moment for backend to process
           await new Promise(resolve => setTimeout(resolve, 2000));
 
-          // 3. Trigger analysis
           setIsAnalyzing(true);
           try {
             await aiMockInterviewAPI.analyzeCall(callId);
@@ -162,7 +153,6 @@ export default function Call({ interview }: CallProps) {
     }
   }, [isEnded, callId, analysisComplete]);
 
-  // Setup Retell event listeners
   useEffect(() => {
     webClient.on("call_started", () => {
       console.log("Call started");
@@ -206,7 +196,6 @@ export default function Call({ interview }: CallProps) {
     });
 
     return () => {
-      // Clean up event listeners
       webClient.removeAllListeners();
     };
   }, []);
@@ -232,42 +221,37 @@ export default function Call({ interview }: CallProps) {
     const data = {
       mins: String(interview.configuration?.duration || 10),
       objective: interview.customPrompt || "",
-      questions: "", // TODO: Get questions from interview if available
-      name: name || "not provided",
+      questions: "", 
+      name: user?.firstName || user?.username || "Guest",
     };
   
     setLoading(true);
   
     try {
-      // Register call to get callId and accessToken from backend
       const registerResponse = await aiMockInterviewAPI.registerCall({
         interviewerId: interview.interviewerAgentId!,
         sessionId: interview.id,
-        email: email,
-        name: name,
+        email: user?.email || "",
+        name: user?.firstName || user?.username || "Guest",
         dynamicData: data,
       });
 
       console.log("Register call response:", registerResponse);
 
-      // Handle different response structures
       let callId: string;
       let accessToken: string;
       let responseId: string;
 
-      // Check if response has success property (wrapped response)
       if (registerResponse.success && registerResponse.data) {
         callId = registerResponse.data.callId;
         accessToken = registerResponse.data.accessToken;
         responseId = registerResponse.data.responseId;
       } 
-      // Check if response is the data object directly
       else if (registerResponse.callId && registerResponse.accessToken) {
         callId = registerResponse.callId;
         accessToken = registerResponse.accessToken;
         responseId = registerResponse.responseId || "";
       } 
-      // Check nested structure (like reference code)
       else if ((registerResponse as any).data?.registerCallResponse) {
         const resp = (registerResponse as any).data.registerCallResponse;
         callId = resp.call_id || resp.callId;
@@ -284,9 +268,6 @@ export default function Call({ interview }: CallProps) {
       
       setCallId(callId);
 
-      console.log("Starting call with:", { callId, accessToken: accessToken.substring(0, 20) + "..." });
-
-      // Start the call using Retell Web Client with both accessToken and callId
       await webClient.startCall({
         accessToken: accessToken,
         callId: callId,
@@ -305,11 +286,10 @@ export default function Call({ interview }: CallProps) {
     }
   };
 
-      
   useEffect(() => {
     if (isEnded && callId) {
       const updateInterview = async () => {
-        await aiMockInterviewAPI.updateResponse(callId, {
+        await aiMockInterviewAPI.recordCallResult(callId, {
           isEnded: true,
         });
       };
@@ -317,282 +297,360 @@ export default function Call({ interview }: CallProps) {
     }
   }, [isEnded, callId]);
 
-  const handleFeedbackSubmit = async (
-    formData: Omit<SubmitFeedbackRequest, "sessionId">
-  ) => {
-    try {
-      const result = await aiMockInterviewAPI.submitFeedback({
-        ...formData,
-        sessionId: interview.id,
-      });
-
-      if (result) {
-        toast.success("Thank you for your feedback!");
-        setIsFeedbackSubmitted(true);
-        setIsDialogOpen(false);
-      } else {
-        toast.error("Failed to submit feedback. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error submitting feedback:", error);
-      toast.error("An error occurred. Please try again later.");
-    }
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#F8F9FB] font-sans">
       {isStarted && <TabSwitchWarning />}
-      <div className="bg-white rounded-md md:w-[80%] w-[90%]">
-        <Card className="h-[88vh] rounded-lg border-2 border-b-4 border-r-4 border-black text-xl font-bold transition-all md:block dark:border-white">
-          <div>
-            <div className="m-4 h-[15px] rounded-lg border-[1px] border-black">
+      
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/candidate/ai-mock-interview')}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">AI Mock Interview</h1>
+                {!isEnded && interview.configuration?.duration && (
+                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                    <AlarmClockIcon className="w-4 h-4" />
+                    Expected: {interviewTimeDuration} minutes
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {isCalling && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="text-sm font-semibold text-red-700">
+                    {formatTime(Number(currentTimeDuration))}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      {!isEnded && (
+        <div className="bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="bg-indigo-600 h-[15px] rounded-lg transition-all"
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300"
                 style={{
                   width: isEnded
                     ? "100%"
-                    : `${
-                        (Number(currentTimeDuration) /
-                          (Number(interviewTimeDuration) * 60)) *
+                    : `${Math.min(
+                        (Number(currentTimeDuration) / (Number(interviewTimeDuration) * 60)) * 100,
                         100
-                      }%`,
+                      )}%`,
                 }}
               />
             </div>
-            <CardHeader className="items-center p-1">
-              {!isEnded && (
-                <CardTitle className="flex flex-row items-center text-lg md:text-xl font-bold mb-2">
-                  AI Mock Interview
-                </CardTitle>
-              )}
-              {!isEnded && interview.configuration?.duration && (
-                <div className="flex mt-2 flex-row">
-                  <AlarmClockIcon className="text-indigo-600 h-[1rem] w-[1rem] mr-2 font-bold" />
-                  <div className="text-sm font-normal">
-                    Expected duration:{" "}
-                    <span className="font-bold text-indigo-600">
-                      {interviewTimeDuration} mins
-                    </span>{" "}
-                    or less
-                  </div>
-                </div>
-              )}
-            </CardHeader>
+          </div>
+        </div>
+      )}
 
-            {!isStarted && !isEnded && (
-              <div className="w-fit min-w-[400px] max-w-[400px] mx-auto mt-2 border border-indigo-200 rounded-md p-2 m-2 bg-slate-50">
-                <div>
-                  <div className="p-2 font-normal text-sm mb-4 whitespace-pre-line">
-                    {interview.jobDescription && (
-                      <div className="mb-4">
-                        <p className="font-semibold mb-2">Job Description:</p>
-                        <p>{interview.jobDescription}</p>
-                      </div>
-                    )}
-                    <p className="font-bold text-sm">
-                      Ensure your volume is up and grant microphone access when
-                      prompted. Additionally, please make sure you are in a quiet
-                      environment.
-                      {"\n\n"}Note: Tab switching will be recorded.
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-2 justify-center">
-                    <div className="flex justify-center">
-                      <input
-                        value={email}
-                        className="h-fit mx-auto py-2 border-2 rounded-md w-[75%] self-center px-2 border-gray-400 text-sm font-normal"
-                        placeholder="Enter your email address"
-                        onChange={(e) => setEmail(e.target.value)}
-                      />
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {!isStarted && !isEnded && (
+          <Card className="border border-gray-200 rounded-xl shadow-sm">
+            <CardHeader className="border-b border-gray-100">
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Interview Preparation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {interview.jobDescription && (
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                    <h3 className="font-semibold text-gray-900 mb-2">Job Description</h3>
+                    <div className="prose prose-sm max-w-none">
+                      <Markdown content={interview.jobDescription} />
                     </div>
-                    <div className="flex justify-center">
-                      <input
-                        value={name}
-                        className="h-fit mb-4 mx-auto py-2 border-2 rounded-md w-[75%] self-center px-2 border-gray-400 text-sm font-normal"
-                        placeholder="Enter your first name"
-                        onChange={(e) => setName(e.target.value)}
-                      />
+                  </div>
+                )}
+                {(interview as any).questions && Array.isArray((interview as any).questions) && (interview as any).questions.length > 0 && (
+                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <HelpCircle className="w-5 h-5 text-indigo-600" />
+                      <h3 className="font-semibold text-gray-900">Interview Questions</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {(interview as any).questions.map((question: any, index: number) => (
+                        <div
+                          key={index}
+                          className="p-3 bg-white border border-indigo-100 rounded-lg hover:border-indigo-200 transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
+                              {index + 1}
+                            </div>
+                            <p className="text-sm text-gray-700 leading-relaxed flex-1">
+                              {question.question || question}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <Mic className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-2">
+                      <p className="font-semibold text-gray-900 text-sm">Before You Start</p>
+                      <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                        <li>Ensure your volume is up and grant microphone access when prompted</li>
+                        <li>Make sure you are in a quiet environment</li>
+                        <li>Tab switching will be recorded</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
-                <div className="w-[80%] flex flex-row mx-auto justify-center items-center align-middle">
+
+                <div className="flex gap-3 pt-4">
                   <Button
-                    className="min-w-20 h-10 rounded-lg flex flex-row justify-center mb-8 bg-indigo-600 text-white"
-                    disabled={loading || !isValidEmail || !name}
                     onClick={startConversation}
+                    disabled={loading}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-11 rounded-xl font-semibold shadow-sm"
                   >
-                    {!loading ? "Start Interview" : "Starting..."}
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="w-4 h-4 mr-2" />
+                        Start Interview
+                      </>
+                    )}
                   </Button>
+                  
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
-                        className="bg-white border ml-2 text-black min-w-15 h-10 rounded-lg flex flex-row justify-center mb-8"
-                        style={{ borderColor: "#4F46E5" }}
+                        variant="outline"
                         disabled={loading}
+                        className="border-gray-300 text-gray-700 hover:bg-gray-50 h-11 rounded-xl"
                       >
                         Exit
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Exit Interview?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to exit? Your progress will not be saved.
+                        </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                          className="bg-indigo-600 hover:bg-indigo-800"
                           onClick={onEndCallClick}
+                          className="bg-red-600 hover:bg-red-700"
                         >
-                          Continue
+                          Exit
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
               </div>
-            )}
+            </CardContent>
+          </Card>
+        )}
 
-            {isStarted && !isEnded && (
-              <div className="flex flex-row p-2 grow">
-                <div className="border-x-2 border-grey w-[50%] my-auto min-h-[70%]">
-                  <div className="flex flex-col justify-evenly">
-                    <div className="text-[22px] w-[80%] md:text-[26px] mt-4 min-h-[250px] mx-auto px-6">
-                      {lastInterviewerResponse || (
-                        <p className="text-muted-foreground">Waiting for interviewer...</p>
-                      )}
-                    </div>
-                    <div className="flex flex-col mx-auto justify-center items-center align-middle">
-                      {interviewerImg ? (
-                        <img
-                          src={interviewerImg}
-                          alt="Image of the interviewer"
-                          className={`w-[120px] h-[120px] object-cover object-center mx-auto my-auto rounded-full ${
-                            activeTurn === "agent"
-                              ? "border-4 border-indigo-600"
-                              : ""
-                          }`}
-                        />
-                      ) : (
-                        <div className="w-[120px] h-[120px] bg-indigo-100 rounded-full flex items-center justify-center">
-                          <Skeleton className="w-full h-full rounded-full" />
-                        </div>
-                      )}
-                      <div className="font-semibold">Interviewer</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col justify-evenly w-[50%]">
-                  <div
-                    ref={lastUserResponseRef}
-                    className="text-[22px] w-[80%] md:text-[26px] mt-4 mx-auto h-[250px] px-6 overflow-y-auto"
-                  >
-                    {lastUserResponse || (
-                      <p className="text-muted-foreground">Your responses will appear here...</p>
+        {isStarted && !isEnded && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Interviewer Side */}
+            <Card className="border border-gray-200 rounded-xl shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center space-y-6">
+                  <div className={cn(
+                    "w-32 h-32 rounded-2xl flex items-center justify-center transition-all duration-300",
+                    activeTurn === "agent"
+                      ? "ring-4 ring-indigo-500 ring-offset-2 bg-indigo-50"
+                      : "bg-gray-50"
+                  )}>
+                    {interviewerImg ? (
+                      <img
+                        src={interviewerImg}
+                        alt="Interviewer"
+                        className="w-full h-full rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <Skeleton className="w-full h-full rounded-2xl" />
                     )}
                   </div>
-                  <div className="flex flex-col mx-auto justify-center items-center align-middle">
-                    <div
-                      className={`w-[120px] h-[120px] bg-gray-200 rounded-full flex items-center justify-center ${
-                        activeTurn === "user" ? "border-4 border-indigo-600" : ""
-                      }`}
-                    >
-                      <span className="text-4xl">👤</span>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Bot className="w-5 h-5 text-indigo-600" />
+                      <h3 className="text-lg font-bold text-gray-900">Interviewer</h3>
                     </div>
-                    <div className="font-semibold">You</div>
+                    {activeTurn === "agent" && (
+                      <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">
+                        Speaking
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <p className="text-gray-700 leading-relaxed">
+                      {lastInterviewerResponse || (
+                        <span className="text-gray-400 italic">Waiting for interviewer...</span>
+                      )}
+                    </p>
                   </div>
                 </div>
-              </div>
-            )}
+              </CardContent>
+            </Card>
 
-            {isStarted && !isEnded && (
-              <div className="items-center p-2">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      className="bg-white text-black border border-indigo-600 h-10 mx-auto flex flex-row justify-center mb-8 w-full"
-                      disabled={loading}
-                    >
-                      End Interview{" "}
-                      <XCircleIcon className="h-[1.5rem] ml-2 w-[1.5rem] text-red-500" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This action will end the call.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-indigo-600 hover:bg-indigo-800"
-                        onClick={onEndCallClick}
-                      >
-                        Continue
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            )}
+            {/* User Side */}
+            <Card className="border border-gray-200 rounded-xl shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex flex-col items-center space-y-6">
+                  <div className={cn(
+                    "w-32 h-32 rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center transition-all duration-300",
+                    activeTurn === "user"
+                      ? "ring-4 ring-indigo-500 ring-offset-2"
+                      : ""
+                  )}>
+                    <User className="w-16 h-16 text-gray-600" />
+                  </div>
+                  
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Mic className="w-5 h-5 text-gray-600" />
+                      <h3 className="text-lg font-bold text-gray-900">You</h3>
+                    </div>
+                    {activeTurn === "user" && (
+                      <Badge className="bg-green-100 text-green-700 border-green-200">
+                        Your Turn
+                      </Badge>
+                    )}
+                  </div>
 
-            {isEnded && (
-              <div className="w-fit min-w-[400px] max-w-[400px] mx-auto mt-2 border border-indigo-200 rounded-md p-2 m-2 bg-slate-50 absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                  <div
+                    ref={lastUserResponseRef}
+                    className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-blue-50 rounded-xl border border-blue-200 custom-scrollbar"
+                  >
+                    <p className="text-gray-700 leading-relaxed">
+                      {lastUserResponse || (
+                        <span className="text-gray-400 italic">Your responses will appear here...</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {isStarted && !isEnded && (
+          <div className="mt-6">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full border-red-200 text-red-600 hover:bg-red-50 h-11 rounded-xl"
+                  disabled={loading}
+                >
+                  <XCircleIcon className="w-4 h-4 mr-2" />
+                  End Interview
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>End Interview?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. The interview will be ended immediately.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={onEndCallClick}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    End Interview
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
+
+        {isEnded && (
+          <Card className="border border-gray-200 rounded-xl shadow-sm max-w-2xl mx-auto">
+            <CardContent className="p-8">
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircleIcon className="w-12 h-12 text-green-600" />
+                </div>
+                
                 <div>
-                  <div className="p-2 font-normal text-base mb-4 whitespace-pre-line">
-                    <CheckCircleIcon className="h-[2rem] w-[2rem] mx-auto my-4 text-indigo-500" />
-                    <p className="text-lg font-semibold text-center">
-                      {isStarted
-                        ? `Thank you for taking the time to participate in this interview`
-                        : "Thank you very much for considering."}
-                    </p>
-                    <p className="text-center">
-                      {"\n"}
-                      You can close this tab now.
-                    </p>
-                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    {isStarted
+                      ? "Interview Completed!"
+                      : "Thank You"}
+                  </h2>
+                  <p className="text-gray-600">
+                    {isStarted
+                      ? "Thank you for taking the time to participate in this interview."
+                      : "Thank you very much for considering."}
+                  </p>
+                </div>
 
-                  {!isFeedbackSubmitted && (
-                    <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                      <AlertDialogTrigger asChild>
-                        <div className="w-full flex justify-center">
-                          <Button
-                            className="bg-indigo-600 text-white h-10 mt-4 mb-4"
-                            onClick={() => setIsDialogOpen(true)}
-                          >
-                            Provide Feedback
-                          </Button>
-                        </div>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <FeedbackForm
-                          email={email}
-                          onSubmit={handleFeedbackSubmit}
-                        />
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+                {isAnalyzing && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm font-medium text-blue-700">
+                        Analyzing your interview...
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <Button
+                    onClick={() => navigate(`/candidate/ai-mock-interview/${interview.id}/results`)}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-11 rounded-xl font-semibold shadow-sm"
+                  >
+                    View Results
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/candidate/ai-mock-interview')}
+                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 h-11 rounded-xl"
+                  >
+                    Back to Interviews
+                  </Button>
                 </div>
               </div>
-            )}
-          </div>
-        </Card>
-        <a
-          className="flex flex-row justify-center align-middle mt-3"
-          href="https://folo-up.co/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div className="text-center text-md font-semibold mr-2">
-            Powered by{" "}
-            <span className="font-bold">
-              Folo<span className="text-indigo-600">Up</span>
-            </span>
-          </div>
-          <ArrowUpRightSquareIcon className="h-[1.5rem] w-[1.5rem] text-indigo-500" />
-        </a>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

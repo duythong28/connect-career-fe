@@ -181,20 +181,23 @@ const JobDetailPage = () => {
                                     </span>
                                 </div>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-6">
                                 <div className="space-y-8">
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-900 mb-4">
                                             Job Description
                                         </h3>
-                                        {isHtmlContent(jobData.description) ? (
-                                            <RenderMarkDown content={jobData.description} />
-                                        ) : (
-                                            <Markdown
-                                                content={jobData.description}
-                                                className="prose-sm"
-                                            />
-                                        )}
+                                        {/* Add max-height and scrolling */}
+                                        <div className="max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {isHtmlContent(jobData.description) ? (
+                                                <RenderMarkDown content={jobData.description} />
+                                            ) : (
+                                                <Markdown
+                                                    content={jobData.description}
+                                                    className="prose-sm max-w-none"
+                                                />
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         <h4 className="text-xl font-bold w-full mb-2 text-gray-900">
