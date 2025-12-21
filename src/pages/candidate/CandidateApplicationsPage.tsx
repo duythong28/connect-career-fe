@@ -101,7 +101,7 @@ const CandidateApplicationsPage = () => {
 
   return (
     // PRESERVE: Original background color
-    <div className="min-h-screen bg-[#F8F9FB] px-4 py-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] px-4 py-8 ">
       <div className="max-w-[1200px] mx-auto animate-fade-in">
         
         {/* Header */}

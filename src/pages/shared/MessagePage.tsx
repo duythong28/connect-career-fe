@@ -1,24 +1,25 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Chat,
   Channel,
   ChannelList,
   Window,
-  ChannelHeader,
   MessageList,
   MessageInput,
   Thread,
   LoadingIndicator,
+  useChatContext,
+  SearchResultItemProps,
 } from "stream-chat-react";
 import "stream-chat-react/dist/css/v2/index.css";
 import { useChatClient } from "@/hooks/useChatClient";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Button } from "@/components/ui/button";
-import { MessageSquare, ArrowLeft } from "lucide-react";
-import CustomChannelPreview from "@/components/chat/customChannelPreview";
+import { MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useChatContext } from "@/context/ChatContext";
 import { Channel as StreamChannel } from "stream-chat";
+import CustomChannelPreview from "@/components/chat/customChannelPreview";
+import CustomSearchResultItem from "@/components/chat/CustomSearchResultItem";
+import CustomChannelHeader from "@/components/chat/CustomChannelHeader";
 
 const MessagePage = () => {
   const { user } = useAuth();
@@ -30,58 +31,75 @@ const MessagePage = () => {
     null
   );
 
-  const filters = {
-    members: { $in: [user?.id || ""] },
-  };
-  const options = { presence: true, state: true };
-  const sort = { last_message_at: -1 as const };
+  // --- 1. Local Selection Handler (Right Pane & Mobile) ---
+  const handleChannelSelect = useCallback(
+    (channel: StreamChannel) => {
+      setSelectedChannel(channel);
+      if (isMobile) {
+        const otherMember = Object.values(channel.state.members).find(
+          (member) => member.user?.id !== user?.id
+        );
+        if (openChatBox) {
+          openChatBox(
+            channel,
+            otherMember?.user?.id,
+            otherMember?.user?.name || "Unknown User",
+            otherMember?.user?.image
+          );
+        }
+      }
+    },
+    [isMobile, user?.id, openChatBox]
+  );
 
-  const handleChannelSelect = (channel: StreamChannel) => {
-    setSelectedChannel(channel);
+  // --- 2. Memoize Search Props ---
+  const additionalChannelSearchProps = useMemo(
+    () => ({
+      searchForChannels: true,
+      searchQueryParams: {
+        channelFilters: {
+          filters: { members: { $in: [user?.id || ""] } },
+        },
+      },
+      // Pass our Custom Item which now has access to useChatContext
+      SearchResultItem: (props: SearchResultItemProps) => (
+        <CustomSearchResultItem
+          {...props}
+          onSelectLocal={handleChannelSelect}
+        />
+      ),
+    }),
+    [user?.id, handleChannelSelect]
+  );
 
-    // If on mobile, also open this channel in the chatbox system
-    if (isMobile) {
-      // Extract recipient info from channel members
-      const otherMember = Object.values(channel.state.members).find(
-        (member) => member.user?.id !== user?.id
-      );
+  const filters = useMemo(
+    () => ({ members: { $in: [user?.id || ""] } }),
+    [user?.id]
+  );
+  const options = useMemo(() => ({ presence: true, state: true }), []);
+  const sort = useMemo(() => ({ last_message_at: -1 as const }), []);
 
-      openChatBox(
-        channel,
-        otherMember?.user?.id,
-        otherMember?.user?.name || "Unknown User",
-        otherMember?.user?.image
-      );
-    }
-  };
-
-  if (loading) {
+  if (loading)
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="h-full flex items-center justify-center">
         <LoadingIndicator />
       </div>
     );
-  }
-
-  if (error) {
+  if (error)
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4">
-        <p className="text-red-500">{error}</p>
-        <Button onClick={() => window.location.reload()}>Try Again</Button>
+      <div className="h-full flex items-center justify-center text-red-500">
+        {error}
       </div>
     );
-  }
-
-  if (!client) {
+  if (!client)
     return (
-      <div className="flex items-center justify-center h-full">
-        <p>Unable to connect to chat</p>
+      <div className="h-full flex items-center justify-center">
+        Unable to connect
       </div>
     );
-  }
 
   return (
-    <div className="h-[calc(100vh-4.5rem)] border border-1 relative overflow-hidden">
+    <div className="h-[calc(100vh-4.4rem)] border border-1 relative overflow-hidden">
       <Chat client={client}>
         <div className="flex h-full">
           <div
@@ -95,25 +113,20 @@ const MessagePage = () => {
                 options={options}
                 sort={sort}
                 showChannelSearch
-                Preview={(props) => (
+                additionalChannelSearchProps={additionalChannelSearchProps}
+                Preview={(previewProps) => (
                   <CustomChannelPreview
-                    {...props}
+                    {...previewProps}
+                    // REVERTED: No strict ID check needed anymore.
+                    // setActiveChannel here handles list clicks
                     setActiveChannel={(channel, watchers) => {
                       handleChannelSelect(channel);
-                      if (props.setActiveChannel) {
-                        props.setActiveChannel(channel, watchers);
+                      if (previewProps.setActiveChannel) {
+                        previewProps.setActiveChannel(channel, watchers);
                       }
                     }}
                   />
                 )}
-                additionalChannelSearchProps={{
-                  searchForChannels: true,
-                  searchQueryParams: {
-                    channelFilters: {
-                      filters: { members: { $in: [user?.id || ""] } },
-                    },
-                  },
-                }}
               />
             </div>
           </div>
@@ -138,22 +151,10 @@ const MessagePage = () => {
             ) : selectedChannel ? (
               <Channel channel={selectedChannel}>
                 <Window>
-                  {isMobile && (
-                    <div className="flex items-center p-3 border-b bg-background">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedChannel(null)}
-                        className="mr-3"
-                      >
-                        <ArrowLeft className="h-4 w-4" />
-                      </Button>
-                      <div className="flex-1">
-                        <ChannelHeader />
-                      </div>
-                    </div>
-                  )}
-                  {!isMobile && <ChannelHeader />}
+                  <CustomChannelHeader
+                    isMobile={isMobile}
+                    onBack={() => setSelectedChannel(null)}
+                  />
                   <MessageList />
                   <MessageInput />
                 </Window>

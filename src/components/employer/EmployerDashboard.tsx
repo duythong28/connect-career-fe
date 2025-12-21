@@ -270,7 +270,7 @@ export function EmployerDashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans text-xs">
+        <div className="min-h-screen bg-gray-50 text-xs">
             <style>
                 {`
                     .sticky-filter-bar {
@@ -747,10 +747,7 @@ export function EmployerDashboard() {
                 </div>
 
 
-                {/* Floating Feedback Button */}
-                <button className="fixed bottom-4 right-4 bg-[#0EA5E9] text-white px-3 py-1.5 rounded-lg font-bold text-xs shadow-lg hover:bg-[#0284c7] flex items-center gap-2 z-50">
-                    <MessageSquare size={14} /> Feedback
-                </button>
+            
             </div>
         </div>
     );

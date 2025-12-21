@@ -91,11 +91,11 @@ const SavedJobsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] px-4 py-8 font-sans animate-fade-in">
+    <div className="min-h-screen bg-[#F8F9FB] px-4 py-8 animate-fade-in">
       <div className="max-w-[1400px] mx-auto">
         {/* Header (UI: Standard, Logic: Preserved) */}
         <div className="mb-8 text-center sm:text-left">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl font-bold text-foreground  mb-2">
             Saved Jobs
           </h1>
           <p className="text-muted-foreground text-sm">

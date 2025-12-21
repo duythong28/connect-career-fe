@@ -34,8 +34,8 @@ export interface WalletBalance {
 export interface TopUpRequest {
   amount: number;
   currency: string;
-  provider: string; // e.g. "momo", "zalopay", "stripe"
-  paymentMethod: string; // e.g. "momo", "zalopay", "credit_card"
+  provider: string;
+  paymentMethod: string;
 }
 
 export interface TopUpResponse {

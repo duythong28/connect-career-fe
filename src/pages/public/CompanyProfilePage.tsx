@@ -424,7 +424,7 @@ const CompanyProfilePage = () => {
   const isViewMode = !editMode || previewMode;
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar bg-[#F8F9FB] font-sans">
+    <div className="h-full overflow-y-auto custom-scrollbar bg-[#F8F9FB]">
       <div className="max-w-[1400px] mx-auto py-8 px-6 animate-fadeIn">
         {/* Navigation Back */}
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-gray-900 mb-6 uppercase tracking-wide">

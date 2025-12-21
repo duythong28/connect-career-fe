@@ -12,22 +12,26 @@ import {
   Wallet,
   CreditCard,
   X,
-  MessageSquare, // Added icon from SimplifyPage for button example
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const paymentProviders = [
-  { label: "MoMo", value: "momo" },
-  { label: "ZaloPay", value: "zalopay" },
-  { label: "Stripe", value: "stripe" },
+  { label: "MoMo", value: "momo", currency: "VND", paymentMethod: "momo" },
+  {
+    label: "ZaloPay",
+    value: "zalopay",
+    currency: "VND",
+    paymentMethod: "zalopay",
+  },
+  {
+    label: "Stripe",
+    value: "stripe",
+    currency: "USD",
+    paymentMethod: "credit_card",
+  },
 ];
 
-const paymentMethods = {
-  momo: [{ label: "MoMo Wallet", value: "momo" }],
-  zalopay: [{ label: "ZaloPay Wallet", value: "zalopay" }],
-  stripe: [{ label: "Credit Card", value: "credit_card" }],
-};
-
-// Component helper for uniformity (taken from SimplifyPage context/style)
+// Component helper for uniformity
 const StatCard = ({
   icon: Icon,
   title,
@@ -37,21 +41,34 @@ const StatCard = ({
   subtitle,
   iconBg,
   amountColor,
+}: {
+  icon: any;
+  title: string;
+  amount: string | number;
+  currency?: string;
+  color: string;
+  subtitle: string;
+  iconBg: string;
+  amountColor: string;
 }) => (
-  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm transition-all hover:shadow-md group">
+  <div className="bg-card border border-border rounded-3xl p-6 shadow-sm hover:shadow-md transition-all group">
     <div className="flex items-center justify-between mb-4">
-      <h3 className="text-sm font-bold text-gray-600">{title}</h3>
-      <div className={`p-2 rounded-lg ${iconBg}`}>
-        <Icon size={16} className={`${color}`} />
+      <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
+        {title}
+      </h3>
+      <div className={`p-2 rounded-xl ${iconBg}`}>
+        <Icon size={18} className={`${color}`} />
       </div>
     </div>
     <div className="flex items-end">
-      <p className={`text-3xl font-bold ${amountColor}`}>{amount}</p>
+      <p className={`text-2xl font-bold ${amountColor}`}>{amount}</p>
       {currency && (
-        <span className="text-sm text-gray-500 ml-2 mb-0.5">{currency}</span>
+        <span className="text-sm text-muted-foreground ml-2 mb-1 font-medium">
+          {currency}
+        </span>
       )}
     </div>
-    <p className="text-xs text-gray-500 mt-2">{subtitle}</p>
+    <p className="text-xs text-muted-foreground mt-2 font-medium">{subtitle}</p>
   </div>
 );
 
@@ -69,9 +86,18 @@ const UserWalletPage = () => {
   const [showTopUp, setShowTopUp] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
   const [provider, setProvider] = useState("momo");
-  const [paymentMethod, setPaymentMethod] = useState("momo");
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+
+  // Determine currency based on selected provider
+  const selectedCurrency =
+    paymentProviders.find((p) => p.value === provider)?.currency || "VND";
+
+  const paymentMethod =
+    paymentProviders.find((p) => p.value === provider)?.paymentMethod || "momo";
+
+  // HELPER: Check if a payment session is active
+  const isPaymentActive = !!redirectUrl;
 
   const topUpMutation = useMutation({
     mutationFn: (data: {
@@ -87,9 +113,7 @@ const UserWalletPage = () => {
       toast({ title: "Top up request created. Please complete payment." });
       refetch();
     },
-    onError: () => {
-      /* toast({ title: "Top up failed", variant: "destructive" })*/
-    },
+    onError: () => {},
   });
 
   const formatCurrency = (amount: number | string) => {
@@ -112,54 +136,56 @@ const UserWalletPage = () => {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto py-8 px-6 animate-fadeIn font-sans">
+    <div className="container-custom py-8 animate-fade-in">
       {/* Hero Balance Card */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-8 mb-8 shadow-lg">
+      <div className="bg-card border border-border rounded-3xl p-8 mb-8 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-primary/10 rounded-xl text-primary">
                 <Wallet size={20} />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-foreground">
                 Wallet Balance
               </h1>
             </div>
             {loadingBalance ? (
               <div className="flex items-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                <p className="text-gray-600">Loading wallet data...</p>
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <p className="text-muted-foreground font-medium text-sm">
+                  Loading wallet data...
+                </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="text-5xl font-bold text-blue-600">
+              <div className="space-y-1">
+                <div className="text-3xl font-bold text-primary tracking-tight">
                   {formatCurrency(walletData?.balance ?? 0)}
-                  <span className="text-2xl text-gray-500 ml-2">
+                  <span className="text-lg text-muted-foreground ml-2 font-medium">
                     {walletData?.currency}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 font-medium">
-                  Wallet ID: {walletData?.walletId}
-                </p>
               </div>
             )}
           </div>
-          <button
+          <Button
+            variant="default"
             onClick={() => setShowTopUp(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md transition-all self-start lg:self-center"
+            className="flex items-center gap-2 px-6 h-10 font-bold rounded-xl shadow-sm self-start lg:self-center"
           >
             <Plus size={18} /> Top Up Wallet
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Statistics Cards (using local StatCard component for Simplify style) */}
+      {/* Statistics Cards */}
       {walletData?.statistics && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
             icon={TrendingUp}
             title="Total Credits"
-            amount={formatCurrency(walletData.statistics.totalCredits.total ?? 0)}
+            amount={formatCurrency(
+              walletData.statistics.totalCredits.total ?? 0
+            )}
             currency={walletData.currency}
             color="text-green-600"
             amountColor="text-green-600"
@@ -169,7 +195,9 @@ const UserWalletPage = () => {
           <StatCard
             icon={ArrowDown}
             title="Total Debits"
-            amount={formatCurrency(walletData.statistics.totalDebits.total ?? 0)}
+            amount={formatCurrency(
+              walletData.statistics.totalDebits.total ?? 0
+            )}
             currency={walletData.currency}
             color="text-red-600"
             amountColor="text-red-600"
@@ -182,11 +210,9 @@ const UserWalletPage = () => {
             amount={
               walletData.statistics.totalSpent.total
                 ? formatCurrency(walletData.statistics.totalSpent.total ?? 0)
-                : "N/A"
+                : 0
             }
-            currency={
-              walletData.statistics.totalSpent.total ? walletData.currency : ""
-            }
+            currency={walletData.currency}
             color="text-amber-600"
             amountColor="text-amber-600"
             iconBg="bg-amber-100"
@@ -198,54 +224,49 @@ const UserWalletPage = () => {
       {/* Recent Transactions */}
       {walletData?.recentTransactions &&
         walletData.recentTransactions.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+          <div className="bg-card border border-border rounded-3xl shadow-sm overflow-hidden">
+            <div className="px-6 py-5 border-b border-border flex justify-between items-center bg-secondary/5">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">
-                  Recent Transactions
+                <h2 className="text-xl font-bold text-foreground">
+                  Transactions
                 </h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Last {walletData.recentTransactions.length} transactions
-                </p>
               </div>
-              <button className="text-blue-600 font-bold text-xs px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors">
-                View All Transactions
-              </button>
             </div>
-            <div className="divide-y divide-gray-100">
-              {walletData.recentTransactions.map((transaction) => (
+            <div className="divide-y divide-border">
+              {walletData.recentTransactions.map((transaction: any) => (
                 <div
                   key={transaction.id}
-                  className="px-6 py-4 hover:bg-blue-50/20 transition-colors flex items-center justify-between group"
+                  className="px-6 py-4 hover:bg-secondary/20 transition-colors flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <div
-                      className={`p-3 rounded-lg flex-shrink-0 ${
+                      className={`p-2.5 rounded-xl flex-shrink-0 ${
                         transaction.type === "credit"
                           ? "bg-green-100"
                           : "bg-red-100"
                       }`}
                     >
                       {transaction.type === "credit" ? (
-                        <ArrowUp className="w-5 h-5 text-green-600" />
+                        <ArrowUp className="w-4 h-4 text-green-600" />
                       ) : (
-                        <ArrowDown className="w-5 h-5 text-red-600" />
+                        <ArrowDown className="w-4 h-4 text-red-600" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm mb-1">
+                      <p className="font-bold text-foreground text-sm mb-1 truncate">
                         {transaction.description ||
                           (transaction.type === "credit" ? "Top-up" : "Debit")}
                       </p>
-                      <p className="text-xs text-gray-500 mb-2">
+                      <p className="text-xs text-muted-foreground mb-1.5 font-medium">
                         {formatDateTime(transaction.createdAt)}
                       </p>
                       <div className="flex gap-2 flex-wrap">
-                        <span className="text-[10px] bg-gray-100 px-2 py-1 rounded-md text-gray-600 font-medium">
-                          Before: {formatCurrency(transaction.balanceBefore ?? 0)}{" "}
+                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-lg text-muted-foreground font-bold uppercase tracking-wide border border-border">
+                          Before:{" "}
+                          {formatCurrency(transaction.balanceBefore ?? 0)}{" "}
                           {walletData.currency}
                         </span>
-                        <span className="text-[10px] bg-gray-100 px-2 py-1 rounded-md text-gray-600 font-medium">
+                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-lg text-muted-foreground font-bold uppercase tracking-wide border border-border">
                           After: {formatCurrency(transaction.balanceAfter ?? 0)}{" "}
                           {walletData.currency}
                         </span>
@@ -254,7 +275,7 @@ const UserWalletPage = () => {
                   </div>
                   <div className="text-right flex-shrink-0 ml-4">
                     <p
-                      className={`font-bold text-lg ${
+                      className={`font-bold text-base ${
                         transaction.type === "credit"
                           ? "text-green-600"
                           : "text-red-600"
@@ -266,8 +287,8 @@ const UserWalletPage = () => {
                     <span
                       className={`text-[10px] font-bold uppercase tracking-wider mt-1 inline-block px-2 py-0.5 rounded-full ${
                         transaction.status === "completed"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-yellow-100 text-yellow-700"
+                          ? "bg-green-100 text-green-700 border border-green-200"
+                          : "bg-yellow-100 text-yellow-700 border border-yellow-200"
                       }`}
                     >
                       {transaction.status}
@@ -279,14 +300,14 @@ const UserWalletPage = () => {
           </div>
         )}
 
-      {/* Top Up Modal (Styled to match EditModal/ReportModal in SimplifyPage) */}
+      {/* Top Up Modal */}
       {showTopUp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fadeIn">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl relative flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="bg-card rounded-3xl w-full max-w-md shadow-2xl border border-border relative flex flex-col overflow-hidden">
             {/* Modal Header */}
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <div className="flex items-center gap-3 text-gray-900 font-bold text-lg">
-                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-secondary/30">
+              <div className="flex items-center gap-3 text-foreground font-bold text-lg">
+                <div className="p-2 bg-primary/10 rounded-xl text-primary">
                   <Wallet size={20} />
                 </div>
                 Top Up Wallet
@@ -298,17 +319,17 @@ const UserWalletPage = () => {
                   setRedirectUrl(null);
                   setExpiresAt(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary/50"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
 
             {/* Modal Content */}
             <div className="p-6 flex-1 overflow-y-auto">
-              <div className="space-y-4 mb-6">
+              <div className="space-y-5 mb-6">
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">
+                  <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">
                     Amount
                   </label>
                   <div className="relative">
@@ -318,16 +339,17 @@ const UserWalletPage = () => {
                       value={topUpAmount}
                       onChange={(e) => setTopUpAmount(e.target.value)}
                       min="1"
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-gray-400"
+                      disabled={isPaymentActive} // DISABLE INPUT
+                      className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none placeholder-muted-foreground text-foreground font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm">
-                      {walletData?.currency}
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">
+                      {selectedCurrency}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">
+                  <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">
                     Payment Provider
                   </label>
                   <div className="relative">
@@ -335,13 +357,9 @@ const UserWalletPage = () => {
                       value={provider}
                       onChange={(val) => {
                         setProvider(val.target.value);
-                        setPaymentMethod(
-                          paymentMethods[
-                            val.target.value as keyof typeof paymentMethods
-                          ][0].value
-                        );
                       }}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white text-gray-700"
+                      disabled={isPaymentActive} // DISABLE SELECT
+                      className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none appearance-none text-foreground font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {paymentProviders.map((p) => (
                         <option key={p.value} value={p.value}>
@@ -350,32 +368,7 @@ const UserWalletPage = () => {
                       ))}
                     </select>
                     <ChevronDown
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                      size={16}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">
-                    Payment Method
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white text-gray-700"
-                    >
-                      {paymentMethods[
-                        provider as keyof typeof paymentMethods
-                      ].map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                       size={16}
                     />
                   </div>
@@ -383,19 +376,19 @@ const UserWalletPage = () => {
               </div>
 
               {redirectUrl && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-xs font-bold text-blue-900 mb-3">
+                <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-2xl">
+                  <p className="text-xs font-bold text-primary mb-2 uppercase tracking-wide">
                     ✓ Payment link ready
                   </p>
                   <a
                     href={redirectUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 font-bold text-sm underline hover:text-blue-700 block mb-2"
+                    className="text-primary font-bold text-sm hover:underline hover:text-primary/80 block mb-1 transition-colors"
                   >
                     → Complete Payment
                   </a>
-                  <p className="text-[10px] text-gray-600">
+                  <p className="text-[10px] text-muted-foreground font-medium">
                     Expires: {expiresAt ? formatDateTime(expiresAt) : ""}
                   </p>
                 </div>
@@ -403,35 +396,39 @@ const UserWalletPage = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-6 border-t border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-b-xl">
-              <button
+            <div className="p-5 border-t border-border flex justify-between items-center bg-secondary/10 gap-3">
+              <Button
+                variant="outline"
                 onClick={() => {
                   setShowTopUp(false);
                   setTopUpAmount("");
                   setRedirectUrl(null);
                   setExpiresAt(null);
                 }}
-                className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-600 font-bold text-sm hover:bg-gray-100 transition-colors"
+                className="px-6 h-10 border-border rounded-xl text-muted-foreground font-bold text-sm hover:text-foreground bg-background hover:bg-secondary w-full"
               >
-                Cancel
-              </button>
-              <button
+                {isPaymentActive ? "Close" : "Cancel"}
+              </Button>
+              <Button
+                variant="default"
                 onClick={() =>
                   topUpMutation.mutate({
                     amount: Number(topUpAmount),
-                    currency: "VND",
+                    currency: selectedCurrency,
                     provider,
                     paymentMethod,
                   })
                 }
-                disabled={topUpMutation.isPending || !topUpAmount}
-                className="px-8 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={
+                  topUpMutation.isPending || !topUpAmount || isPaymentActive
+                } // DISABLE SUBMIT BUTTON
+                className="px-6 h-10 font-bold text-sm rounded-xl shadow-sm w-full gap-2"
               >
                 {topUpMutation.isPending && (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 )}
                 Top Up Now
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -94,7 +94,7 @@ export function CandidateProfilePage() {
 
   return (
     // PRESERVED BACKGROUND: Using original #F8F9FB as requested
-    <div className="min-h-screen bg-[#F8F9FB] font-sans overflow-y-auto custom-scrollbar">
+    <div className="min-h-screen bg-[#F8F9FB] overflow-y-auto custom-scrollbar">
       <div className="max-w-[1400px] mx-auto py-8 px-6 animate-fade-in">
         {/* Personal Info Modal */}
         {showPersonalModal && (

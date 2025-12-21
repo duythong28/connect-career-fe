@@ -15,7 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import {
   getCandidateJobById,
-  getCandidateSimilarJobs,
   getCandidateJobs,
 } from "@/api/endpoints/jobs.api";
 import RenderMarkDown, {
@@ -31,10 +30,27 @@ import {
 } from "@/api/types/jobs.types";
 import { toast } from "@/hooks/use-toast";
 import ReportDialog from "@/components/reports/ReportDialog";
+import {
+  getSimilarJobsRecommendations,
+  getJobsByIds,
+} from "@/api/endpoints/recommendations.api";
+import { SimilarJobRecommendationResponse } from "@/api/types/recommendations.types";
 
 const JobDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  const handleGetSimilarJobs = async (jobId: string) => {
+    try {
+      const response = await getSimilarJobsRecommendations(jobId);
+      if (response.jobIds && response.jobIds.length > 0) {
+        const result = await getJobsByIds(response.jobIds);
+        console.log("Similar Jobs:", result);
+      }
+    } catch (error) {
+      console.error("Error fetching similar jobs:", error);
+    }
+  };
 
   // Fetch job detail
   const { data: jobData } = useQuery({
@@ -44,11 +60,12 @@ const JobDetailPage = () => {
   });
 
   // Fetch similar jobs
-  const { data: similarJobs, isLoading: loadingSimilar } = useQuery<Job[]>({
-    queryKey: ["similar-jobs", id],
-    queryFn: () => getCandidateSimilarJobs(id!),
-    enabled: !!id,
-  });
+  const { data: similarJobs, isLoading: loadingSimilar } =
+    useQuery({
+      queryKey: ["similar-jobs", id],
+      queryFn: () => handleGetSimilarJobs(id!),
+      enabled: !!id,
+    });
 
   // Fallback: fetch 5 jobs from same company or with similar keywords
   const { data: fallbackJobs } = useQuery<JobsResponse>({
@@ -65,12 +82,16 @@ const JobDetailPage = () => {
 
   if (!jobData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center font-sans">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-4">
             Job not found
           </h2>
-          <Button onClick={() => navigate("/jobs")} variant="outline" className="h-10 px-6 rounded-xl border-border hover:bg-secondary">
+          <Button
+            onClick={() => navigate("/jobs")}
+            variant="outline"
+            className="h-9 px-6 rounded-xl border-border hover:bg-secondary"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Jobs
           </Button>
@@ -78,8 +99,6 @@ const JobDetailPage = () => {
       </div>
     );
   }
-
-  const isApplied = false; // TODO: Replace with real application status
 
   const stripHtml = (html: string) => {
     const tmp = document.createElement("DIV");
@@ -105,12 +124,12 @@ const JobDetailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans animate-fade-in">
+    <div className="min-h-screen bg-background animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)} 
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
             className="text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-transparent px-0 py-0 flex items-center gap-1 uppercase tracking-wide h-auto"
           >
             <ArrowLeft className="h-3 w-3 mr-1" />
@@ -124,7 +143,7 @@ const JobDetailPage = () => {
               <CardHeader className="p-8 border-b border-border">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-5">
-                    <Avatar className="h-20 w-20 rounded-2xl flex items-center justify-center text-3xl font-bold bg-secondary text-primary shadow-sm shrink-0 border border-border">
+                    <Avatar className="h-20 w-20 rounded-2xl flex items-center justify-center border border-border shadow-sm shrink-0">
                       <AvatarImage
                         src={
                           jobData.organization?.logoFile?.url ??
@@ -132,7 +151,7 @@ const JobDetailPage = () => {
                         }
                         className="rounded-2xl object-cover"
                       />
-                      <AvatarFallback className="text-2xl font-bold text-muted-foreground">
+                      <AvatarFallback className="text-2xl font-bold bg-secondary text-primary">
                         {jobData.companyName?.charAt(0) || "C"}
                       </AvatarFallback>
                     </Avatar>
@@ -145,14 +164,17 @@ const JobDetailPage = () => {
                       </p>
                       <div className="flex flex-wrap gap-x-5 gap-y-2 text-muted-foreground text-sm">
                         <span className="flex items-center min-w-0 text-xs font-bold text-foreground">
-                          <MapPin className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                          <MapPin className="h-3.5 w-3.5 mr-1.5 text-primary" />
                           {jobData.location}
                         </span>
-                        <span className="flex items-center min-w-0 text-xs font-bold text-green-600">
-                          <DollarSign className="h-3.5 w-3.5 mr-1.5 text-green-600" />
+                        <span className="flex items-center min-w-0 text-xs font-bold text-brand-success">
+                          <DollarSign className="h-3.5 w-3.5 mr-1.5 text-brand-success" />
                           {jobData.salary}
                         </span>
-                        <Badge variant="secondary" className="capitalize bg-primary/10 text-primary font-bold text-[10px] px-2.5 py-0.5 rounded-lg border-transparent hover:bg-primary/20">
+                        <Badge
+                          variant="secondary"
+                          className="capitalize bg-secondary text-primary font-bold text-[10px] px-2.5 py-0.5 rounded-lg border-transparent"
+                        >
                           {JobTypeLabel[jobData.type as JobType] ||
                             jobData.type}
                         </Badge>
@@ -160,22 +182,24 @@ const JobDetailPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="icon" onClick={handleShare} className="h-10 w-10 border-border hover:bg-secondary rounded-xl">
-                      <Share className="h-4 w-4 text-muted-foreground" />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleShare}
+                      className="h-10 w-10 border-border hover:bg-secondary rounded-xl"
+                    >
+                      <Share className="h-4 w-4 text-primary" />
                     </Button>
-                    <ReportDialog
-                      entityId={jobData.id}
-                      entityType={"job"}
-                    />
+                    <ReportDialog entityId={jobData.id} entityType={"job"} />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground mt-6 border-t border-border pt-5">
-                  <span className="flex items-center min-w-0 text-xs font-bold text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/70" />
+                  <span className="flex items-center min-w-0 text-xs font-bold">
+                    <Clock className="h-3.5 w-3.5 mr-1.5 text-primary" />
                     Posted {new Date(jobData.createdAt).toLocaleDateString()}
                   </span>
-                  <span className="flex items-center min-w-0 text-xs font-bold text-muted-foreground">
-                    <Users className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/70" />
+                  <span className="flex items-center min-w-0 text-xs font-bold">
+                    <Users className="h-3.5 w-3.5 mr-1.5 text-primary" />
                     {jobData.applications} applicants
                   </span>
                 </div>
@@ -200,22 +224,25 @@ const JobDetailPage = () => {
                       Required Skills
                     </h4>
                     {jobData.keywords.map((keyword: string) => (
-                      <Badge key={keyword} variant="outline" className="text-xs font-bold bg-secondary/30 text-foreground px-3.5 py-1.5 rounded-full border border-border hover:bg-secondary/50 transition-colors">
+                      <Badge
+                        key={keyword}
+                        variant="outline"
+                        className="text-xs font-bold bg-secondary/30 text-foreground px-3.5 py-1.5 rounded-full border border-border hover:bg-secondary/50"
+                      >
                         {keyword}
                       </Badge>
                     ))}
                   </div>
                 </div>
-                {/* Sticky apply button on mobile */}
-                <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-4 shadow-xl">
+                <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-4 shadow-lg">
                   <ApplyJobDialog jobId={id ?? ""} />
                 </div>
               </CardContent>
             </Card>
           </div>
+
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Application Actions (desktop only) */}
             <Card className="hidden lg:block border border-border rounded-3xl shadow-sm bg-card">
               <CardContent className="p-6">
                 <div className="mb-5">
@@ -223,17 +250,25 @@ const JobDetailPage = () => {
                 </div>
                 <div className="space-y-4 text-sm pt-5 border-t border-border">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs font-bold uppercase">Applicants</span>
-                    <span className="font-bold text-foreground text-sm">{jobData.applications}</span>
+                    <span className="text-muted-foreground text-xs font-bold uppercase">
+                      Applicants
+                    </span>
+                    <span className="font-bold text-foreground text-sm">
+                      {jobData.applications}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs font-bold uppercase">Job Type</span>
+                    <span className="text-muted-foreground text-xs font-bold uppercase">
+                      Job Type
+                    </span>
                     <span className="font-bold text-foreground text-sm capitalize">
                       {JobTypeLabel[jobData.type as JobType] || jobData.type}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs font-bold uppercase">Posted</span>
+                    <span className="text-muted-foreground text-xs font-bold uppercase">
+                      Posted
+                    </span>
                     <span className="font-bold text-foreground text-sm">
                       {new Date(jobData.postedDate).toLocaleDateString()}
                     </span>
@@ -241,10 +276,12 @@ const JobDetailPage = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Company Info */}
+
             <Card className="border border-border rounded-3xl shadow-sm bg-card">
               <CardHeader className="border-b border-border p-6">
-                <CardTitle className="text-lg font-bold text-foreground">About {jobData.companyName}</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">
+                  About {jobData.companyName}
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-5">
@@ -258,21 +295,19 @@ const JobDetailPage = () => {
                   </p>
                   <div className="space-y-3 text-sm pt-5 border-t border-border">
                     <div className="flex items-center gap-2 justify-between">
-                      <span className="text-xs font-bold text-muted-foreground uppercase">Industry</span>
-                      <span className="font-bold text-foreground text-sm text-right">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">
+                        Industry
+                      </span>
+                      <span className="font-medium text-foreground text-sm text-right">
                         {jobData.organization?.industry?.name}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 justify-between">
-                      <span className="text-xs font-bold text-muted-foreground uppercase">Company Size</span>
-                      <span className="font-bold text-foreground text-sm text-right">
-                        {jobData.organization.organizationSize}
+                      <span className="text-xs font-bold text-muted-foreground uppercase">
+                        Company Size
                       </span>
-                    </div>
-                    <div className="flex items-center gap-2 justify-between">
-                      <span className="text-xs font-bold text-muted-foreground uppercase">Location</span>
-                      <span className="font-bold text-foreground text-sm text-right">
-                        {jobData.organization.headquartersAddress}
+                      <span className="font-medium text-foreground text-sm text-right">
+                        {jobData.organization.organizationSize}
                       </span>
                     </div>
                   </div>
@@ -283,7 +318,7 @@ const JobDetailPage = () => {
                       onClick={() =>
                         navigate(`/company/${jobData.organizationId}/profile`)
                       }
-                      className="flex-1 h-10 bg-background border-border rounded-xl text-sm font-bold text-primary hover:bg-secondary hover:text-primary"
+                      className="flex-1 h-9 border-border rounded-xl text-xs font-bold text-primary hover:bg-secondary"
                     >
                       View Company
                     </Button>
@@ -292,15 +327,14 @@ const JobDetailPage = () => {
                         variant="outline"
                         size="icon"
                         asChild
-                        className="flex-0 w-10 h-10 border-border hover:bg-secondary rounded-xl"
+                        className="flex-0 w-9 h-9 border-border hover:bg-secondary rounded-xl"
                       >
                         <a
                           href={jobData.organization.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center"
                         >
-                          <Globe className="h-4 w-4 text-muted-foreground" />
+                          <Globe className="h-4 w-4 text-primary" />
                         </a>
                       </Button>
                     )}
@@ -308,48 +342,60 @@ const JobDetailPage = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Similar Jobs */}
+
             <Card className="border border-border rounded-3xl shadow-sm bg-card">
               <CardHeader className="border-b border-border p-6">
-                <CardTitle className="text-lg font-bold text-foreground">Similar Jobs</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">
+                  Similar Jobs
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-3">
                   {loadingSimilar ? (
-                    <div className="text-muted-foreground text-sm">Loading...</div>
-                  ) : similarJobs && similarJobs.length > 0 ? (
-                    similarJobs.slice(0, 5).map((similarJob) => (
+                    <div className="text-muted-foreground text-sm">
+                      Loading...
+                    </div>
+                  ) : (similarJobs?.length || 0) > 0 ? (
+                    similarJobs?.slice(0, 5).map((similarJob) => (
                       <div
                         key={similarJob.id}
-                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all shadow-sm bg-card"
+                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all bg-card"
                         onClick={() => navigate(`/jobs/${similarJob.id}`)}
                       >
                         <h4 className="font-bold text-sm mb-1.5 text-foreground hover:text-primary transition-colors">
                           {similarJob.title}
                         </h4>
                         <p className="text-xs text-muted-foreground mb-2.5 flex items-center gap-1.5 font-medium">
-                          <MapPin size={12} className="text-muted-foreground"/> {similarJob.location}
+                          <MapPin size={12} className="text-primary" />{" "}
+                          {similarJob.location}
                         </p>
-                        <Badge variant="outline" className="capitalize bg-secondary/50 text-muted-foreground border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold">
+                        <Badge
+                          variant="outline"
+                          className="capitalize bg-secondary/50 text-primary border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold"
+                        >
                           {JobTypeLabel[similarJob.type as JobType] ||
                             similarJob.type}
                         </Badge>
                       </div>
                     ))
-                  ) : fallbackJobs && fallbackJobs.data.length > 0 ? (
+                  ) : fallbackJobs && (fallbackJobs?.data?.length || 0) > 0 ? (
                     fallbackJobs.data.map((job) => (
                       <div
                         key={job.id}
-                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all shadow-sm bg-card"
+                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all bg-card"
                         onClick={() => navigate(`/jobs/${job.id}`)}
                       >
                         <h4 className="font-bold text-sm mb-1.5 text-foreground hover:text-primary transition-colors">
                           {job.title}
                         </h4>
                         <p className="text-xs text-muted-foreground mb-2.5 flex items-center gap-1.5 font-medium">
-                          <MapPin size={12} className="text-muted-foreground"/> {job.location}
+                          <MapPin size={12} className="text-primary" />{" "}
+                          {job.location}
                         </p>
-                        <Badge variant="outline" className="capitalize bg-secondary/50 text-muted-foreground border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold">
+                        <Badge
+                          variant="outline"
+                          className="capitalize bg-secondary/50 text-primary border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold"
+                        >
                           {JobTypeLabel[job.type as JobType] || job.type}
                         </Badge>
                       </div>

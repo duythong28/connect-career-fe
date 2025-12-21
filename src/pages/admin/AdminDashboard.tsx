@@ -296,7 +296,7 @@ const AdminDashboard = () => {
   // --- End of Helper Components ---
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-sans text-sm">
+    <div className="min-h-screen bg-gray-50 p-6 text-sm">
       <div className="max-w-7xl mx-auto">
         {/* Header with Period Selector */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

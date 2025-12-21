@@ -254,7 +254,7 @@ export const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans text-slate-900 pb-12">
+    <div className="min-h-screen bg-[#F8F9FB]  text-slate-900 pb-12">
       <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8 animate-fadeIn">
         <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
           <Bell size={24} className="text-[#0EA5E9]" />

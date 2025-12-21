@@ -190,7 +190,7 @@ const BackOfficeCompanyPage = () => {
   const { organization: org, stats } = data;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans py-8 px-6">
+    <div className="min-h-screen bg-[#F8F9FB] py-8 px-6">
       <div className="max-w-[1400px] mx-auto">
         {/* Navigation Back */}
         <Button

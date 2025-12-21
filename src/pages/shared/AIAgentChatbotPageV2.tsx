@@ -554,7 +554,7 @@ const handleSendMessage = async (textOverride?: string) => {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="h-full overflow-hidden bg-[#F8F9FB] font-sans flex flex-col">
+    <div className="h-full overflow-hidden bg-[#F8F9FB] flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm ">
         <div className="max-w-[1600px] mx-auto flex items-center justify-between">
