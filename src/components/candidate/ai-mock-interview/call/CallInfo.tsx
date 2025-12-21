@@ -2,17 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { aiMockInterviewAPI } from "@/api/endpoints/ai-mock-interview.api";
-import { ArrowLeft, Trash2 as TrashIcon, Download as DownloadIcon } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { 
+  ArrowLeft, 
+  Trash2, 
+  CheckCircle2, 
+  XCircle, 
+  Clock,
+  TrendingUp,
+  Target,
+  Lightbulb,
+  AlertCircle,
+  FileText
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,20 +28,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GetCallResponse, InterviewAnalytics } from "@/api/types/ai-mock-interview.types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import QuestionAnswerCard from "./QuestionAnswerCard";
 import { Markdown } from "@/components/ui/markdown";
-
-// Candidate status enum
-enum CandidateStatus {
-  NO_STATUS = "NO_STATUS",
-  NOT_SELECTED = "NOT_SELECTED",
-  POTENTIAL = "POTENTIAL",
-  SELECTED = "SELECTED",
-}
+import { cn } from "@/lib/utils";
 
 type CallInfoProps = {
   callId: string;
@@ -52,29 +49,24 @@ export default function CallInfo({
 }: CallInfoProps) {
   const navigate = useNavigate();
   const [transcript, setTranscript] = useState("");
-  const [candidateStatus, setCandidateStatus] = useState<string>("");
-  const [isClicked, setIsClicked] = useState(false);
+  const [, setCandidateStatus] = useState<string>("");
 
-  // Fetch call data
   const { data: callResponse, isLoading, refetch } = useQuery<GetCallResponse>({
     queryKey: ["call", callId],
     queryFn: () => aiMockInterviewAPI.getCall(callId),
     enabled: !!callId,
     refetchInterval: (query) => {
       const data = query.state.data;
-      // Poll if call is not yet analyzed
       if (data?.data?.response && !data?.data?.response?.isAnalysed) {
-        return 5000; // Poll every 5 seconds
+        return 5000;
       }
       return false;
     },
   });
 
-  // Access response and analytics directly from data (no callData in API response)
   const response = callResponse?.response;
   const analytics = callResponse?.analytics as InterviewAnalytics | undefined;
 
-  // Trigger analysis mutation
   const { mutate: triggerAnalysis, isPending: isAnalyzing } = useMutation({
     mutationFn: async () => {
       return await aiMockInterviewAPI.analyzeCall(callId);
@@ -88,28 +80,8 @@ export default function CallInfo({
     },
   });
 
-  // Update candidate status mutation (if this endpoint exists)
-  const { mutate: updateStatus } = useMutation({
-    mutationFn: async (newStatus: string) => {
-      // Note: This endpoint might not exist, check your backend
-      // await aiMockInterviewAPI.updateCandidateStatus(callId, newStatus);
-      return newStatus;
-    },
-    onSuccess: (newStatus) => {
-      setCandidateStatus(newStatus);
-      onCandidateStatusChange(callId, newStatus);
-      toast.success("Status updated successfully");
-    },
-    onError: () => {
-      toast.error("Failed to update status");
-    },
-  });
-
-  // Delete response mutation (if this endpoint exists)
   const { mutate: deleteResponse } = useMutation({
     mutationFn: async () => {
-      // Note: This endpoint might not exist, check your backend
-      // await aiMockInterviewAPI.deleteResponse(callId);
       return callId;
     },
     onSuccess: (deletedCallId) => {
@@ -121,21 +93,6 @@ export default function CallInfo({
     },
   });
 
-  // Update response status mutation
-  const { mutate: updateResponseStatus } = useMutation({
-    mutationFn: async (status: { isEnded?: boolean; isAnalyzed?: boolean }) => {
-      return await aiMockInterviewAPI.updateResponseStatus(callId, status);
-    },
-    onSuccess: () => {
-      refetch();
-      toast.success("Response status updated");
-    },
-    onError: () => {
-      toast.error("Failed to update response status");
-    },
-  });
-
-  // Extract transcript from response
   useEffect(() => {
     if (response?.transcript) {
       setTranscript(response.transcript);
@@ -144,7 +101,6 @@ export default function CallInfo({
     }
   }, [response, analytics]);
 
-  // Set candidate status from response
   useEffect(() => {
     if (response?.candidateStatus) {
       setCandidateStatus(response.candidateStatus);
@@ -153,48 +109,94 @@ export default function CallInfo({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-64 w-full" />
+      <div className="space-y-6 animate-fade-in">
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+        <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
     );
   }
 
   if (!callResponse || !response) {
     return (
-      <div className="text-center p-8">
-        <p className="text-gray-600">Call data not found</p>
-      </div>
+      <Card className="border-border rounded-2xl bg-card">
+        <CardContent className="p-12 text-center">
+          <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <p className="text-lg font-semibold text-foreground mb-2">Call data not found</p>
+          <p className="text-sm text-muted-foreground">The interview data could not be loaded.</p>
+        </CardContent>
+      </Card>
     );
   }
 
+  const duration = response.duration 
+    ? response.duration 
+    : analytics?.duration 
+      ? analytics.duration 
+      : 0;
+
   return (
-    <div className="space-y-6">
-      {/* Header with back button and actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          {/* Trigger analysis button if not analyzed */}
+    <div className="space-y-6 animate-fade-in">
+      {/* Header Actions */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+          <div className="h-6 w-px bg-border" />
+          <h1 className="text-2xl font-bold text-foreground">Interview Details</h1>
+        </div>
+
+        <div className="flex items-center gap-3">
           {!response.isAnalysed && (
             <Button
               onClick={() => triggerAnalysis()}
               disabled={isAnalyzing}
+              className="bg-primary hover:opacity-90 text-primary-foreground rounded-xl"
             >
-              {isAnalyzing ? "Analyzing..." : "Analyze Interview"}
+              {isAnalyzing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Analyze Interview
+                </>
+              )}
             </Button>
           )}
 
-          {/* Delete button */}
           <AlertDialog>
-            <AlertDialogContent>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-destructive/20 text-destructive hover:bg-destructive/10 rounded-xl"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete Response?</AlertDialogTitle>
+                <AlertDialogTitle>Delete Interview Response?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete this interview response.
+                  This action cannot be undone. This will permanently delete this interview response and all associated data.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => deleteResponse()}>
+                <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteResponse()}
+                  className="bg-destructive hover:bg-destructive/90 rounded-xl"
+                >
                   Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -203,223 +205,342 @@ export default function CallInfo({
         </div>
       </div>
 
-      {/* Call Information Card */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold mb-4">Call Information</h2>
-        
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-sm text-gray-600">Status</p>
-            <p className="font-semibold">{response.session?.status || "Unknown"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Duration</p>
-            <p className="font-semibold">
-              {response.duration 
-                ? `${Math.floor(response.duration / 60)}m ${response.duration % 60}s` 
-                : analytics?.duration 
-                  ? `${Math.floor(analytics.duration / 60)}m ${analytics.duration % 60}s`
-                  : "N/A"}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Analyzed</p>
-            <p className="font-semibold">{response.isAnalysed ? "Yes" : "No"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Ended</p>
-            <p className="font-semibold">{response.isEnded ? "Yes" : "No"}</p>
-          </div>
-        </div>
+      {/* Status Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Status</p>
+                <p className="text-lg font-bold text-foreground">
+                  {response.session?.status || "Unknown"}
+                </p>
+              </div>
+              <div className={cn(
+                "w-12 h-12 rounded-xl flex items-center justify-center",
+                response.isEnded 
+                  ? "bg-green-100/50" 
+                  : "bg-yellow-100/50"
+              )}>
+                {response.isEnded ? (
+                  <CheckCircle2 className="w-6 h-6 text-brand-success" />
+                ) : (
+                  <Clock className="w-6 h-6 text-yellow-600" />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Candidate Info */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="text-sm text-gray-600">Name</p>
-            <p className="font-semibold">{response.name || "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">Email</p>
-            <p className="font-semibold">{response.email || "N/A"}</p>
-          </div>
-        </div>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Duration</p>
+                <p className="text-lg font-bold text-foreground">
+                  {duration 
+                    ? `${Math.floor(duration / 60)}m ${duration % 60}s` 
+                    : "N/A"}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Candidate Status Selector */}
-        <div className="mt-4">
-          <label className="text-sm font-medium mb-2 block">Candidate Status</label>
-          <Select
-            value={candidateStatus}
-            onValueChange={(value) => updateStatus(value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="NO_STATUS">No Status</SelectItem>
-              <SelectItem value="NOT_SELECTED">Not Selected</SelectItem>
-              <SelectItem value="POTENTIAL">Potential</SelectItem>
-              <SelectItem value="SELECTED">Selected</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Analysis</p>
+                <p className="text-lg font-bold text-foreground">
+                  {response.isAnalysed ? "Complete" : "Pending"}
+                </p>
+              </div>
+              <div className={cn(
+                "w-12 h-12 rounded-xl flex items-center justify-center",
+                response.isAnalysed 
+                  ? "bg-green-100/50" 
+                  : "bg-muted"
+              )}>
+                {response.isAnalysed ? (
+                  <CheckCircle2 className="w-6 h-6 text-brand-success" />
+                ) : (
+                  <AlertCircle className="w-6 h-6 text-muted-foreground" />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {analytics?.overallScore !== undefined && (
+          <Card className="border-border rounded-2xl bg-card shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Overall Score</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {analytics.overallScore}%
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* Overall Score Card */}
+      {analytics?.overallScore !== undefined && (
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Overall Performance</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center justify-center py-8">
+              <CircularProgress value={analytics.overallScore} size="lg" />
+              <div className="mt-6 text-center">
+                <p className="text-4xl font-bold text-foreground mb-2">
+                  {analytics.overallScore}%
+                </p>
+                <p className="text-sm text-muted-foreground">Overall Score</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dimension Scores */}
+      {analytics?.dimensionScores && Object.keys(analytics.dimensionScores).length > 0 && (
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Dimension Scores</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(analytics.dimensionScores).map(([key, value]) => (
+                <div
+                  key={key}
+                  className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold uppercase text-muted-foreground">
+                      {key.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-lg font-bold text-primary">{value}%</span>
+                  </div>
+                  <CircularProgress value={value as number} size="sm" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Overall Feedback */}
+      {analytics?.overallFeedback && (
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Overall Feedback</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="prose prose-sm max-w-none text-foreground">
+              <Markdown content={analytics.overallFeedback} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Strengths & Weaknesses */}
+      {(analytics?.strengths?.length > 0 || analytics?.weaknesses?.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {analytics?.strengths && analytics.strengths.length > 0 && (
+            <Card className="border-green-200 rounded-2xl bg-green-50/20 shadow-sm">
+              <CardHeader className="border-b border-green-100">
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-brand-success" />
+                  Strengths
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ul className="space-y-2">
+                  {analytics.strengths.map((strength, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                      <CheckCircle2 className="w-4 h-4 text-brand-success mt-0.5 flex-shrink-0" />
+                      <span>{strength}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {analytics?.weaknesses && analytics.weaknesses.length > 0 && (
+            <Card className="border-amber-200 rounded-2xl bg-amber-50/20 shadow-sm">
+              <CardHeader className="border-b border-amber-100">
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Target className="w-5 h-5 text-amber-600" />
+                  Areas for Improvement
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ul className="space-y-2">
+                  {analytics.weaknesses.map((weakness, index) => (
+                    <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                      <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <span>{weakness}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Recommendations */}
+      {analytics?.recommendations && analytics.recommendations.length > 0 && (
+        <Card className="border-primary/20 rounded-2xl bg-primary/5 shadow-sm">
+          <CardHeader className="border-b border-primary/10">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-primary" />
+              Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <ul className="space-y-2">
+              {analytics.recommendations.map((rec, index) => (
+                <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                  <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <span>{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Detailed Feedback */}
+      {analytics?.feedback && Array.isArray(analytics.feedback) && analytics.feedback.length > 0 && (
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Detailed Feedback</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {analytics.feedback.map((fb: any, index: number) => (
+                <div
+                  key={index}
+                  className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge
+                      className={cn(
+                        "text-[10px] font-bold uppercase",
+                        fb.priority === 'high' 
+                          ? 'bg-destructive/10 text-destructive border-destructive/20' 
+                          : fb.priority === 'medium' 
+                            ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                            : 'bg-green-100 text-green-700 border-green-200'
+                      )}
+                    >
+                      {fb.priority || fb.type || 'Feedback'}
+                    </Badge>
+                    {fb.dimension && (
+                      <Badge variant="outline" className="text-[10px] font-bold uppercase">
+                        {fb.dimension}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-foreground">{fb.content}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Evaluation Criteria */}
+      {analytics?.criteria && (
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Evaluation Criteria</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {Object.entries(analytics.criteria).map(([dimension, criteriaList]: [string, any]) => (
+                <div
+                  key={dimension}
+                  className="p-4 border border-border rounded-xl bg-background/50"
+                >
+                  <h4 className="text-sm font-bold uppercase text-foreground mb-3">
+                    {dimension.replace(/_/g, ' ')}
+                  </h4>
+                  <ul className="space-y-2 mb-3">
+                    {Array.isArray(criteriaList) && criteriaList.map((criterion: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                        <span>{criterion}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {analytics.evidence && analytics.evidence[dimension] && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Evidence:</p>
+                      <ul className="space-y-1">
+                        {Array.isArray(analytics.evidence[dimension]) && analytics.evidence[dimension].map((evidence: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-xs text-muted-foreground/80">
+                            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 mt-1.5 flex-shrink-0" />
+                            <span>{evidence}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Transcript */}
       {transcript && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold mb-4">Transcript</h2>
-          <ScrollArea className="h-64">
-            <p className="whitespace-pre-wrap">{transcript}</p>
-          </ScrollArea>
-        </div>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <FileText className="w-5 h-5 text-muted-foreground" />
+              Transcript
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <p className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
+                {transcript}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Analytics */}
-      {analytics && response.isAnalysed && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold mb-4">Analytics</h2>
-          
-          {analytics.overallScore !== undefined && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold">Overall Score</span>
-                <span className="text-2xl font-bold">{analytics.overallScore}%</span>
-              </div>
-              <CircularProgress value={analytics.overallScore} />
-            </div>
-          )}
-
-          {/* Dimension Scores */}
-          {analytics.dimensionScores && Object.keys(analytics.dimensionScores).length > 0 && (
-            <div className="mb-6">
-              <h3 className="font-semibold mb-4">Dimension Scores</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(analytics.dimensionScores).map(([key, value]) => (
-                  <div key={key} className="p-4 border rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm font-medium capitalize">{key.replace('_', ' ')}</span>
-                      <span className="font-bold">{value}%</span>
-                    </div>
-                    <CircularProgress value={value as number} size="sm" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Overall Feedback */}
-          {analytics.overallFeedback && (
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2">Overall Feedback</h3>
-              <div className="prose max-w-none">
-                <Markdown content={analytics.overallFeedback} />
-              </div>
-            </div>
-          )}
-
-          {/* Strengths */}
-          {analytics.strengths && analytics.strengths.length > 0 && (
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2">Strengths</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {analytics.strengths.map((strength, index) => (
-                  <li key={index} className="text-sm">{strength}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Weaknesses */}
-          {analytics.weaknesses && analytics.weaknesses.length > 0 && (
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2">Areas for Improvement</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {analytics.weaknesses.map((weakness, index) => (
-                  <li key={index} className="text-sm">{weakness}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Recommendations */}
-          {analytics.recommendations && analytics.recommendations.length > 0 && (
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2">Recommendations</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {analytics.recommendations.map((rec, index) => (
-                  <li key={index} className="text-sm">{rec}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Feedback Array */}
-          {analytics.feedback && Array.isArray(analytics.feedback) && analytics.feedback.length > 0 && (
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2">Detailed Feedback</h3>
-              <div className="space-y-2">
-                {analytics.feedback.map((fb: any, index: number) => (
-                  <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        fb.priority === 'high' ? 'bg-red-100 text-red-700' :
-                        fb.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
-                      }`}>
-                        {fb.priority || fb.type || 'Feedback'}
-                      </span>
-                      {fb.dimension && (
-                        <span className="text-xs text-gray-600 capitalize">{fb.dimension}</span>
-                      )}
-                    </div>
-                    <p className="text-sm">{fb.content}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Criteria and Evidence */}
-          {analytics.criteria && (
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2">Evaluation Criteria</h3>
-              <div className="space-y-3">
-                {Object.entries(analytics.criteria).map(([dimension, criteriaList]: [string, any]) => (
-                  <div key={dimension} className="p-3 border rounded-lg">
-                    <h4 className="font-medium capitalize mb-2">{dimension.replace('_', ' ')}</h4>
-                    <ul className="list-disc list-inside space-y-1">
-                      {Array.isArray(criteriaList) && criteriaList.map((criterion: string, idx: number) => (
-                        <li key={idx} className="text-sm text-gray-700">{criterion}</li>
-                      ))}
-                    </ul>
-                    {analytics.evidence && analytics.evidence[dimension] && (
-                      <div className="mt-2 pt-2 border-t">
-                        <p className="text-xs font-medium text-gray-600 mb-1">Evidence:</p>
-                        <ul className="list-disc list-inside space-y-1">
-                          {Array.isArray(analytics.evidence[dimension]) && analytics.evidence[dimension].map((evidence: string, idx: number) => (
-                            <li key={idx} className="text-xs text-gray-600">{evidence}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Question & Answer Cards */}
+      {/* Questions & Answers */}
       {analytics?.questionAnswers && analytics.questionAnswers.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold mb-4">Questions & Answers</h2>
-          <div className="space-y-4">
-            {analytics.questionAnswers.map((qa: any, index: number) => (
-              <QuestionAnswerCard key={index} question={qa.question} answer={qa.answer} />
-            ))}
-          </div>
-        </div>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Questions & Answers</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {analytics.questionAnswers.map((qa: any, index: number) => (
+                <QuestionAnswerCard key={index} question={qa.question} answer={qa.answer} questionNumber={index + 1} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
