@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-card/80 backdrop-blur-md border-b border-border px-4 sm:px-6 py-5 fixed top-0 left-0 right-0 z-50 shadow-sm">
+    <header className="bg-card/80 backdrop-blur-md border-b border-border px-4 sm:px-6 py-4 fixed top-0 left-0 right-0 z-50 shadow-sm">
       <div
         className={cn(
           "flex items-center justify-between",

@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import {
   getSignUrl,
   createFileEntity,
@@ -85,15 +85,16 @@ export function UploadCVButton({ disabled }: Props) {
             });
             queryClient.invalidateQueries({ queryKey: ["candidateCvs"] });
             toast({
-              title: "CV uploaded",
-              description: "CV uploaded successfully.",
+              title: "CV Uploaded",
+              description: "Your professional document has been added to the ecosystem.",
             });
           },
           onError: (err: any) => {
             console.error(err);
             toast({
-              title: "Upload failed",
-              description: err?.message || "Unable to upload CV.",
+              title: "Upload Failed",
+              description: err?.message || "Unable to process your CV. Please try again.",
+              variant: "destructive",
             });
           },
         }
@@ -101,8 +102,9 @@ export function UploadCVButton({ disabled }: Props) {
     } catch (err: any) {
       console.error(err);
       toast({
-        title: "Upload failed",
-        description: err?.message || "Unable to upload avatar.",
+        title: "Upload Failed",
+        description: err?.message || "An unexpected error occurred during upload.",
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
@@ -120,13 +122,20 @@ export function UploadCVButton({ disabled }: Props) {
         onChange={handleFile}
       />
       <Button
+        // Using "default" variant (Solid Blue) for primary action as per hierarchy
+        variant="default" 
         size="sm"
         onClick={handleClick}
         disabled={disabled || isUploading}
-        arial-label="Upload CV"
+        aria-label="Upload CV"
+        className="font-bold rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
       >
-        <Upload className="w-4 h-4 mr-2" />
-        Upload CV
+        {isUploading ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+            <Upload className="w-4 h-4 mr-2" />
+        )}
+        {isUploading ? "Uploading..." : "Upload CV"}
       </Button>
     </div>
   );

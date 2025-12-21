@@ -19,10 +19,10 @@ import {
   LayoutGrid,
   Pencil,
   Eye,
-  CheckCircle2,
   Star,
   Settings,
   MessageCircle,
+  Loader2,
 } from "lucide-react";
 import AvatarEditor from "@/components/candidate/profile/AvatarEditor";
 import { CandidateProfile } from "@/api/types/candidates.types";
@@ -63,7 +63,10 @@ export function CandidateProfilePage() {
   const { mutate: updateProfile } = useMutation({
     mutationFn: updateMyProfile,
     onSuccess: () => {
-      toast({ title: "Success", description: "Profile updated successfully." });
+      toast({ 
+        title: "Profile Sync Complete", 
+        description: "Your professional profile has been updated across the ecosystem." 
+      });
       queryClient.invalidateQueries({
         queryKey: ["candidateProfile", candidateId || "me"],
       });
@@ -71,24 +74,29 @@ export function CandidateProfilePage() {
     },
     onError: () =>
       toast({
-        title: "Error",
-        description: "Failed to update profile.",
+        title: "Update Failed",
+        description: "Could not save changes. Please try again.",
         variant: "destructive",
       }),
   });
 
   if (isProfileLoading || !profileData) {
     return (
+      // PRESERVED BACKGROUND: Using original #F8F9FB as requested
       <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
-        Loading...
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-muted-foreground font-medium">Loading Profile...</p>
+        </div>
       </div>
     );
   }
 
   return (
+    // PRESERVED BACKGROUND: Using original #F8F9FB as requested
     <div className="min-h-screen bg-[#F8F9FB] font-sans overflow-y-auto custom-scrollbar">
-      <div className="max-w-[1400px] mx-auto py-8 px-6 animate-fadeIn">
-        {/* Personal Info Modal (Triggered by Edit Info button) */}
+      <div className="max-w-[1400px] mx-auto py-8 px-6 animate-fade-in">
+        {/* Personal Info Modal */}
         {showPersonalModal && (
           <ProfileEditorModal
             data={{
@@ -108,35 +116,36 @@ export function CandidateProfilePage() {
         )}
 
         {/* Back Button */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-gray-900 mb-6 uppercase tracking-wide"
+          className="mb-6 pl-0 hover:bg-transparent hover:text-primary text-muted-foreground"
         >
-          <ArrowLeft size={12} /> Back
-        </button>
+          <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
+        </Button>
 
         <div className="grid grid-cols-12 gap-8">
           {/* --- LEFT SIDEBAR --- */}
           <div className="col-span-12 lg:col-span-3 space-y-6">
             {/* User Card */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm text-center relative group">
+            <div className="bg-card rounded-3xl p-6 border border-border shadow-sm text-center relative group">
               {/* Avatar Section */}
-              <div className="relative w-24 h-24 mx-auto mb-4">
-                <div className="w-full h-full rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-gray-100">
+              <div className="relative w-28 h-28 mx-auto mb-5">
+                <div className="w-full h-full rounded-2xl overflow-hidden border-4 border-background shadow-lg bg-muted">
                   <Avatar className="w-full h-full rounded-none">
                     <AvatarImage
                       src={profileData.user.avatarUrl ?? undefined}
                       className="object-cover"
                     />
-                    <AvatarFallback className="bg-[#0EA5E9] text-white text-2xl font-bold">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
                       {profileData.user.firstName?.[0] || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </div>
 
-                {/* Avatar Editor Button - ONLY visible in Edit Mode */}
+                {/* Avatar Editor Button - Visible in Edit Mode */}
                 {isMyProfile && editMode && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity rounded-2xl">
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center transition-opacity rounded-2xl cursor-pointer">
                     <AvatarEditor
                       currentUrl={profileData.user.avatarUrl}
                       onUploaded={() =>
@@ -150,21 +159,21 @@ export function CandidateProfilePage() {
               </div>
 
               {/* Name & Location */}
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-foreground">
                 {profileData.user.fullName ||
                   `${profileData.user.firstName} ${profileData.user.lastName}`}
               </h2>
-              <p className="text-xs text-gray-500 mt-1 mb-2 flex items-center justify-center gap-1">
-                <MapPin size={10} />{" "}
-                {profileData.city || profileData.address || "Location N/A"}
+              <p className="text-sm text-muted-foreground mt-1 mb-3 flex items-center justify-center gap-1">
+                <MapPin size={14} />{" "}
+                {profileData.city || profileData.address || "Location not set"}
               </p>
 
               {/* Status Badge */}
               <div
-                className={`text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit mb-6 uppercase tracking-wide ${
+                className={`text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit mb-6 uppercase tracking-wide border ${
                   profileData.completionStatus === "complete"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-yellow-100 text-yellow-700"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
                 }`}
               >
                 {CompletionStatusLabel[
@@ -172,19 +181,16 @@ export function CandidateProfilePage() {
                 ] || "Active"}
               </div>
 
-              {/* PRIMARY ACTION: Toggle Edit Mode (Owner) OR Report (Visitor) */}
+              {/* PRIMARY ACTION */}
               {isMyProfile ? (
                 <Button
+                  variant="default" // Standard Primary Action (Solid Blue)
                   onClick={() => setEditMode(!editMode)}
-                  className={`w-full mb-4 font-bold shadow-sm transition-all ${
-                    editMode
-                      ? "bg-gray-900 text-white hover:bg-gray-800"
-                      : "bg-[#0EA5E9] hover:bg-[#0284c7] text-white"
-                  }`}
+                  className="w-full mb-4 rounded-xl"
                 >
                   {editMode ? (
                     <>
-                      <Eye size={16} className="mr-2" /> View Profile
+                      <Eye size={16} className="mr-2" /> View Public Profile
                     </>
                   ) : (
                     <>
@@ -193,14 +199,13 @@ export function CandidateProfilePage() {
                   )}
                 </Button>
               ) : (
-                // <--- REPORT BUTTON ĐÃ ĐƯỢC THÊM LẠI Ở ĐÂY
                 <ReportDialog
                   entityId={profileData.user.id}
                   entityType="user"
                   trigger={
                     <Button
                       variant="outline"
-                      className="w-full mb-4 text-red-500 border-red-100 hover:bg-red-50 font-bold transition-colors"
+                      className="w-full mb-4 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive rounded-xl"
                     >
                       <Flag size={16} className="mr-2" /> Report Candidate
                     </Button>
@@ -209,32 +214,32 @@ export function CandidateProfilePage() {
               )}
 
               {/* Navigation Menu */}
-              <div className="text-left space-y-1 pt-4 border-t border-gray-100">
+              <div className="text-left space-y-2 pt-6 border-t border-border">
                 {/* 1. Details */}
                 <button
                   onClick={() => setActiveTab("details")}
-                  className={`w-full p-3 rounded-lg flex items-center gap-3 text-sm font-bold transition-colors ${
+                  className={`w-full p-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-all duration-200 ${
                     activeTab === "details"
-                      ? "bg-blue-50 text-[#0EA5E9]"
-                      : "text-gray-600 hover:bg-gray-50"
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
-                  <LayoutGrid size={16} /> Profile Details
+                  <LayoutGrid size={18} /> Profile Details
                 </button>
 
                 {/* 2. Documents (Owner Only) */}
                 {isMyProfile && (
                   <button
                     onClick={() => setActiveTab("cvs")}
-                    className={`w-full p-3 rounded-lg flex items-center gap-3 text-sm font-bold transition-colors ${
+                    className={`w-full p-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-all duration-200 ${
                       activeTab === "cvs"
-                        ? "bg-blue-50 text-[#0EA5E9]"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >
                     <FileText
-                      size={16}
-                      className={activeTab !== "cvs" ? "text-orange-500" : ""}
+                      size={18}
+                      className={activeTab !== "cvs" ? "text-orange-500/80" : ""}
                     />{" "}
                     Documents
                   </button>
@@ -243,16 +248,16 @@ export function CandidateProfilePage() {
                 {/* 3. Recruiter Feedback */}
                 <button
                   onClick={() => setActiveTab("feedback")}
-                  className={`w-full p-3 rounded-lg flex items-center gap-3 text-sm font-bold transition-colors ${
+                  className={`w-full p-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-all duration-200 ${
                     activeTab === "feedback"
-                      ? "bg-blue-50 text-[#0EA5E9]"
-                      : "text-gray-600 hover:bg-gray-50"
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
                   <Star
-                    size={16}
+                    size={18}
                     className={
-                      activeTab !== "feedback" ? "text-yellow-500" : ""
+                      activeTab !== "feedback" ? "text-yellow-500/80" : ""
                     }
                   />{" "}
                   Recruiter Feedback
@@ -261,62 +266,34 @@ export function CandidateProfilePage() {
                 {/* 4. Interview Feedback */}
                 <button
                   onClick={() => setActiveTab("interview-feedback")}
-                  className={`w-full p-3 rounded-lg flex items-center gap-3 text-sm font-bold transition-colors ${
+                  className={`w-full p-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-all duration-200 ${
                     activeTab === "interview-feedback"
-                      ? "bg-blue-50 text-[#0EA5E9]"
-                      : "text-gray-600 hover:bg-gray-50"
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
                   <MessageSquare
-                    size={16}
+                    size={18}
                     className={
-                      activeTab !== "interview-feedback" ? "text-green-500" : ""
+                      activeTab !== "interview-feedback"
+                        ? "text-green-500/80"
+                        : ""
                     }
                   />{" "}
                   Interview Feedback
                 </button>
 
-                {/* EDIT INFO BUTTON: ONLY SHOWS IN EDIT MODE */}
+                {/* Edit Personal Info Button */}
                 {isMyProfile && editMode && (
                   <button
                     onClick={() => setShowPersonalModal(true)}
-                    className="w-full bg-blue-50/50 text-[#0EA5E9] p-3 rounded-lg flex items-center gap-3 text-sm font-bold hover:bg-blue-100 border border-blue-100 transition-all mt-2 animate-fadeIn"
+                    className="w-full bg-secondary/50 text-foreground p-3 rounded-xl flex items-center gap-3 text-sm font-medium hover:bg-secondary border border-border transition-all mt-4 animate-fade-in"
                   >
-                    <Settings size={16} /> Edit Personal Info
+                    <Settings size={18} /> Edit Personal Info
                   </button>
                 )}
               </div>
             </div>
-
-            {/* Profile Strength Widget (Owner Only) */}
-            {isMyProfile && (
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
-                    Profile Strength
-                  </h4>
-                  <span className="text-xs font-bold text-[#0EA5E9]">
-                    {profileData.completionPercentage}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
-                  <div
-                    className="bg-[#0EA5E9] h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${profileData.completionPercentage}%` }}
-                  ></div>
-                </div>
-                <div className="text-xs text-gray-500 flex items-center gap-2">
-                  {profileData.completionPercentage === 100 ? (
-                    <>
-                      <CheckCircle2 size={14} className="text-green-500" /> All
-                      set!
-                    </>
-                  ) : (
-                    "Add more details to reach 100%"
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* --- RIGHT CONTENT AREA --- */}
@@ -338,33 +315,37 @@ export function CandidateProfilePage() {
 
             {/* 3. RECRUITER FEEDBACK TAB */}
             {activeTab === "feedback" && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 text-lg font-bold text-gray-900 border-b border-gray-200 pb-4 bg-white p-4 rounded-t-xl shadow-sm">
-                  <Star className="text-yellow-500 fill-yellow-500" size={20} />{" "}
+              <div className="space-y-6 animate-fade-in">
+                <div className="flex items-center gap-2 text-lg font-bold text-foreground border-b border-border pb-4 bg-card p-6 rounded-t-3xl shadow-sm">
+                  <Star className="text-yellow-500 fill-yellow-500" size={24} />{" "}
                   Recruiter Feedback
                 </div>
-                <FeedbackTab
-                  recruiterFeedbacks={
-                    profileData.userFeedbacks.givenAsRecruiter
-                      .recruiterFeedbacks
-                  }
-                />
+                <div className="bg-card rounded-b-3xl p-6 border-x border-b border-border shadow-sm -mt-6">
+                  <FeedbackTab
+                    recruiterFeedbacks={
+                      profileData.userFeedbacks.givenAsRecruiter
+                        .recruiterFeedbacks
+                    }
+                  />
+                </div>
               </div>
             )}
 
             {/* 4. INTERVIEW FEEDBACK TAB */}
             {activeTab === "interview-feedback" && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 text-lg font-bold text-gray-900 border-b border-gray-200 pb-4 bg-white p-4 rounded-t-xl shadow-sm">
-                  <MessageCircle className="text-green-500" size={20} />{" "}
+              <div className="space-y-6 animate-fade-in">
+                <div className="flex items-center gap-2 text-lg font-bold text-foreground border-b border-border pb-4 bg-card p-6 rounded-t-3xl shadow-sm">
+                  <MessageCircle className="text-green-500" size={24} />{" "}
                   Interview Feedback
                 </div>
-                <FeedbackTab
-                  interviewFeedbacks={
-                    profileData.userFeedbacks.receivedAsCandidate
-                      .interviewFeedbacks
-                  }
-                />
+                <div className="bg-card rounded-b-3xl p-6 border-x border-b border-border shadow-sm -mt-6">
+                  <FeedbackTab
+                    interviewFeedbacks={
+                      profileData.userFeedbacks.receivedAsCandidate
+                        .interviewFeedbacks
+                    }
+                  />
+                </div>
               </div>
             )}
           </div>
