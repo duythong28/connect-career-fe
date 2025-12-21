@@ -2,30 +2,19 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { aiMockInterviewAPI } from "@/api/endpoints/ai-mock-interview.api";
 import { 
   ArrowLeft, 
   Trash2, 
-  Download, 
   CheckCircle2, 
   XCircle, 
   Clock,
-  User,
-  Mail,
   TrendingUp,
   Target,
   Lightbulb,
   AlertCircle,
   FileText
 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -47,13 +36,6 @@ import QuestionAnswerCard from "./QuestionAnswerCard";
 import { Markdown } from "@/components/ui/markdown";
 import { cn } from "@/lib/utils";
 
-enum CandidateStatus {
-  NO_STATUS = "NO_STATUS",
-  NOT_SELECTED = "NOT_SELECTED",
-  POTENTIAL = "POTENTIAL",
-  SELECTED = "SELECTED",
-}
-
 type CallInfoProps = {
   callId: string;
   onDeleteResponse: (deletedCallId: string) => void;
@@ -67,8 +49,7 @@ export default function CallInfo({
 }: CallInfoProps) {
   const navigate = useNavigate();
   const [transcript, setTranscript] = useState("");
-  const [candidateStatus, setCandidateStatus] = useState<string>("");
-  const [isClicked, setIsClicked] = useState(false);
+  const [, setCandidateStatus] = useState<string>("");
 
   const { data: callResponse, isLoading, refetch } = useQuery<GetCallResponse>({
     queryKey: ["call", callId],
@@ -99,20 +80,6 @@ export default function CallInfo({
     },
   });
 
-  const { mutate: updateStatus } = useMutation({
-    mutationFn: async (newStatus: string) => {
-      return newStatus;
-    },
-    onSuccess: (newStatus) => {
-      setCandidateStatus(newStatus);
-      onCandidateStatusChange(callId, newStatus);
-      toast.success("Status updated successfully");
-    },
-    onError: () => {
-      toast.error("Failed to update status");
-    },
-  });
-
   const { mutate: deleteResponse } = useMutation({
     mutationFn: async () => {
       return callId;
@@ -123,19 +90,6 @@ export default function CallInfo({
     },
     onError: () => {
       toast.error("Failed to delete response");
-    },
-  });
-
-  const { mutate: updateResponseStatus } = useMutation({
-    mutationFn: async (status: { isEnded?: boolean; isAnalyzed?: boolean }) => {
-      return await aiMockInterviewAPI.updateResponseStatus(callId, status);
-    },
-    onSuccess: () => {
-      refetch();
-      toast.success("Response status updated");
-    },
-    onError: () => {
-      toast.error("Failed to update response status");
     },
   });
 
@@ -155,21 +109,21 @@ export default function CallInfo({
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-32 w-full rounded-xl" />
-        <Skeleton className="h-64 w-full rounded-xl" />
-        <Skeleton className="h-96 w-full rounded-xl" />
+      <div className="space-y-6 animate-fade-in">
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+        <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
     );
   }
 
   if (!callResponse || !response) {
     return (
-      <Card className="border border-gray-200 rounded-xl shadow-sm">
+      <Card className="border-border rounded-2xl bg-card">
         <CardContent className="p-12 text-center">
-          <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-lg font-semibold text-gray-900 mb-2">Call data not found</p>
-          <p className="text-sm text-gray-600">The interview data could not be loaded.</p>
+          <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <p className="text-lg font-semibold text-foreground mb-2">Call data not found</p>
+          <p className="text-sm text-muted-foreground">The interview data could not be loaded.</p>
         </CardContent>
       </Card>
     );
@@ -182,7 +136,7 @@ export default function CallInfo({
       : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header Actions */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
@@ -190,13 +144,13 @@ export default function CallInfo({
             variant="ghost"
             size="sm"
             onClick={() => navigate(-1)}
-            className="text-gray-600 hover:text-gray-900"
+            className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <div className="h-6 w-px bg-gray-200" />
-          <h1 className="text-2xl font-bold text-gray-900">Interview Details</h1>
+          <div className="h-6 w-px bg-border" />
+          <h1 className="text-2xl font-bold text-foreground">Interview Details</h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -204,11 +158,11 @@ export default function CallInfo({
             <Button
               onClick={() => triggerAnalysis()}
               disabled={isAnalyzing}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
+              className="bg-primary hover:opacity-90 text-primary-foreground rounded-xl"
             >
               {isAnalyzing ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
                   Analyzing...
                 </>
               ) : (
@@ -224,13 +178,13 @@ export default function CallInfo({
             <AlertDialogTrigger asChild>
               <Button
                 variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50 rounded-xl"
+                className="border-destructive/20 text-destructive hover:bg-destructive/10 rounded-xl"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="rounded-2xl">
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Interview Response?</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -238,10 +192,10 @@ export default function CallInfo({
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteResponse()}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-destructive hover:bg-destructive/90 rounded-xl"
                 >
                   Delete
                 </AlertDialogAction>
@@ -253,23 +207,23 @@ export default function CallInfo({
 
       {/* Status Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Status</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Status</p>
+                <p className="text-lg font-bold text-foreground">
                   {response.session?.status || "Unknown"}
                 </p>
               </div>
               <div className={cn(
                 "w-12 h-12 rounded-xl flex items-center justify-center",
                 response.isEnded 
-                  ? "bg-green-100" 
-                  : "bg-yellow-100"
+                  ? "bg-green-100/50" 
+                  : "bg-yellow-100/50"
               )}>
                 {response.isEnded ? (
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  <CheckCircle2 className="w-6 h-6 text-brand-success" />
                 ) : (
                   <Clock className="w-6 h-6 text-yellow-600" />
                 )}
@@ -278,43 +232,43 @@ export default function CallInfo({
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Duration</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Duration</p>
+                <p className="text-lg font-bold text-foreground">
                   {duration 
                     ? `${Math.floor(duration / 60)}m ${duration % 60}s` 
                     : "N/A"}
                 </p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Analysis</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Analysis</p>
+                <p className="text-lg font-bold text-foreground">
                   {response.isAnalysed ? "Complete" : "Pending"}
                 </p>
               </div>
               <div className={cn(
                 "w-12 h-12 rounded-xl flex items-center justify-center",
                 response.isAnalysed 
-                  ? "bg-green-100" 
-                  : "bg-gray-100"
+                  ? "bg-green-100/50" 
+                  : "bg-muted"
               )}>
                 {response.isAnalysed ? (
-                  <CheckCircle2 className="w-6 h-6 text-green-600" />
+                  <CheckCircle2 className="w-6 h-6 text-brand-success" />
                 ) : (
-                  <AlertCircle className="w-6 h-6 text-gray-600" />
+                  <AlertCircle className="w-6 h-6 text-muted-foreground" />
                 )}
               </div>
             </div>
@@ -322,17 +276,17 @@ export default function CallInfo({
         </Card>
 
         {analytics?.overallScore !== undefined && (
-          <Card className="border border-gray-200 rounded-xl shadow-sm">
+          <Card className="border-border rounded-2xl bg-card shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">Overall Score</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Overall Score</p>
+                  <p className="text-lg font-bold text-foreground">
                     {analytics.overallScore}%
                   </p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <Target className="w-6 h-6 text-indigo-600" />
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Target className="w-6 h-6 text-primary" />
                 </div>
               </div>
             </CardContent>
@@ -342,18 +296,18 @@ export default function CallInfo({
 
       {/* Overall Score Card */}
       {analytics?.overallScore !== undefined && (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-xl font-bold text-gray-900">Overall Performance</CardTitle>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Overall Performance</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="flex flex-col items-center justify-center py-8">
               <CircularProgress value={analytics.overallScore} size="lg" />
               <div className="mt-6 text-center">
-                <p className="text-4xl font-bold text-gray-900 mb-2">
+                <p className="text-4xl font-bold text-foreground mb-2">
                   {analytics.overallScore}%
                 </p>
-                <p className="text-sm text-gray-600">Overall Score</p>
+                <p className="text-sm text-muted-foreground">Overall Score</p>
               </div>
             </div>
           </CardContent>
@@ -362,22 +316,22 @@ export default function CallInfo({
 
       {/* Dimension Scores */}
       {analytics?.dimensionScores && Object.keys(analytics.dimensionScores).length > 0 && (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-xl font-bold text-gray-900">Dimension Scores</CardTitle>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Dimension Scores</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(analytics.dimensionScores).map(([key, value]) => (
                 <div
                   key={key}
-                  className="p-4 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-900 capitalize">
+                    <span className="text-xs font-bold uppercase text-muted-foreground">
                       {key.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-lg font-bold text-indigo-600">{value}%</span>
+                    <span className="text-lg font-bold text-primary">{value}%</span>
                   </div>
                   <CircularProgress value={value as number} size="sm" />
                 </div>
@@ -389,12 +343,12 @@ export default function CallInfo({
 
       {/* Overall Feedback */}
       {analytics?.overallFeedback && (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-xl font-bold text-gray-900">Overall Feedback</CardTitle>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Overall Feedback</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="prose prose-sm max-w-none">
+            <div className="prose prose-sm max-w-none text-foreground">
               <Markdown content={analytics.overallFeedback} />
             </div>
           </CardContent>
@@ -405,18 +359,18 @@ export default function CallInfo({
       {(analytics?.strengths?.length > 0 || analytics?.weaknesses?.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {analytics?.strengths && analytics.strengths.length > 0 && (
-            <Card className="border border-green-200 rounded-xl shadow-sm bg-green-50/30">
+            <Card className="border-green-200 rounded-2xl bg-green-50/20 shadow-sm">
               <CardHeader className="border-b border-green-100">
-                <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-brand-success" />
                   Strengths
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <ul className="space-y-2">
                   {analytics.strengths.map((strength, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                      <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                      <CheckCircle2 className="w-4 h-4 text-brand-success mt-0.5 flex-shrink-0" />
                       <span>{strength}</span>
                     </li>
                   ))}
@@ -426,9 +380,9 @@ export default function CallInfo({
           )}
 
           {analytics?.weaknesses && analytics.weaknesses.length > 0 && (
-            <Card className="border border-amber-200 rounded-xl shadow-sm bg-amber-50/30">
+            <Card className="border-amber-200 rounded-2xl bg-amber-50/20 shadow-sm">
               <CardHeader className="border-b border-amber-100">
-                <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
                   <Target className="w-5 h-5 text-amber-600" />
                   Areas for Improvement
                 </CardTitle>
@@ -436,7 +390,7 @@ export default function CallInfo({
               <CardContent className="p-6">
                 <ul className="space-y-2">
                   {analytics.weaknesses.map((weakness, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                    <li key={index} className="flex items-start gap-2 text-sm text-foreground">
                       <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                       <span>{weakness}</span>
                     </li>
@@ -450,18 +404,18 @@ export default function CallInfo({
 
       {/* Recommendations */}
       {analytics?.recommendations && analytics.recommendations.length > 0 && (
-        <Card className="border border-blue-200 rounded-xl shadow-sm bg-blue-50/30">
-          <CardHeader className="border-b border-blue-100">
-            <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-blue-600" />
+        <Card className="border-primary/20 rounded-2xl bg-primary/5 shadow-sm">
+          <CardHeader className="border-b border-primary/10">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-primary" />
               Recommendations
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <ul className="space-y-2">
               {analytics.recommendations.map((rec, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                  <Lightbulb className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                  <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                   <span>{rec}</span>
                 </li>
               ))}
@@ -472,23 +426,23 @@ export default function CallInfo({
 
       {/* Detailed Feedback */}
       {analytics?.feedback && Array.isArray(analytics.feedback) && analytics.feedback.length > 0 && (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-xl font-bold text-gray-900">Detailed Feedback</CardTitle>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Detailed Feedback</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-3">
               {analytics.feedback.map((fb: any, index: number) => (
                 <div
                   key={index}
-                  className="p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
+                  className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Badge
                       className={cn(
-                        "text-xs font-semibold",
+                        "text-[10px] font-bold uppercase",
                         fb.priority === 'high' 
-                          ? 'bg-red-100 text-red-700 border-red-200' 
+                          ? 'bg-destructive/10 text-destructive border-destructive/20' 
                           : fb.priority === 'medium' 
                             ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
                             : 'bg-green-100 text-green-700 border-green-200'
@@ -497,12 +451,12 @@ export default function CallInfo({
                       {fb.priority || fb.type || 'Feedback'}
                     </Badge>
                     {fb.dimension && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-[10px] font-bold uppercase">
                         {fb.dimension}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-gray-700">{fb.content}</p>
+                  <p className="text-sm text-foreground">{fb.content}</p>
                 </div>
               ))}
             </div>
@@ -512,35 +466,35 @@ export default function CallInfo({
 
       {/* Evaluation Criteria */}
       {analytics?.criteria && (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-xl font-bold text-gray-900">Evaluation Criteria</CardTitle>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Evaluation Criteria</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">
               {Object.entries(analytics.criteria).map(([dimension, criteriaList]: [string, any]) => (
                 <div
                   key={dimension}
-                  className="p-4 border border-gray-200 rounded-xl bg-gray-50"
+                  className="p-4 border border-border rounded-xl bg-background/50"
                 >
-                  <h4 className="font-semibold text-gray-900 capitalize mb-3">
+                  <h4 className="text-sm font-bold uppercase text-foreground mb-3">
                     {dimension.replace(/_/g, ' ')}
                   </h4>
                   <ul className="space-y-2 mb-3">
                     {Array.isArray(criteriaList) && criteriaList.map((criterion: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 mt-1.5 flex-shrink-0" />
+                      <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                         <span>{criterion}</span>
                       </li>
                     ))}
                   </ul>
                   {analytics.evidence && analytics.evidence[dimension] && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-xs font-semibold text-gray-600 mb-2">Evidence:</p>
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Evidence:</p>
                       <ul className="space-y-1">
                         {Array.isArray(analytics.evidence[dimension]) && analytics.evidence[dimension].map((evidence: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2 text-xs text-gray-600">
-                            <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 flex-shrink-0" />
+                          <li key={idx} className="flex items-start gap-2 text-xs text-muted-foreground/80">
+                            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 mt-1.5 flex-shrink-0" />
                             <span>{evidence}</span>
                           </li>
                         ))}
@@ -556,16 +510,16 @@ export default function CallInfo({
 
       {/* Transcript */}
       {transcript && (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-gray-600" />
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <FileText className="w-5 h-5 text-muted-foreground" />
               Transcript
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-              <p className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+              <p className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
                 {transcript}
               </p>
             </div>
@@ -575,9 +529,9 @@ export default function CallInfo({
 
       {/* Questions & Answers */}
       {analytics?.questionAnswers && analytics.questionAnswers.length > 0 && (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-xl font-bold text-gray-900">Questions & Answers</CardTitle>
+        <Card className="border-border rounded-2xl bg-card shadow-sm">
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl font-bold text-foreground">Questions & Answers</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">

@@ -81,12 +81,10 @@ export default function Call({ interview }: CallProps) {
 
   useEffect(() => {
     webClient.on("call_started", () => {
-      console.log("Call started");
       setIsCalling(true);
     });
 
     webClient.on("call_ended", () => {
-      console.log("Call ended");
       setIsCalling(false);
       setIsEnded(true);
     });
@@ -100,7 +98,7 @@ export default function Call({ interview }: CallProps) {
       }
     }
   }, [interviewers, interview.interviewerAgentId]);
-  
+
   useEffect(() => {
     if (lastUserResponseRef.current) {
       const { current } = lastUserResponseRef;
@@ -154,17 +152,6 @@ export default function Call({ interview }: CallProps) {
   }, [isEnded, callId, analysisComplete]);
 
   useEffect(() => {
-    webClient.on("call_started", () => {
-      console.log("Call started");
-      setIsCalling(true);
-    });
-
-    webClient.on("call_ended", () => {
-      console.log("Call ended");
-      setIsCalling(false);
-      setIsEnded(true);
-    });
-
     webClient.on("agent_start_talking", () => {
       setActiveTurn("agent");
     });
@@ -221,12 +208,12 @@ export default function Call({ interview }: CallProps) {
     const data = {
       mins: String(interview.configuration?.duration || 10),
       objective: interview.customPrompt || "",
-      questions: "", 
+      questions: "",
       name: user?.firstName || user?.username || "Guest",
     };
-  
+
     setLoading(true);
-  
+
     try {
       const registerResponse = await aiMockInterviewAPI.registerCall({
         interviewerId: interview.interviewerAgentId!,
@@ -236,50 +223,37 @@ export default function Call({ interview }: CallProps) {
         dynamicData: data,
       });
 
-      console.log("Register call response:", registerResponse);
-
       let callId: string;
       let accessToken: string;
-      let responseId: string;
 
       if (registerResponse.success && registerResponse.data) {
         callId = registerResponse.data.callId;
         accessToken = registerResponse.data.accessToken;
-        responseId = registerResponse.data.responseId;
-      } 
-      else if (registerResponse.callId && registerResponse.accessToken) {
+      } else if (registerResponse.callId && registerResponse.accessToken) {
         callId = registerResponse.callId;
         accessToken = registerResponse.accessToken;
-        responseId = registerResponse.responseId || "";
-      } 
-      else if ((registerResponse as any).data?.registerCallResponse) {
+      } else if ((registerResponse as any).data?.registerCallResponse) {
         const resp = (registerResponse as any).data.registerCallResponse;
         callId = resp.call_id || resp.callId;
         accessToken = resp.access_token || resp.accessToken;
-        responseId = resp.response_id || resp.responseId || "";
-      }
-      else {
+      } else {
         throw new Error("Invalid response structure from register call");
       }
 
       if (!callId || !accessToken) {
         throw new Error("Missing callId or accessToken in response");
       }
-      
+
       setCallId(callId);
 
       await webClient.startCall({
         accessToken: accessToken,
         callId: callId,
-      }).catch((error) => {
-        console.error("Error starting call:", error);
-        throw error;
       });
 
       setIsCalling(true);
       setIsStarted(true);
     } catch (error: any) {
-      console.error("Error starting conversation:", error);
       toast.error(error.message || "Failed to start interview");
     } finally {
       setLoading(false);
@@ -304,11 +278,11 @@ export default function Call({ interview }: CallProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans">
+    <div className="min-h-screen bg-background font-sans animate-fade-in">
       {isStarted && <TabSwitchWarning />}
-      
+
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-card border-b border-border sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -316,27 +290,27 @@ export default function Call({ interview }: CallProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/candidate/ai-mock-interview')}
-                className="text-gray-600 hover:text-gray-900"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">AI Mock Interview</h1>
+                <h1 className="text-xl font-bold text-foreground">AI Mock Interview</h1>
                 {!isEnded && interview.configuration?.duration && (
-                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                    <AlarmClockIcon className="w-4 h-4" />
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                    <AlarmClockIcon className="w-4 h-4 text-primary" />
                     Expected: {interviewTimeDuration} minutes
                   </p>
                 )}
               </div>
             </div>
-            
+
             {isCalling && (
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-sm font-semibold text-red-700">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-destructive/10 border border-destructive/20 rounded-xl">
+                  <div className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
+                  <span className="text-sm font-semibold text-destructive">
                     {formatTime(Number(currentTimeDuration))}
                   </span>
                 </div>
@@ -344,15 +318,15 @@ export default function Call({ interview }: CallProps) {
             )}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Progress Bar */}
       {!isEnded && (
-        <div className="bg-white border-b border-gray-100">
+        <div className="bg-card border-b border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300"
+                className="h-full bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] rounded-full transition-all duration-300"
                 style={{
                   width: isEnded
                     ? "100%"
@@ -368,41 +342,42 @@ export default function Call({ interview }: CallProps) {
       )}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {!isStarted && !isEnded && (
-          <Card className="border border-gray-200 rounded-xl shadow-sm">
-            <CardHeader className="border-b border-gray-100">
-              <CardTitle className="text-2xl font-bold text-gray-900">
+          <Card className="border border-border rounded-2xl shadow-sm">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="text-2xl font-bold text-foreground">
                 Interview Preparation
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-6">
                 {interview.jobDescription && (
-                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <h3 className="font-semibold text-gray-900 mb-2">Job Description</h3>
-                    <div className="prose prose-sm max-w-none">
+                  <div className="p-4 bg-muted/50 border border-border rounded-2xl">
+                    <h3 className="text-xs font-bold uppercase text-muted-foreground mb-3">Job Description</h3>
+                    <div className="prose prose-sm max-w-none text-foreground">
                       <Markdown content={interview.jobDescription} />
                     </div>
                   </div>
                 )}
+                
                 {(interview as any).questions && Array.isArray((interview as any).questions) && (interview as any).questions.length > 0 && (
-                  <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                  <div className="p-4 bg-accent/30 border border-border rounded-2xl">
                     <div className="flex items-center gap-2 mb-3">
-                      <HelpCircle className="w-5 h-5 text-indigo-600" />
-                      <h3 className="font-semibold text-gray-900">Interview Questions</h3>
+                      <HelpCircle className="w-5 h-5 text-primary" />
+                      <h3 className="text-xs font-bold uppercase text-muted-foreground">Interview Questions</h3>
                     </div>
                     <div className="space-y-3">
                       {(interview as any).questions.map((question: any, index: number) => (
                         <div
                           key={index}
-                          className="p-3 bg-white border border-indigo-100 rounded-lg hover:border-indigo-200 transition-colors"
+                          className="p-3 bg-card border border-border rounded-xl hover:border-primary/50 transition-colors"
                         >
                           <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold">
+                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                               {index + 1}
                             </div>
-                            <p className="text-sm text-gray-700 leading-relaxed flex-1">
+                            <p className="text-sm text-foreground leading-relaxed flex-1">
                               {question.question || question}
                             </p>
                           </div>
@@ -412,12 +387,12 @@ export default function Call({ interview }: CallProps) {
                   </div>
                 )}
                 
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                <div className="p-4 bg-secondary/50 border border-border rounded-2xl">
                   <div className="flex items-start gap-3">
-                    <Mic className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <Mic className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <div className="space-y-2">
-                      <p className="font-semibold text-gray-900 text-sm">Before You Start</p>
-                      <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                      <p className="text-xs font-bold uppercase text-muted-foreground">Before You Start</p>
+                      <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                         <li>Ensure your volume is up and grant microphone access when prompted</li>
                         <li>Make sure you are in a quiet environment</li>
                         <li>Tab switching will be recorded</li>
@@ -430,7 +405,7 @@ export default function Call({ interview }: CallProps) {
                   <Button
                     onClick={startConversation}
                     disabled={loading}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-11 rounded-xl font-semibold shadow-sm"
+                    className="flex-1 bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] text-white h-11 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
                   >
                     {loading ? (
                       <>
@@ -450,12 +425,12 @@ export default function Call({ interview }: CallProps) {
                       <Button
                         variant="outline"
                         disabled={loading}
-                        className="border-gray-300 text-gray-700 hover:bg-gray-50 h-11 rounded-xl"
+                        className="border-border text-muted-foreground hover:bg-muted h-11 rounded-xl"
                       >
                         Exit
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="rounded-2xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Exit Interview?</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -463,10 +438,10 @@ export default function Call({ interview }: CallProps) {
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={onEndCallClick}
-                          className="bg-red-600 hover:bg-red-700"
+                          className="bg-destructive hover:bg-destructive/90 rounded-xl"
                         >
                           Exit
                         </AlertDialogAction>
@@ -482,42 +457,42 @@ export default function Call({ interview }: CallProps) {
         {isStarted && !isEnded && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Interviewer Side */}
-            <Card className="border border-gray-200 rounded-xl shadow-sm">
+            <Card className="border border-border rounded-2xl shadow-sm bg-card">
               <CardContent className="p-6">
                 <div className="flex flex-col items-center space-y-6">
                   <div className={cn(
-                    "w-32 h-32 rounded-2xl flex items-center justify-center transition-all duration-300",
+                    "w-32 h-32 rounded-3xl flex items-center justify-center transition-all duration-300",
                     activeTurn === "agent"
-                      ? "ring-4 ring-indigo-500 ring-offset-2 bg-indigo-50"
-                      : "bg-gray-50"
+                      ? "ring-4 ring-primary ring-offset-2 bg-primary/5"
+                      : "bg-muted"
                   )}>
                     {interviewerImg ? (
                       <img
                         src={interviewerImg}
                         alt="Interviewer"
-                        className="w-full h-full rounded-2xl object-cover"
+                        className="w-full h-full rounded-3xl object-cover"
                       />
                     ) : (
-                      <Skeleton className="w-full h-full rounded-2xl" />
+                      <Skeleton className="w-full h-full rounded-3xl" />
                     )}
                   </div>
                   
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
-                      <Bot className="w-5 h-5 text-indigo-600" />
-                      <h3 className="text-lg font-bold text-gray-900">Interviewer</h3>
+                      <Bot className="w-5 h-5 text-primary" />
+                      <h3 className="text-lg font-bold text-foreground">Interviewer</h3>
                     </div>
                     {activeTurn === "agent" && (
-                      <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">
+                      <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
                         Speaking
                       </Badge>
                     )}
                   </div>
 
-                  <div className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <p className="text-gray-700 leading-relaxed">
+                  <div className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-muted/50 rounded-2xl border border-border shadow-inner">
+                    <p className="text-foreground leading-relaxed">
                       {lastInterviewerResponse || (
-                        <span className="text-gray-400 italic">Waiting for interviewer...</span>
+                        <span className="text-muted-foreground italic">Waiting for interviewer...</span>
                       )}
                     </p>
                   </div>
@@ -526,25 +501,25 @@ export default function Call({ interview }: CallProps) {
             </Card>
 
             {/* User Side */}
-            <Card className="border border-gray-200 rounded-xl shadow-sm">
+            <Card className="border border-border rounded-2xl shadow-sm bg-card">
               <CardContent className="p-6">
                 <div className="flex flex-col items-center space-y-6">
                   <div className={cn(
-                    "w-32 h-32 rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center transition-all duration-300",
+                    "w-32 h-32 rounded-3xl bg-muted flex items-center justify-center transition-all duration-300",
                     activeTurn === "user"
-                      ? "ring-4 ring-indigo-500 ring-offset-2"
+                      ? "ring-4 ring-primary ring-offset-2"
                       : ""
                   )}>
-                    <User className="w-16 h-16 text-gray-600" />
+                    <User className="w-16 h-16 text-muted-foreground" />
                   </div>
                   
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
-                      <Mic className="w-5 h-5 text-gray-600" />
-                      <h3 className="text-lg font-bold text-gray-900">You</h3>
+                      <Mic className="w-5 h-5 text-primary" />
+                      <h3 className="text-lg font-bold text-foreground">You</h3>
                     </div>
                     {activeTurn === "user" && (
-                      <Badge className="bg-green-100 text-green-700 border-green-200">
+                      <Badge className="bg-brand-success/10 text-brand-success border-brand-success/20 hover:bg-brand-success/10">
                         Your Turn
                       </Badge>
                     )}
@@ -552,11 +527,11 @@ export default function Call({ interview }: CallProps) {
 
                   <div
                     ref={lastUserResponseRef}
-                    className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-blue-50 rounded-xl border border-blue-200 custom-scrollbar"
+                    className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-primary/5 rounded-2xl border border-primary/10 shadow-inner custom-scrollbar"
                   >
-                    <p className="text-gray-700 leading-relaxed">
+                    <p className="text-foreground leading-relaxed">
                       {lastUserResponse || (
-                        <span className="text-gray-400 italic">Your responses will appear here...</span>
+                        <span className="text-muted-foreground italic">Your responses will appear here...</span>
                       )}
                     </p>
                   </div>
@@ -572,14 +547,14 @@ export default function Call({ interview }: CallProps) {
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full border-red-200 text-red-600 hover:bg-red-50 h-11 rounded-xl"
+                  className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 h-11 rounded-xl"
                   disabled={loading}
                 >
                   <XCircleIcon className="w-4 h-4 mr-2" />
                   End Interview
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="rounded-2xl">
                 <AlertDialogHeader>
                   <AlertDialogTitle>End Interview?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -587,10 +562,10 @@ export default function Call({ interview }: CallProps) {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={onEndCallClick}
-                    className="bg-red-600 hover:bg-red-700"
+                    className="bg-destructive hover:bg-destructive/90 rounded-xl"
                   >
                     End Interview
                   </AlertDialogAction>
@@ -601,20 +576,20 @@ export default function Call({ interview }: CallProps) {
         )}
 
         {isEnded && (
-          <Card className="border border-gray-200 rounded-xl shadow-sm max-w-2xl mx-auto">
+          <Card className="border border-border rounded-2xl shadow-sm max-w-2xl mx-auto bg-card">
             <CardContent className="p-8">
               <div className="text-center space-y-6">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircleIcon className="w-12 h-12 text-green-600" />
+                <div className="w-20 h-20 bg-brand-success/10 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircleIcon className="w-12 h-12 text-brand-success" />
                 </div>
                 
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-2xl font-bold text-foreground mb-2 text-center">
                     {isStarted
                       ? "Interview Completed!"
                       : "Thank You"}
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-muted-foreground text-center">
                     {isStarted
                       ? "Thank you for taking the time to participate in this interview."
                       : "Thank you very much for considering."}
@@ -622,10 +597,10 @@ export default function Call({ interview }: CallProps) {
                 </div>
 
                 {isAnalyzing && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-sm font-medium text-blue-700">
+                  <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span className="text-sm font-bold uppercase text-primary tracking-tight">
                         Analyzing your interview...
                       </span>
                     </div>
@@ -635,14 +610,14 @@ export default function Call({ interview }: CallProps) {
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button
                     onClick={() => navigate(`/candidate/ai-mock-interview/${interview.id}/results`)}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-11 rounded-xl font-semibold shadow-sm"
+                    className="flex-1 bg-primary text-primary-foreground h-11 rounded-xl font-bold shadow-lg transition-all"
                   >
                     View Results
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => navigate('/candidate/ai-mock-interview')}
-                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 h-11 rounded-xl"
+                    className="flex-1 border-border text-muted-foreground hover:bg-muted h-11 rounded-xl"
                   >
                     Back to Interviews
                   </Button>
@@ -651,7 +626,7 @@ export default function Call({ interview }: CallProps) {
             </CardContent>
           </Card>
         )}
-      </div>
+      </main>
     </div>
   );
 }
