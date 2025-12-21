@@ -1,9 +1,5 @@
 import {
-  JSXElementConstructor,
   Key,
-  ReactElement,
-  ReactNode,
-  ReactPortal,
   useState,
 } from "react";
 import {
@@ -106,10 +102,10 @@ const InterviewCalendar = ({
   emptyDays,
   getInterviewsForDate,
   setSelectedInterview,
-}) => (
-  <Card className="p-6 border border-gray-200 shadow-sm rounded-xl">
-    <CardHeader className="flex flex-row items-center justify-between p-0 mb-6 border-b pb-4">
-      <CardTitle className="text-xl font-bold text-gray-900">
+}: any) => (
+  <Card className="p-6 border border-border shadow-sm rounded-3xl bg-card">
+    <CardHeader className="flex flex-row items-center justify-between p-0 mb-6 border-b border-border pb-4">
+      <CardTitle className="text-xl font-bold text-foreground">
         {format(currentMonth, "MMMM yyyy")}
       </CardTitle>
       <div className="flex gap-2">
@@ -117,7 +113,7 @@ const InterviewCalendar = ({
           variant="outline"
           size="sm"
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-100"
+          className="h-8 w-8 p-0 text-muted-foreground hover:bg-secondary border-border"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -125,7 +121,7 @@ const InterviewCalendar = ({
           variant="outline"
           size="sm"
           onClick={() => setCurrentMonth(new Date())}
-          className="h-8 text-sm font-semibold text-[#0EA5E9] border-[#0EA5E9] hover:bg-blue-50"
+          className="h-8 text-sm font-semibold text-primary border-primary/20 hover:bg-primary/10"
         >
           Today
         </Button>
@@ -133,7 +129,7 @@ const InterviewCalendar = ({
           variant="outline"
           size="sm"
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          className="h-8 w-8 p-0 text-gray-600 hover:bg-gray-100"
+          className="h-8 w-8 p-0 text-muted-foreground hover:bg-secondary border-border"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -141,21 +137,21 @@ const InterviewCalendar = ({
     </CardHeader>
 
     <CardContent className="p-0">
-      <div className="grid grid-cols-7 gap-px border border-gray-200 rounded-lg overflow-hidden bg-gray-200">
+      <div className="grid grid-cols-7 gap-px border border-border rounded-2xl overflow-hidden bg-border">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
           <div
             key={day}
-            className="text-center font-bold text-xs text-gray-700 bg-gray-50 p-2"
+            className="text-center font-bold text-xs text-muted-foreground bg-secondary/30 p-2"
           >
             {day}
           </div>
         ))}
 
-        {emptyDays.map((i) => (
-          <div key={`empty-${i}`} className="min-h-24 p-2 bg-white" />
+        {emptyDays.map((i: any) => (
+          <div key={`empty-${i}`} className="min-h-24 p-2 bg-card" />
         ))}
 
-        {daysInMonth.map((day) => {
+        {daysInMonth.map((day: any) => {
           const dayInterviews = getInterviewsForDate(day);
           const isToday = isSameDay(day, new Date());
 
@@ -164,8 +160,8 @@ const InterviewCalendar = ({
               key={day.toString()}
               className={`min-h-24 p-2 cursor-pointer transition-colors ${
                 isToday
-                  ? "bg-blue-50 border-blue-400 border"
-                  : "bg-white hover:bg-gray-50"
+                  ? "bg-primary/5 border-primary/50 border"
+                  : "bg-card hover:bg-secondary/20"
               }`}
               onClick={() => {
                 if (dayInterviews.length > 0) {
@@ -175,7 +171,7 @@ const InterviewCalendar = ({
             >
               <div
                 className={`font-bold text-sm mb-1 ${
-                  isToday ? "text-blue-700" : "text-gray-900"
+                  isToday ? "text-primary" : "text-foreground"
                 }`}
               >
                 {format(day, "d")}
@@ -207,7 +203,7 @@ const InterviewCalendar = ({
                   );
                 })}
                 {dayInterviews.length > 2 && (
-                  <div className="text-[10px] font-medium text-gray-500 mt-1">
+                  <div className="text-[10px] font-medium text-muted-foreground mt-1">
                     +{dayInterviews.length - 2} more
                   </div>
                 )}
@@ -228,7 +224,7 @@ const InterviewListItem = ({
   Recommendation,
   getStatusVariant,
   getTypeIcon,
-}) => {
+}: any) => {
   const job = interview?.application?.job;
   if (!job) return null;
 
@@ -237,52 +233,54 @@ const InterviewListItem = ({
   return (
     <Card
       key={interview.id}
-      className={`cursor-pointer hover:border-blue-400 transition-all border border-gray-200 shadow-sm rounded-xl ${
-        isPastInterview ? "opacity-75 bg-gray-50" : "bg-white"
+      className={`cursor-pointer hover:border-primary/50 transition-all border border-border shadow-sm rounded-2xl ${
+        isPastInterview ? "opacity-75 bg-card" : "bg-card"
       }`}
       onClick={() => setSelectedInterview(interview)}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-6">
         <div className="flex flex-col md:flex-row items-start justify-between">
           {/* Job Info */}
-          <div className="flex-1 space-y-1 mb-3 md:mb-0">
+          <div className="flex-1 space-y-1 mb-4 md:mb-0">
             <div className="flex items-center gap-2">
-              {getTypeIcon(interview.type)}
-              <h3 className="text-lg font-bold text-gray-900">{job.title}</h3>
+              <div className="text-primary">
+                {getTypeIcon(interview.type)}
+              </div>
+              <h3 className="text-lg font-bold text-foreground">{job.title}</h3>
             </div>
-            <p className="text-sm text-gray-600 ml-6">{job.companyName}</p>
+            <p className="text-sm text-muted-foreground ml-6">{job.companyName}</p>
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full md:w-auto md:max-w-xl">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 w-full md:w-auto md:max-w-xl">
             {/* Date & Time */}
             <div>
-              <p className="text-xs text-gray-500 font-medium">Date & Time</p>
-              <p className="font-semibold text-sm text-gray-800">
+              <p className="text-xs text-muted-foreground font-bold uppercase mb-1">Date & Time</p>
+              <p className="font-semibold text-sm text-foreground">
                 {format(new Date(interview.scheduledDate), "MMM d, yyyy")}
               </p>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 {format(new Date(interview.scheduledDate), "p")}
               </p>
             </div>
             {/* Type */}
             <div>
-              <p className="text-xs text-gray-500 font-medium">Type</p>
+              <p className="text-xs text-muted-foreground font-bold uppercase mb-1">Type</p>
               <Badge
                 variant="outline"
-                className="capitalize text-sm font-semibold mt-1 bg-gray-100 text-gray-700 border-gray-300"
+                className="capitalize text-sm font-semibold mt-1 bg-secondary text-foreground border-border"
               >
                 {interview.type}
               </Badge>
             </div>
             {/* Status */}
             <div>
-              <p className="text-xs text-gray-500 font-medium">Status</p>
+              <p className="text-xs text-muted-foreground font-bold uppercase mb-1">Status</p>
               <Badge
                 variant={getStatusVariant(interview.status)}
                 className={`capitalize text-sm font-bold mt-1 ${
                   interview.status === "scheduled"
-                    ? "bg-blue-500 hover:bg-blue-600 text-white"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : ""
                 }`}
               >
@@ -294,7 +292,7 @@ const InterviewListItem = ({
               <MessageButton
                 senderId={user?.id}
                 recieverId={job.userId}
-                className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white h-9 px-3 text-sm font-bold"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground h-9 px-3 text-sm font-bold rounded-xl shadow-sm"
                 icon={<MessageSquare className="h-4 w-4 mr-1" />}
                 text="Chat Recruiter"
               />
@@ -314,7 +312,7 @@ const InterviewDetailsDialog = ({
   Recommendation,
   getStatusVariant,
   getTypeIcon,
-}) => {
+}: any) => {
   if (!selectedInterview) return null;
   const job = selectedInterview.application?.job;
   const isScheduled = selectedInterview.status === "scheduled";
@@ -325,22 +323,22 @@ const InterviewDetailsDialog = ({
       open={!!selectedInterview}
       onOpenChange={() => setSelectedInterview(null)}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-xl p-6">
-        <DialogHeader className="border-b pb-3 mb-4">
-          <DialogTitle className="text-2xl font-bold text-gray-900">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-3xl p-8 border-border">
+        <DialogHeader className="border-b border-border pb-4 mb-6">
+          <DialogTitle className="text-2xl font-bold text-foreground">
             Interview Details
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Job Info */}
           <div>
-            <h3 className="font-bold text-xl text-gray-900">{job?.title}</h3>
-            <p className="text-sm text-gray-600 mt-1">{job?.companyName}</p>
+            <h3 className="font-bold text-xl text-foreground">{job?.title}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{job?.companyName}</p>
           </div>
 
           {/* Core Details Grid */}
-          <div className="grid grid-cols-2 gap-4 text-sm border-b pb-4">
+          <div className="grid grid-cols-2 gap-6 text-sm border-b border-border pb-6">
             {[
               {
                 label: "Date & Time",
@@ -348,12 +346,12 @@ const InterviewDetailsDialog = ({
                   new Date(selectedInterview.scheduledDate),
                   "PPP p"
                 ),
-                icon: <CalendarIcon className="h-4 w-4 text-gray-500" />,
+                icon: <CalendarIcon className="h-4 w-4 text-muted-foreground" />,
               },
               {
                 label: "Type",
                 value: selectedInterview.type,
-                icon: getTypeIcon(selectedInterview.type),
+                icon: <div className="text-muted-foreground">{getTypeIcon(selectedInterview.type)}</div>,
               },
               {
                 label: "Status",
@@ -365,18 +363,18 @@ const InterviewDetailsDialog = ({
                 value: selectedInterview.duration
                   ? `${selectedInterview.duration} min`
                   : null,
-                icon: <Clock className="h-4 w-4 text-gray-500" />,
+                icon: <Clock className="h-4 w-4 text-muted-foreground" />,
               },
               {
                 label: "Interviewer",
                 value: selectedInterview.interviewerName,
-                icon: <User className="h-4 w-4 text-gray-500" />,
+                icon: <User className="h-4 w-4 text-muted-foreground" />,
               },
             ]
               .filter((item) => item.value)
               .map((item, index) => (
-                <div key={index} className="space-y-1">
-                  <span className="font-semibold text-gray-700">
+                <div key={index} className="space-y-1.5">
+                  <span className="font-bold text-muted-foreground text-xs uppercase block">
                     {item.label}:
                   </span>
                   <div className="flex items-center gap-2">
@@ -386,14 +384,14 @@ const InterviewDetailsDialog = ({
                         variant={getStatusVariant(item.value)}
                         className={`capitalize font-bold ${
                           item.value === "scheduled"
-                            ? "bg-blue-500 hover:bg-blue-600 text-white"
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
                             : ""
                         }`}
                       >
                         {item.value}
                       </Badge>
                     ) : (
-                      <span className="text-gray-600">{item.value}</span>
+                      <span className="text-foreground font-medium">{item.value}</span>
                     )}
                   </div>
                 </div>
@@ -402,18 +400,18 @@ const InterviewDetailsDialog = ({
 
           {/* Location/Link */}
           {(selectedInterview.location || selectedInterview.meetingLink) && (
-            <div className="text-sm border-b pb-4">
-              <span className="font-semibold text-gray-700">
+            <div className="text-sm border-b border-border pb-6">
+              <span className="font-bold text-muted-foreground text-xs uppercase block mb-2">
                 {selectedInterview.type === "in-person"
                   ? "Location"
                   : "Meeting Link"}
                 :
               </span>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 {selectedInterview.type === "in-person" ? (
                   <>
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-foreground font-medium">
                       {selectedInterview.location}
                     </span>
                   </>
@@ -422,7 +420,7 @@ const InterviewDetailsDialog = ({
                     href={selectedInterview.meetingLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#0EA5E9] hover:underline flex items-center gap-1 font-medium"
+                    className="text-primary hover:underline flex items-center gap-1 font-bold"
                   >
                     Join Meeting <ExternalLink className="h-3 w-3" />
                   </a>
@@ -434,8 +432,8 @@ const InterviewDetailsDialog = ({
           {/* Notes */}
           {selectedInterview.notes && (
             <div className="text-sm">
-              <span className="font-semibold text-gray-700">Notes:</span>
-              <p className="text-gray-600 mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <span className="font-bold text-muted-foreground text-xs uppercase block mb-2">Notes:</span>
+              <p className="text-foreground mt-1 p-4 bg-secondary/20 border border-border rounded-xl leading-relaxed">
                 {selectedInterview.notes}
               </p>
             </div>
@@ -443,9 +441,9 @@ const InterviewDetailsDialog = ({
 
           {/* Interview Feedback Section */}
           {selectedInterview.feedback && (
-            <div className="border-t pt-4 mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <Label className="text-base font-bold text-gray-800">
+            <div className="border-t border-border pt-6 mt-4">
+              <div className="flex items-center justify-between mb-5">
+                <Label className="text-base font-bold text-foreground">
                   Interview Feedback
                 </Label>
                 <div className="flex items-center gap-3">
@@ -469,22 +467,22 @@ const InterviewDetailsDialog = ({
                 </div>
               </div>
 
-              <div className="grid gap-3">
+              <div className="grid gap-4">
                 {/* Strengths */}
                 {selectedInterview.feedback.strengths &&
                   selectedInterview.feedback.strengths.length > 0 && (
-                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                    <div className="bg-green-50 rounded-xl p-4 border border-green-200">
                       <div className="flex items-center gap-2 mb-2">
                         <ThumbsUp className="h-4 w-4 text-green-700" />
-                        <Label className="text-sm font-medium text-green-800">
+                        <Label className="text-sm font-bold text-green-800">
                           Strengths
                         </Label>
                       </div>
-                      <ul className="space-y-1 text-sm text-green-700">
+                      <ul className="space-y-1.5 text-sm text-green-700">
                         {selectedInterview.feedback.strengths.map(
                           (strength: any, idx: Key) => (
                             <li key={idx} className="flex items-start gap-2">
-                              <span className="text-green-600 mt-0.5">•</span>
+                              <span className="text-green-600 mt-0.5 font-bold">•</span>
                               <span>{strength}</span>
                             </li>
                           )
@@ -495,18 +493,18 @@ const InterviewDetailsDialog = ({
                 {/* Weaknesses */}
                 {selectedInterview.feedback.weaknesses &&
                   selectedInterview.feedback.weaknesses.length > 0 && (
-                    <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+                    <div className="bg-red-50 rounded-xl p-4 border border-red-200">
                       <div className="flex items-center gap-2 mb-2">
                         <ThumbsDown className="h-4 w-4 text-red-700" />
-                        <Label className="text-sm font-medium text-red-800">
+                        <Label className="text-sm font-bold text-red-800">
                           Areas for Improvement
                         </Label>
                       </div>
-                      <ul className="space-y-1 text-sm text-red-700">
+                      <ul className="space-y-1.5 text-sm text-red-700">
                         {selectedInterview.feedback.weaknesses.map(
                           (weakness: any, idx: Key) => (
                             <li key={idx} className="flex items-start gap-2">
-                              <span className="text-red-600 mt-0.5">•</span>
+                              <span className="text-red-600 mt-0.5 font-bold">•</span>
                               <span>{weakness}</span>
                             </li>
                           )
@@ -516,15 +514,15 @@ const InterviewDetailsDialog = ({
                   )}
                 {/* Comments */}
                 {selectedInterview.feedback.comments && (
-                  <div className="bg-gray-100/50 rounded-lg p-3 border border-gray-200">
+                  <div className="bg-secondary/30 rounded-xl p-4 border border-border">
                     <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="h-4 w-4 text-gray-500" />
-                      <Label className="text-sm font-medium text-gray-800">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-sm font-bold text-foreground">
                         Additional Comments
                       </Label>
                     </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      {selectedInterview.feedback.comments}
+                    <p className="text-sm text-muted-foreground leading-relaxed italic">
+                      "{selectedInterview.feedback.comments}"
                     </p>
                   </div>
                 )}
@@ -534,23 +532,23 @@ const InterviewDetailsDialog = ({
         </div>
 
         {/* Footer Buttons */}
-        <div className="flex gap-2 pt-4 justify-end">
+        <div className="flex gap-3 pt-6 justify-end border-t border-border mt-6">
           {isScheduled && !isPastInterview && (
             <Button
               onClick={() =>
                 window.open(selectedInterview.meetingLink, "_blank")
               }
-              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+              className="bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm"
             >
-              <ExternalLink className="h-4 w-4 mr-1" />
+              <ExternalLink className="h-4 w-4 mr-2" />
               Join Meeting
             </Button>
           )}
           <MessageButton
             senderId={user.id}
             recieverId={job?.userId}
-            className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold"
-            icon={<MessageSquare className="h-4 w-4 mr-1" />}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-sm"
+            icon={<MessageSquare className="h-4 w-4 mr-2" />}
             text="Chat Recruiter"
           />
         </div>
@@ -587,13 +585,13 @@ const CandidateInterviewsPage = () => {
   const daysInMonth = eachDayOfInterval({
     start: startOfMonth(currentMonth),
     end: endOfMonth(currentMonth),
-  }); // Add empty cells for days before the first day of the month
+  });
 
   const firstDayOfMonth = startOfMonth(currentMonth);
   const startDay = firstDayOfMonth.getDay();
   const emptyDays = Array.from({ length: startDay }, (_, i) => i);
 
-  // Render views (chuyển sang sử dụng components đã tách)
+  // Render views
   const renderCalendarView = () => (
     <InterviewCalendar
       currentMonth={currentMonth}
@@ -620,13 +618,15 @@ const CandidateInterviewsPage = () => {
           />
         ))
       ) : (
-        <Card className="border border-gray-200 rounded-xl shadow-sm">
-          <CardContent className="p-12 text-center">
-            <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
+        <Card className="border border-border rounded-3xl shadow-sm bg-card">
+          <CardContent className="p-16 text-center">
+            <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
+                <CalendarIcon className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2">
               No interviews scheduled
             </h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground max-w-sm mx-auto">
               Interviews will appear here once scheduled by recruiters
             </p>
           </CardContent>
@@ -637,50 +637,48 @@ const CandidateInterviewsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center py-12">Loading...</div>
-        </div>
+      <div className="min-h-screen p-6 flex items-center justify-center">
+          <div className="text-center text-muted-foreground font-medium">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8 border-b border-gray-200 pb-4">
+        <div className="mb-10 border-b border-border pb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
                 My Interviews
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-muted-foreground mt-2 text-lg">
                 View and manage your upcoming and past interviews
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3 bg-card p-1 rounded-2xl border border-border">
               <Button
-                variant={viewMode === "calendar" ? "default" : "outline"}
+                variant="ghost"
                 size="sm"
                 onClick={() => setViewMode("calendar")}
-                className={
+                className={`rounded-xl font-bold transition-all h-10 px-4 ${
                   viewMode === "calendar"
-                    ? "bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold"
-                    : "text-gray-700 font-semibold border-gray-300 hover:bg-gray-100"
-                }
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
               >
                 <CalendarIcon className="h-4 w-4 mr-2" />
                 Calendar
               </Button>
               <Button
-                variant={viewMode === "list" ? "default" : "outline"}
+                variant="ghost"
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className={
+                className={`rounded-xl font-bold transition-all h-10 px-4 ${
                   viewMode === "list"
-                    ? "bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold"
-                    : "text-gray-700 font-semibold border-gray-300 hover:bg-gray-100"
-                }
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
               >
                 <List className="h-4 w-4 mr-2" />
                 List
@@ -688,33 +686,7 @@ const CandidateInterviewsPage = () => {
             </div>
           </div>
         </div>
-        {/* Status Legend */}
-        <div className="mb-6 flex gap-4 flex-wrap p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-blue-500" />
-            <span className="text-sm font-medium text-gray-700">Scheduled</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-orange-500" />
-            <span className="text-sm font-medium text-gray-700">
-              Rescheduled
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-green-500" />
-            <span className="text-sm font-medium text-gray-700">Completed</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-red-500" />
-            <span className="text-sm font-medium text-gray-700">Cancelled</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-blue-300" />
-            <span className="text-sm font-medium text-gray-700">
-              Past Events (Faded)
-            </span>
-          </div>
-        </div>
+        
         {viewMode === "calendar" ? renderCalendarView() : renderListView()}
         <InterviewDetailsDialog
           selectedInterview={selectedInterview}
@@ -728,6 +700,5 @@ const CandidateInterviewsPage = () => {
     </div>
   );
 };
-
 
 export default CandidateInterviewsPage;

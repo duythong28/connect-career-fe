@@ -13,7 +13,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { verifyEmail } from "@/api/endpoints/auth.api";
-import { CheckCircle2, Mail, AlertCircle } from "lucide-react";
+import { CheckCircle2, Mail, AlertCircle, Loader2 } from "lucide-react";
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -26,8 +26,8 @@ const VerifyEmail = () => {
       setToken(tokenFromUrl);
     } else {
       toast({
-        title: "Invalid Link",
-        description: "No verification token found in the URL.",
+        title: "Link Expired or Invalid",
+        description: "We couldn't find a valid verification token.",
         variant: "destructive",
       });
     }
@@ -37,9 +37,9 @@ const VerifyEmail = () => {
     mutationFn: (token: string) => verifyEmail(token),
     onSuccess: () => {
       toast({
-        title: "Email Verified! ✅",
+        title: "Identity Verified",
         description:
-          "Your email has been successfully verified. You can now log in.",
+          "Welcome to the ecosystem. You can now access your account.",
       });
       setTimeout(() => {
         navigate("/login");
@@ -50,7 +50,7 @@ const VerifyEmail = () => {
         title: "Verification Failed",
         description:
           error?.response?.data?.message ||
-          "Failed to verify email. The token may be expired or invalid.",
+          "Unable to verify your email. The link may have expired.",
         variant: "destructive",
       });
     },
@@ -63,85 +63,56 @@ const VerifyEmail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+    <div className="min-h-screen bg-[hsl(var(--brand-blue-light))] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md rounded-3xl border-border bg-card animate-fade-in">
+        <CardHeader className="text-center space-y-4 pt-10 pb-6">
+          <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             {isSuccess ? (
-              <CheckCircle2 className="w-10 h-10 text-green-600" />
+              <CheckCircle2 className="w-10 h-10 text-green-500" />
             ) : isError ? (
-              <AlertCircle className="w-10 h-10 text-red-600" />
+              <AlertCircle className="w-10 h-10 text-destructive" />
             ) : (
-              <Mail className="w-10 h-10 text-blue-600" />
+              <Mail className="w-10 h-10 text-primary" />
             )}
           </div>
-          <CardTitle className="text-2xl">
-            {isSuccess ? "Email Verified!" : "Verify Your Email"}
+          
+          <CardTitle className="text-3xl font-bold text-foreground">
+            {isSuccess ? "Welcome to CareerHub" : "Verify your email"}
           </CardTitle>
-          <CardDescription>
+          
+          <CardDescription className="text-muted-foreground text-base max-w-xs mx-auto">
             {isSuccess
-              ? "Your email has been successfully verified. Redirecting to login..."
+              ? "Your identity is confirmed. Redirecting you to the unified platform..."
               : isError
-              ? "Verification failed. Please try again or request a new verification link."
-              : "Click the button below to verify your email address and activate your account."}
+              ? "We encountered an issue verifying your token. Please request a new link."
+              : "Confirm your email address to unlock intelligent matching and exclusive opportunities."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        
+        <CardContent className="space-y-6 pb-10 px-8">
           {token && !isSuccess && (
-            <>
-              {/* <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <p className="text-xs text-gray-500 mb-1">
-                  Verification Token:
-                </p>
-                <p className="text-xs font-mono text-gray-700 break-all">
-                  {token}
-                </p>
-              </div> */}
-
-              <Button
-                onClick={handleVerify}
-                disabled={isPending || isSuccess}
-                className="w-full"
-                size="lg"
-              >
-                {isPending ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 mr-2" />
-                    Verify Email
-                  </>
-                )}
-              </Button>
-            </>
+            <Button
+              onClick={handleVerify}
+              disabled={isPending || isSuccess}
+              // "Hero/Special CTA" style: Gradient + Shadow-lg + Hover translate
+              className="w-full bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] text-primary-foreground font-bold py-6 rounded-xl shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5 transition-all duration-300 text-lg"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="animate-spin -ml-1 mr-3 h-5 w-5" />
+                  Verifying...
+                </>
+              ) : (
+                "Verify Email Address"
+              )}
+            </Button>
           )}
 
           {isSuccess && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-              <p className="text-green-800 font-medium">
-                Redirecting to login page...
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 text-center">
+              <p className="text-green-600 font-semibold flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Redirecting to login...
               </p>
             </div>
           )}
@@ -149,24 +120,24 @@ const VerifyEmail = () => {
           {isError && (
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full py-6 rounded-xl border-border text-foreground font-semibold hover:bg-secondary/50"
               onClick={() => navigate("/signup")}
             >
-              Back to Sign Up
+              Back to Registration
             </Button>
           )}
 
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-muted-foreground pt-2">
             {!isSuccess && (
-              <>
+              <p>
                 Already verified?{" "}
                 <Link
                   to="/login"
-                  className="text-primary hover:underline font-medium"
+                  className="text-primary font-bold hover:underline hover:text-blue-600 transition-colors"
                 >
                   Sign in
                 </Link>
-              </>
+              </p>
             )}
           </div>
         </CardContent>

@@ -133,7 +133,7 @@ const UserWalletPage = () => {
             ) : (
               <div className="space-y-2">
                 <div className="text-5xl font-bold text-blue-600">
-                  {formatCurrency(walletData?.balance || 0)}
+                  {formatCurrency(walletData?.balance ?? 0)}
                   <span className="text-2xl text-gray-500 ml-2">
                     {walletData?.currency}
                   </span>
@@ -159,7 +159,7 @@ const UserWalletPage = () => {
           <StatCard
             icon={TrendingUp}
             title="Total Credits"
-            amount={formatCurrency(walletData.statistics.totalCredits.total)}
+            amount={formatCurrency(walletData.statistics.totalCredits.total ?? 0)}
             currency={walletData.currency}
             color="text-green-600"
             amountColor="text-green-600"
@@ -169,7 +169,7 @@ const UserWalletPage = () => {
           <StatCard
             icon={ArrowDown}
             title="Total Debits"
-            amount={formatCurrency(walletData.statistics.totalDebits.total)}
+            amount={formatCurrency(walletData.statistics.totalDebits.total ?? 0)}
             currency={walletData.currency}
             color="text-red-600"
             amountColor="text-red-600"
@@ -181,7 +181,7 @@ const UserWalletPage = () => {
             title="Total Spent"
             amount={
               walletData.statistics.totalSpent.total
-                ? formatCurrency(walletData.statistics.totalSpent.total)
+                ? formatCurrency(walletData.statistics.totalSpent.total ?? 0)
                 : "N/A"
             }
             currency={
@@ -242,11 +242,11 @@ const UserWalletPage = () => {
                       </p>
                       <div className="flex gap-2 flex-wrap">
                         <span className="text-[10px] bg-gray-100 px-2 py-1 rounded-md text-gray-600 font-medium">
-                          Before: {formatCurrency(transaction.balanceBefore)}{" "}
+                          Before: {formatCurrency(transaction.balanceBefore ?? 0)}{" "}
                           {walletData.currency}
                         </span>
                         <span className="text-[10px] bg-gray-100 px-2 py-1 rounded-md text-gray-600 font-medium">
-                          After: {formatCurrency(transaction.balanceAfter)}{" "}
+                          After: {formatCurrency(transaction.balanceAfter ?? 0)}{" "}
                           {walletData.currency}
                         </span>
                       </div>
@@ -261,7 +261,7 @@ const UserWalletPage = () => {
                       }`}
                     >
                       {transaction.type === "credit" ? "+" : "-"}
-                      {formatCurrency(transaction.amount)}
+                      {formatCurrency(transaction.amount ?? 0)}
                     </p>
                     <span
                       className={`text-[10px] font-bold uppercase tracking-wider mt-1 inline-block px-2 py-0.5 rounded-full ${

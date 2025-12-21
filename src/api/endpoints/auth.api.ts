@@ -39,4 +39,26 @@ const getProfile = async (): Promise<ProfileResponse> => {
   return response.data;
 };
 
-export { login, logout, register, getProfile, loginNormalUser, verifyEmail };
+const forgotPassword = async (email: string) => {
+  const response = await axios.post(`${API_URL}/forgot-password`, { email });
+  return response.data;
+};
+
+const resetPassword = async (token: string, newPassword: string) => {
+  const response = await axios.post(`${API_URL}/reset-password`, {
+    token,
+    newPassword,
+  });
+  return response.data;
+};
+
+export {
+  login,
+  logout,
+  register,
+  getProfile,
+  loginNormalUser,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+};

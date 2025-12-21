@@ -91,28 +91,30 @@ const RecruiterFeedbackDialog = ({
         {trigger ? (
           trigger
         ) : (
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="rounded-xl border-border font-bold text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm">
             Give Recruiter Feedback
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+      <DialogContent className="max-w-md w-full p-0 gap-0 bg-card border border-border rounded-3xl overflow-hidden shadow-xl animate-fade-in">
+        <DialogHeader className="p-6 border-b border-border bg-secondary/30">
+          <DialogTitle className="flex items-center gap-3 text-lg font-bold text-foreground">
+            <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                <MessageSquare className="h-5 w-5" />
+            </div>
             Feedback for Recruiter
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="p-6 space-y-5">
           <div>
-            <Label>Feedback Type</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Feedback Type</Label>
             <Select
               value={feedbackType}
               onValueChange={(value) =>
                 setFeedbackType(value as RecruiterFeedbackType)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue placeholder="Select feedback type" />
               </SelectTrigger>
               <SelectContent>
@@ -126,22 +128,32 @@ const RecruiterFeedbackDialog = ({
           </div>
 
           <div>
-            <Label>Overall Experience</Label>
-            <div className="flex gap-2 mt-2">
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Overall Experience</Label>
+            <div className="flex gap-3 mt-2">
               <Button
                 type="button"
+                // Using solid blue primary style for selected positive state
                 variant={isPositive ? "default" : "outline"}
                 onClick={() => setIsPositive(true)}
-                className="flex-1"
+                className={`flex-1 rounded-xl h-11 font-bold transition-all ${
+                    isPositive 
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md" 
+                    : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
               >
                 <ThumbsUp className="h-4 w-4 mr-2" />
                 Positive
               </Button>
               <Button
                 type="button"
+                // Using destructive style for selected negative state
                 variant={!isPositive ? "destructive" : "outline"}
                 onClick={() => setIsPositive(false)}
-                className="flex-1"
+                className={`flex-1 rounded-xl h-11 font-bold transition-all ${
+                    !isPositive
+                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md"
+                    : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
               >
                 <ThumbsDown className="h-4 w-4 mr-2" />
                 Negative
@@ -150,15 +162,15 @@ const RecruiterFeedbackDialog = ({
           </div>
 
           <div>
-            <Label className="flex items-center gap-2">
-              <Star className="h-4 w-4" />
+            <Label className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-1.5">
+              <Star className="h-4 w-4 text-yellow-500" />
               Rating (1-5)
             </Label>
             <Select
               value={rating.toString()}
               onValueChange={(v) => setRating(Number(v))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -172,22 +184,28 @@ const RecruiterFeedbackDialog = ({
           </div>
 
           <div>
-            <Label>Your Feedback</Label>
+            <Label className="text-xs font-bold text-muted-foreground uppercase mb-1.5 block">Your Feedback</Label>
             <Textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="Share your experience with this recruiter..."
               rows={5}
+              className="w-full rounded-xl border-border bg-background focus:ring-2 focus:ring-primary resize-none p-4"
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <DialogFooter className="p-6 border-t border-border bg-secondary/10 flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setOpen(false)}
+            className="rounded-xl font-bold border-border text-muted-foreground h-11 hover:text-foreground"
+          >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={createFeedbackMutation.isPending}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold h-11 shadow-sm px-6"
           >
             Submit Feedback
           </Button>

@@ -50,6 +50,7 @@ export default function MessageButton({
       }
     }
   };
+
   return (
     <Button
       variant="outline"
@@ -58,8 +59,9 @@ export default function MessageButton({
         e.stopPropagation();
         handleMessageRecruiter();
       }}
+      className="w-full rounded-xl border-border font-bold text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm"
     >
-      <MessageSquare className="h-4 w-4 mr-1" />
+      <MessageSquare className="h-4 w-4 mr-2" />
       Message
     </Button>
   );
