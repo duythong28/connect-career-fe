@@ -58,21 +58,6 @@ const CallDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-4">
-          <Button
-            variant="outline"
-            onClick={() => {
-              if (interviewId) {
-                navigate(`/candidate/ai-mock-interview/${interviewId}/results`);
-              } else {
-                navigate("/candidate/ai-mock-interview");
-              }
-            }}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Results
-          </Button>
-        </div>
         <CallInfo
           callId={callId}
           onDeleteResponse={handleDeleteResponse}

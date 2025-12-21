@@ -12,8 +12,8 @@ interface Step2FinetuneSettingsProps {
   onInterviewerSelected?: (interviewerId: string) => void;
 }
 
-const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({ 
-  config, 
+const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
+  config,
   setConfig,
   selectedInterviewerId,
   onInterviewerSelected
@@ -29,7 +29,6 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
     return array.includes(item) ? array.filter((i) => i !== item) : [...array, item];
   };
 
-  // Fetch focus areas from API when component mounts
   useEffect(() => {
     const fetchFocusAreas = async () => {
       try {
@@ -42,7 +41,7 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
         });
         const allAreas = Array.from(new Set([...response.areas]));
         setFocusAreas(allAreas);
-        
+
         setConfig({
           ...config,
           focusAreas: allAreas
@@ -62,7 +61,7 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
     }
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     const fetchInterviewers = async () => {
       try {
         setLoadingInterviewers(true);
@@ -82,23 +81,24 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
     fetchInterviewers();
   }, []);
 
-
   const clampDuration = Math.min(Math.max(config.duration ?? 1, 1), 10);
 
   return (
-    <div className="space-y-8">
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-2xl mb-4">
-          <Clock className="w-8 h-8 text-green-600" />
+    <div className="space-y-8 animate-fade-in">
+      {/* Header Section */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
+          <Clock className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Fine-tune Your Experience</h2>
-        <p className="text-lg text-gray-600">Customize the interview settings (all optional)</p>
+        <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Fine-tune Your Experience</h2>
+        <p className="text-lg text-muted-foreground font-normal">Customize the interview settings (all optional)</p>
       </div>
 
-      <div className="bg-gray-50 rounded-2xl p-6">
-        <label className="flex items-center text-base font-semibold text-gray-900 mb-4">
-          <Clock className="w-5 h-5 mr-2 text-indigo-600" />
-          Interview Duration: <span className="text-indigo-600 ml-2">{clampDuration} minutes</span>
+      {/* Interview Duration Slider */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <label className="flex items-center text-xs font-bold uppercase text-muted-foreground mb-4">
+          <Clock className="w-4 h-4 mr-2 text-primary" />
+          Interview Duration: <span className="text-primary ml-2 font-bold normal-case">{clampDuration} minutes</span>
         </label>
         <input
           type="range"
@@ -107,20 +107,21 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
           step="1"
           value={clampDuration}
           onChange={(e) => setConfig({ ...config, duration: parseInt(e.target.value, 10) })}
-          className="w-full h-3 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-lg appearance-none cursor-pointer"
+          className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
           style={{
-            background: `linear-gradient(to right, #818cf8 0%, #818cf8 ${((clampDuration - 1) / 9) * 100}%, #e5e7eb ${((clampDuration - 1) / 9) * 100}%, #e5e7eb 100%)`
+            background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((clampDuration - 1) / 9) * 100}%, hsl(var(--muted)) ${((clampDuration - 1) / 9) * 100}%, hsl(var(--muted)) 100%)`
           }}
         />
-        <div className="flex justify-between text-sm text-gray-600 mt-2">
+        <div className="flex justify-between text-xs font-medium text-muted-foreground mt-3">
           <span>Quick (1 min)</span>
           <span>Standard (5 min)</span>
           <span>Deep (10 min)</span>
         </div>
       </div>
 
+      {/* Difficulty Selection */}
       <div>
-        <label className="text-base font-semibold text-gray-900 mb-4 block">Difficulty Level</label>
+        <label className="text-xs font-bold uppercase text-muted-foreground mb-4 block">Difficulty Level</label>
         <div className="grid grid-cols-3 gap-4">
           {['beginner', 'intermediate', 'advanced'].map((diff) => (
             <button
@@ -131,17 +132,17 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
                   difficulty: diff as 'beginner' | 'intermediate' | 'advanced'
                 })
               }
-              className={`p-5 rounded-2xl border-2 transition-all duration-200 ${
+              className={`p-5 rounded-2xl border-2 transition-all duration-200 text-center ${
                 config.difficulty === diff
-                  ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-md scale-105'
-                  : 'border-gray-200 hover:border-indigo-300'
+                  ? 'border-primary bg-primary/5 scale-[1.02]'
+                  : 'border-border bg-card hover:border-primary/30'
               }`}
             >
               <div className="text-2xl mb-2">
                 {diff === 'beginner' ? '🌱' : diff === 'intermediate' ? '🌿' : '🌳'}
               </div>
-              <div className="font-bold text-gray-900 capitalize">{diff}</div>
-              <div className="text-xs text-gray-600 mt-1">
+              <div className="font-bold text-foreground capitalize">{diff}</div>
+              <div className="text-[10px] text-muted-foreground mt-1 font-bold uppercase tracking-wider">
                 {diff === 'beginner' ? 'Entry level' : diff === 'intermediate' ? 'Mid-level' : 'Senior level'}
               </div>
             </button>
@@ -149,21 +150,22 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
         </div>
       </div>
 
+      {/* Focus Areas Section */}
       <div>
-        <label className="text-base font-semibold text-gray-900 mb-4 block flex items-center">
-          <Sparkles className="w-5 h-5 mr-2 text-indigo-600" />
+        <label className="text-xs font-bold uppercase text-muted-foreground mb-4 block flex items-center">
+          <Sparkles className="w-4 h-4 mr-2 text-primary" />
           Focus Areas from Job Description
         </label>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8 bg-gray-50 rounded-lg">
-            <Loader className="w-5 h-5 animate-spin text-indigo-600 mr-2" />
-            <span className="text-gray-600 font-medium">Loading focus areas...</span>
+          <div className="flex items-center justify-center py-10 bg-muted/50 border border-border rounded-2xl">
+            <Loader className="w-5 h-5 animate-spin text-primary mr-3" />
+            <span className="text-muted-foreground font-medium">Loading focus areas...</span>
           </div>
         ) : error ? (
-          <div className="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
-            <span className="text-sm text-red-700">{error}</span>
+          <div className="flex items-start p-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
+            <AlertCircle className="w-5 h-5 text-destructive mt-0.5 mr-3 flex-shrink-0" />
+            <span className="text-sm text-destructive font-medium">{error}</span>
           </div>
         ) : focusAreas.length > 0 ? (
           <>
@@ -177,47 +179,48 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
                       focusAreas: toggleArrayItem(config.focusAreas, area)
                     })
                   }
-                  className={`px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 border ${
                     config.focusAreas.includes(area)
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-card text-muted-foreground border-border hover:border-primary/50'
                   }`}
                 >
                   {area}
                 </button>
               ))}
             </div>
-            <p className="text-sm text-gray-500 mt-3">
+            <p className="text-xs text-muted-foreground mt-4 font-medium italic">
               {config.focusAreas.length === 0
                 ? "Click on areas above to customize your interview focus."
                 : `Selected: ${config.focusAreas.length}/${focusAreas.length} areas`}
             </p>
           </>
         ) : (
-          <div className="bg-gray-100 rounded-lg p-4 text-center text-gray-600">
-            <p className="text-sm">No focus areas available. Please check your job description.</p>
+          <div className="bg-muted/50 border border-border rounded-2xl p-6 text-center text-muted-foreground">
+            <p className="text-sm font-normal">No focus areas available. Please check your job description.</p>
           </div>
         )}
       </div>
-       {/* AI Interviewer Selection */}
+
+      {/* AI Interviewer Selection */}
       <div>
-        <label className="text-base font-semibold text-gray-900 mb-4 block flex items-center">
-          <Users className="w-5 h-5 mr-2 text-indigo-600" />
+        <label className="text-xs font-bold uppercase text-muted-foreground mb-4 block flex items-center">
+          <Users className="w-4 h-4 mr-2 text-primary" />
           Choose Your AI Interviewer
         </label>
 
         {interviewerError ? (
-          <div className="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
+          <div className="flex items-start p-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
+            <AlertCircle className="w-5 h-5 text-destructive mt-0.5 mr-3 flex-shrink-0" />
             <div>
-              <p className="font-semibold text-red-900">Error loading interviewers</p>
-              <p className="text-sm text-red-700">{interviewerError}</p>
+              <p className="font-bold text-destructive">Error loading interviewers</p>
+              <p className="text-sm text-destructive/80 font-medium">{interviewerError}</p>
             </div>
           </div>
         ) : loadingInterviewers ? (
-          <div className="flex items-center justify-center py-8 bg-gray-50 rounded-lg">
-            <Loader className="w-5 h-5 animate-spin text-indigo-600 mr-2" />
-            <span className="text-gray-600 font-medium">Loading interviewers...</span>
+          <div className="flex items-center justify-center py-10 bg-muted/50 border border-border rounded-2xl">
+            <Loader className="w-5 h-5 animate-spin text-primary mr-3" />
+            <span className="text-muted-foreground font-medium">Loading interviewers...</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -229,105 +232,75 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
                     ...config,
                     interviewerAgentId: interviewer.id
                   });
+                  if (onInterviewerSelected) {
+                    onInterviewerSelected(interviewer.id);
+                  }
                 }}
-                className={`p-4 rounded-2xl border-2 transition-all duration-200 text-left ${
+                className={`p-5 rounded-2xl border-2 transition-all duration-200 text-left relative ${
                   selectedInterviewerId === interviewer.id
-                    ? 'border-indigo-500 bg-gradient-to-br from-indigo-50 to-purple-50 shadow-lg'
-                    : 'border-gray-200 hover:border-indigo-300 hover:shadow'
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-border bg-card hover:border-primary/40'
                 }`}
               >
-
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3 flex-1">
                     <img
                       src={`${VITE_BACKEND_PUBLIC_URL}${interviewer.image}`}
                       alt={interviewer.name}
-                      className="w-12 h-12 rounded-full object-cover bg-gray-200"
+                      className="w-14 h-14 rounded-full object-cover border-2 border-border bg-muted"
                       onError={(e) => {
                         e.currentTarget.src =
-                          'https://via.placeholder.com/48?text=' + interviewer.name[0];
+                          'https://via.placeholder.com/56?text=' + interviewer.name[0];
                       }}
                     />
                     <div>
-                      <h3 className="text-sm font-bold text-gray-900">{interviewer.name}</h3>
-                      <p className="text-xs text-gray-600">AI Interviewer</p>
+                      <h3 className="text-sm font-bold text-foreground">{interviewer.name}</h3>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI Interviewer</p>
                     </div>
                   </div>
-                  <button
+                  <div
                     onClick={(e) => {
                       e.stopPropagation();
                       console.log('Playing audio:', `${VITE_BACKEND_PUBLIC_URL}/${interviewer.audio}`);
                     }}
-                    className="p-1.5 hover:bg-gray-200 rounded-lg transition-all flex-shrink-0"
+                    className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all flex-shrink-0"
                     title="Listen to interviewer"
                   >
-                    <Volume2 className="w-4 h-4 text-indigo-600" />
-                  </button>
+                    <Volume2 className="w-4 h-4" />
+                  </div>
                 </div>
 
-                <p className="text-xs text-gray-700 mb-3 line-clamp-2">
+                <p className="text-xs text-muted-foreground mb-4 line-clamp-2 font-normal leading-relaxed">
                   {interviewer.description}
                 </p>
 
-                {/* Stats - Compact Version */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="text-xs">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-600">Rapport</span>
-                      <span className="font-bold text-gray-900">{interviewer.rapport}/10</span>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-2">
+                  {[
+                    { label: 'Rapport', val: interviewer.rapport, color: 'bg-primary' },
+                    { label: 'Exploration', val: interviewer.exploration, color: 'bg-primary' },
+                    { label: 'Empathy', val: interviewer.empathy, color: 'bg-primary' },
+                    { label: 'Speed', val: interviewer.speed, color: 'bg-primary' }
+                  ].map((stat) => (
+                    <div key={stat.label} className="text-[10px]">
+                      <div className="flex justify-between mb-1 uppercase font-bold text-muted-foreground tracking-tighter">
+                        <span>{stat.label}</span>
+                        <span className="text-foreground">{stat.val}/10</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-1">
+                        <div
+                          className={`${stat.color} h-1 rounded-full opacity-80`}
+                          style={{ width: `${(stat.val / 10) * 100}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div
-                        className="bg-gradient-to-r from-pink-400 to-pink-600 h-1.5 rounded-full"
-                        style={{ width: `${(interviewer.rapport / 10) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-xs">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-600">Exploration</span>
-                      <span className="font-bold text-gray-900">{interviewer.exploration}/10</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div
-                        className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full"
-                        style={{ width: `${(interviewer.exploration / 10) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-xs">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-600">Empathy</span>
-                      <span className="font-bold text-gray-900">{interviewer.empathy}/10</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div
-                        className="bg-gradient-to-r from-green-400 to-green-600 h-1.5 rounded-full"
-                        style={{ width: `${(interviewer.empathy / 10) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-xs">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-600">Speed</span>
-                      <span className="font-bold text-gray-900">{interviewer.speed}/10</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div
-                        className="bg-gradient-to-r from-orange-400 to-orange-600 h-1.5 rounded-full"
-                        style={{ width: `${(interviewer.speed / 10) * 100}%` }}
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 {selectedInterviewerId === interviewer.id && (
-                  <div className="flex items-center justify-center gap-2 p-2 bg-indigo-100 rounded-lg">
-                    <div className="w-2 h-2 bg-indigo-600 rounded-full" />
-                    <span className="text-xs font-semibold text-indigo-700">Selected</span>
+                  <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 bg-primary text-primary-foreground rounded-lg">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Selected</span>
                   </div>
                 )}
               </button>
@@ -335,11 +308,13 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
           </div>
         )}
       </div>
-      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-4">
+
+      {/* Pro Tip Section */}
+      <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5">
         <div className="flex items-start">
-          <Sparkles className="w-5 h-5 text-indigo-500 mt-0.5 mr-3 flex-shrink-0" />
-          <div className="text-sm text-indigo-800">
-            <span className="font-semibold">Pro Tip:</span> All focus areas from your job description are pre-selected. You can deselect any areas you don't want to focus on.
+          <Sparkles className="w-5 h-5 text-primary mt-0.5 mr-4 flex-shrink-0" />
+          <div className="text-sm text-foreground font-normal leading-relaxed">
+            <span className="font-bold text-primary uppercase text-xs mr-1">Pro Tip:</span> All focus areas from your job description are pre-selected. You can deselect any areas you don't want to focus on.
           </div>
         </div>
       </div>

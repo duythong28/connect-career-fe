@@ -1,5 +1,5 @@
 import React from "react";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   GetMyApplicationsParams,
@@ -23,11 +23,11 @@ export default function FilterBar({
   setFilterOpen: (open: boolean) => void;
 }) {
   
-  // Reusable Pill Style for Select Trigger
-  const triggerClass = "w-auto h-9 px-3 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-all focus:ring-0";
+  // Reusable Pill Style for Select Trigger - updated to match Design System
+  const triggerClass = "w-auto h-9 px-3 bg-background border border-border rounded-lg text-xs font-bold text-muted-foreground hover:bg-secondary hover:text-foreground flex items-center gap-2 transition-all focus:ring-2 focus:ring-primary/20";
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-3 animate-fade-in">
        
           {/* Status */}
           <Select
@@ -37,7 +37,7 @@ export default function FilterBar({
             }
           >
             <SelectTrigger className={triggerClass}>
-               <span>Status:</span>
+               <span className="text-foreground">Status:</span>
                <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent>
@@ -60,7 +60,7 @@ export default function FilterBar({
             }
           >
             <SelectTrigger className={triggerClass}>
-              <span>Interviews:</span> <SelectValue />
+              <span className="text-foreground">Interviews:</span> <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
@@ -81,7 +81,7 @@ export default function FilterBar({
             }
           >
             <SelectTrigger className={triggerClass}>
-               <span>Offers:</span> <SelectValue />
+               <span className="text-foreground">Offers:</span> <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
@@ -96,7 +96,7 @@ export default function FilterBar({
             onValueChange={(value) => setParams((p) => ({ ...p, sortBy: value, page: 1 }))}
           >
             <SelectTrigger className={triggerClass}>
-               <span>Sort:</span> <SelectValue />
+               <span className="text-foreground">Sort:</span> <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="appliedDate">Applied Date</SelectItem>
@@ -109,7 +109,7 @@ export default function FilterBar({
             value={params.sortOrder ?? "DESC"}
             onValueChange={(value) => setParams((p) => ({ ...p, sortOrder: value as "ASC" | "DESC", page: 1 }))}
           >
-            <SelectTrigger className="w-24 h-9 px-3 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50 focus:ring-0">
+            <SelectTrigger className="w-24 h-9 px-3 bg-background border border-border rounded-lg text-xs font-bold text-muted-foreground hover:bg-secondary hover:text-foreground focus:ring-2 focus:ring-primary/20">
                <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -122,7 +122,7 @@ export default function FilterBar({
           <Button
             variant="outline"
             size="sm"
-            className="sm:hidden flex items-center gap-2 h-9"
+            className="sm:hidden flex items-center gap-2 h-9 border-border text-muted-foreground hover:text-foreground"
             onClick={() => setFilterOpen(true)}
           >
             <SlidersHorizontal className="h-4 w-4" /> Filters

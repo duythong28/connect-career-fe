@@ -27,7 +27,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         user={user}
       />
       {user && <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />}
-      <div className="flex-1 mt-[4.5rem] flex flex-row overflow-hidden">
+      <div className="flex-1 mt-[4.4rem] flex flex-row overflow-hidden">
         <main
           className={cn(
             "flex-1 min-w-0 overflow-y-auto transition-all duration-200 text-base",

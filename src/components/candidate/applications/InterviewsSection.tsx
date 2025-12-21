@@ -24,17 +24,20 @@ export default function InterviewsSection({
 }) {
   if (!interviews || interviews.length === 0) return null;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5" />
+    <Card className="rounded-3xl border-border shadow-sm bg-card">
+      <CardHeader className="border-b border-border pb-4">
+        <CardTitle className="flex items-center gap-2 text-foreground font-bold text-lg">
+          <CalendarIcon className="h-5 w-5 text-foreground" />
           Interviews
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <div className="flex flex-col gap-4">
           {interviews.map((interview) => (
-            <div key={interview.id} className="border rounded-lg p-4 space-y-3">
+            <div
+              key={interview.id}
+              className="border border-border rounded-2xl p-4 space-y-3 bg-card"
+            >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -47,7 +50,7 @@ export default function InterviewsSection({
                     {interview.type === "in-person" && (
                       <MapPinned className="h-4 w-4 text-primary" />
                     )}
-                    <h4 className="font-semibold">
+                    <h4 className="font-semibold text-foreground">
                       {interview.interviewRound}
                     </h4>
                   </div>
@@ -63,11 +66,20 @@ export default function InterviewsSection({
                       ? "outline"
                       : "secondary"
                   }
+                  className={`
+                    ${
+                      interview.status === "scheduled"
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : interview.status === "completed"
+                        ? "border-green-200 text-green-700 hover:bg-green-50"
+                        : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                    } rounded-full px-3 py-1 text-xs font-bold capitalize
+                  `}
                 >
                   {interview.status}
                 </Badge>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-foreground">
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   <span>
@@ -93,7 +105,7 @@ export default function InterviewsSection({
                       href={interview.meetingLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary hover:underline truncate"
+                      className="text-primary hover:underline truncate font-bold"
                     >
                       {interview.meetingLink}
                     </a>
@@ -102,21 +114,23 @@ export default function InterviewsSection({
               </div>
               {interview.notes && (
                 <div className="text-sm">
-                  <Label>Notes</Label>
-                  <p className="text-muted-foreground mt-1">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">
+                    Notes
+                  </Label>
+                  <p className="text-muted-foreground mt-1 leading-relaxed">
                     {interview.notes}
                   </p>
                 </div>
               )}
               {interview.feedback && (
-                <div className="border-t pt-4 mt-3">
+                <div className="border-t border-border pt-4 mt-3">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-                    <Label className="text-base font-semibold">
+                    <Label className="text-base font-semibold text-foreground">
                       Interview Feedback
                     </Label>
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full">
-                        <span className="text-sm font-semibold">
+                      <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-lg border border-border">
+                        <span className="text-sm font-semibold text-foreground">
                           {interview.feedback.rating}/10
                         </span>
                       </div>
@@ -130,7 +144,15 @@ export default function InterviewsSection({
                             ? "destructive"
                             : "secondary"
                         }
-                        className="capitalize"
+                        className={`capitalize rounded-full px-3 py-1 text-xs font-bold ${
+                          interview.feedback.recommendation ===
+                          Recommendation.STRONGLY_RECOMMEND
+                            ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-100"
+                            : interview.feedback.recommendation ===
+                              Recommendation.DO_NOT_RECOMMEND
+                            ? "bg-red-100 text-red-700 border-red-200 hover:bg-red-100"
+                            : "bg-secondary text-muted-foreground hover:bg-secondary"
+                        }`}
                       >
                         {interview.feedback.recommendation.replace("_", " ")}
                       </Badge>
@@ -152,7 +174,7 @@ export default function InterviewsSection({
                                   key={idx}
                                   className="flex items-start gap-2 text-sm text-green-800"
                                 >
-                                  <span className="text-green-600 mt-0.5">
+                                  <span className="text-green-600 mt-0.5 font-bold">
                                     •
                                   </span>
                                   <span>{strength}</span>
@@ -177,7 +199,9 @@ export default function InterviewsSection({
                                   key={idx}
                                   className="flex items-start gap-2 text-sm text-red-800"
                                 >
-                                  <span className="text-red-600 mt-0.5">•</span>
+                                  <span className="text-red-600 mt-0.5 font-bold">
+                                    •
+                                  </span>
                                   <span>{weakness}</span>
                                 </li>
                               )
@@ -186,10 +210,10 @@ export default function InterviewsSection({
                         </div>
                       )}
                     {interview.feedback.comments && (
-                      <div className="bg-secondary/30 rounded-lg p-3 border">
+                      <div className="bg-secondary/20 rounded-lg p-3 border border-border">
                         <div className="flex items-center gap-2 mb-2">
                           <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                          <Label className="text-sm font-medium">
+                          <Label className="text-sm font-medium text-foreground">
                             Additional Comments
                           </Label>
                         </div>

@@ -6,6 +6,8 @@ import JobSearchPage from "@/pages/public/JobSearchPage";
 import JobDetailPage from "@/pages/public/JobDetailPage";
 import VerifyEmail from "@/pages/public/VerifyEmail";
 import WalletTopUpReturnPage from "@/pages/shared/WalletTopUpReturnPage";
+import ForgotPasswordPage from "@/pages/public/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/public/ResetPasswordPage";
 
 export const PublicRoutes = () => {
   return (
@@ -13,6 +15,8 @@ export const PublicRoutes = () => {
       <Route index element={<HomePage />} />
       <Route path="login" element={<LoginPage />} />
       <Route path="signup" element={<SignupPage />} />
+      <Route path="forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="reset-password" element={<ResetPasswordPage />} />
       <Route path="verify-email" element={<VerifyEmail />} />
       <Route path="jobs" element={<JobSearchPage />} />
       <Route path="jobs/:id" element={<JobDetailPage />} />

@@ -111,8 +111,8 @@ export interface CallData {
 export interface RegisterCallRequest {
     interviewerId: string;  
     sessionId: string;      
-    email: string;
-    name: string;
+    email?: string; 
+    name?: string;
     dynamicData?: Record<string, any>;
 }
 

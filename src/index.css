@@ -1,12 +1,14 @@
+/* 1. Imports (Must be at the very top) */
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import "stream-chat-react/dist/css/v2/index.css";
+@import "@stream-io/video-react-sdk/dist/css/styles.css";
 
+/* 2. Tailwind Directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import "stream-chat-react/dist/css/v2/index.css";
-@import "@stream-io/video-react-sdk/dist/css/styles.css";
-
+/* 3. Base Layer (Variables & Resets) */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -21,7 +23,7 @@
     --primary: 210 100% 47%;
     --primary-foreground: 0 0% 100%;
 
-   --secondary: 214 100% 97%;
+    --secondary: 214 100% 97%;
     --secondary-foreground: 222 47% 11%;
 
     --muted: 220 14% 96%;
@@ -105,9 +107,7 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -118,7 +118,12 @@
   }
 }
 
+/* 4. Components Layer (Buttons, Cards, Layouts) */
 @layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
   /* Professional button variants */
   .btn-hero {
     @apply bg-gradient-to-r from-[hsl(var(--brand-primary))] to-[hsl(210_85%_55%)] text-white font-semibold;
@@ -163,7 +168,7 @@
     animation: scaleIn 0.4s ease-out;
   }
 
-  /* Stream Chat Custom Styles - Add these custom styles here */
+  /* Stream Chat Custom Styles */
   .str-chat {
     height: 100%;
     font-family: inherit;
@@ -234,8 +239,94 @@
   .str-chat__container--chatbox .str-chat__message-list-notifications {
     position: static;
   }
+  html,
+  body,
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #babec2 transparent; /* Thumb color / Track color */
+  }
+
+  /* Webkit (Chrome/Safari) Scrollbar customization */
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+  }
 }
 
+/* 5. Utilities Layer (Helpers, Gradients, Shadows) */
+@layer utilities {
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-[hsl(199,89%,48%)];
+  }
+
+  .gradient-hero {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary-light)) 0%,
+      hsl(210, 50%, 95%) 100%
+    );
+  }
+
+  .gradient-cta {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(199, 89%, 48%) 100%
+    );
+  }
+
+  .gradient-blue {
+    background: var(--gradient-blue);
+  }
+
+  .gradient-hero-bg {
+    background: var(--gradient-hero-bg);
+  }
+
+  /* Text Gradients */
+  .text-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(217 91% 60%) 0%,
+      hsl(199 89% 48%) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Custom Shadows */
+  .shadow-soft {
+    box-shadow: 0 4px 20px -2px hsla(217, 91%, 60%, 0.15);
+  }
+
+  .shadow-card {
+    box-shadow: 0 1px 3px 0 hsla(222, 47%, 11%, 0.1),
+      0 1px 2px -1px hsla(222, 47%, 11%, 0.1);
+  }
+
+  .shadow-card-hover {
+    box-shadow: 0 10px 40px -10px hsla(217, 91%, 60%, 0.25);
+  }
+
+  .shadow-blue {
+    box-shadow: var(--shadow-blue);
+  }
+}
+
+/* 6. Keyframes (Global) */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -269,7 +360,7 @@
   }
 }
 
-/* Print styles for CV templates */
+/* 7. Print Styles */
 @media print {
   body {
     -webkit-print-color-adjust: exact !important;
@@ -292,73 +383,5 @@
 
   .no-print {
     display: none !important;
-  }
-}
-
-@layer utilities {
-  .gradient-primary {
-    @apply bg-gradient-to-r from-primary to-[hsl(199,89%,48%)];
-  }
-
-  .gradient-hero {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--primary-light)) 0%,
-      hsl(210, 50%, 95%) 100%
-    );
-  }
-
-  .gradient-cta {
-    background: linear-gradient(
-      135deg,
-      hsl(var(--primary)) 0%,
-      hsl(199, 89%, 48%) 100%
-    );
-  }
-
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[hsl(199,89%,48%)];
-  }
-
-  .shadow-soft {
-    box-shadow: 0 4px 20px -2px hsla(217, 91%, 60%, 0.15);
-  }
-
-  .shadow-card {
-    box-shadow: 0 1px 3px 0 hsla(222, 47%, 11%, 0.1),
-      0 1px 2px -1px hsla(222, 47%, 11%, 0.1);
-  }
-
-  .shadow-card-hover {
-    box-shadow: 0 10px 40px -10px hsla(217, 91%, 60%, 0.25);
-  }
-}
-
-@layer components {
-  .container-custom {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-  }
-
-  .gradient-blue {
-    background: var(--gradient-blue);
-  }
-
-  .gradient-hero-bg {
-    background: var(--gradient-hero-bg);
-  }
-
-  .shadow-blue {
-    box-shadow: var(--shadow-blue);
-  }
-
-  .text-gradient {
-    background: linear-gradient(
-      135deg,
-      hsl(217 91% 60%) 0%,
-      hsl(199 89% 48%) 100%
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
   }
 }
