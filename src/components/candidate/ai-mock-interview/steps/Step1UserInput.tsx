@@ -52,45 +52,48 @@ const Step1UserInput: React.FC<Step1UserInputProps> = ({ config, setConfig }) =>
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
+      {/* Header Section */}
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-xl mb-4">
-          <Brain className="w-8 h-8 text-blue-600" />
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-accent rounded-xl mb-4">
+          <Brain className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">Let's Get Started!</h2>
-        <p className="text-lg text-gray-600 font-normal">Tell our AI what you want to practice</p>
+        <h2 className="text-3xl font-bold text-foreground mb-2 tracking-tight">Let's Get Started!</h2>
+        <p className="text-lg text-muted-foreground font-normal">Tell our AI what you want to practice</p>
       </div>
 
+      {/* User Intent Section */}
       <div>
-        <label className="flex items-center text-base font-semibold text-gray-900 mb-3">
-          <MessageSquare className="w-5 h-5 mr-2 text-blue-600" />
-          What do you want to improve? <span className="text-red-500 ml-1">*</span>
+        <label className="text-xs font-bold uppercase text-muted-foreground mb-3 flex items-center">
+          <MessageSquare className="w-4 h-4 mr-2 text-primary" />
+          What do you want to improve? <span className="text-destructive ml-1">*</span>
         </label>
         <textarea
           value={config.customPrompt}
           onChange={(e) => setConfig({ ...config, customPrompt: e.target.value })}
           placeholder="Example: I want to practice behavioral questions about conflict resolution and teamwork. I struggle with structuring my answers and often ramble..."
-          className="w-full h-32 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-colors"
+          className="w-full h-32 p-4 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none resize-none bg-background text-foreground placeholder-muted-foreground transition-all"
         />
-        <div className="flex items-start mt-3 text-sm text-gray-600">
-          <Sparkles className="w-4 h-4 mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
+        <div className="flex items-start mt-3 text-sm text-muted-foreground">
+          <Sparkles className="w-4 h-4 mr-2 mt-0.5 text-primary flex-shrink-0" />
           <span className="font-normal">
             Be specific! The more detail you provide, the better our AI can personalize your interview.
           </span>
         </div>
       </div>
 
+      {/* Job Description Section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <label className="flex items-center text-base font-semibold text-gray-900">
-            <FileText className="w-5 h-5 mr-2 text-blue-600" />
-            Job Description <span className="text-red-500 ml-1">*</span>
+          <label className="text-xs font-bold uppercase text-muted-foreground flex items-center">
+            <FileText className="w-4 h-4 mr-2 text-primary" />
+            Job Description <span className="text-destructive ml-1">*</span>
           </label>
           <span
-            className={`text-xs font-medium px-3 py-1 rounded-lg ${
+            className={`text-[10px] font-bold uppercase px-3 py-1 rounded-lg border transition-colors ${
               isJobDescriptionValid 
-                ? 'bg-green-100 text-green-700 border border-green-200' 
-                : 'bg-gray-100 text-gray-600 border border-gray-200'
+                ? 'bg-brand-success/10 text-brand-success border-brand-success/20' 
+                : 'bg-muted text-muted-foreground border-border'
             }`}
           >
             {config.jobDescription.length} characters
@@ -104,17 +107,17 @@ const Step1UserInput: React.FC<Step1UserInputProps> = ({ config, setConfig }) =>
             setError(null);
           }}
           placeholder="Paste the complete job description here... We'll analyze it to extract relevant skills, technologies, and focus areas for your interview."
-          className="w-full h-40 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-colors"
+          className="w-full h-40 p-4 border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none resize-none bg-background text-foreground placeholder-muted-foreground transition-all"
         />
 
         {error && (
-          <div className="flex items-start mt-3 p-3 bg-red-50 border border-red-200 rounded-xl">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 mr-2 flex-shrink-0" />
-            <span className="text-sm text-red-700 font-medium">{error}</span>
+          <div className="flex items-start mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-xl">
+            <AlertCircle className="w-5 h-5 text-destructive mt-0.5 mr-2 flex-shrink-0" />
+            <span className="text-sm text-destructive font-medium">{error}</span>
           </div>
         )}
 
-        <div className="flex items-start mt-3 text-sm text-blue-600">
+        <div className="flex items-start mt-3 text-sm text-primary">
           <Zap className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
           <span className="font-normal">
             Pro tip: The job description helps AI extract relevant skills and tailor questions to
@@ -123,24 +126,25 @@ const Step1UserInput: React.FC<Step1UserInputProps> = ({ config, setConfig }) =>
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-blue-600" />
+      {/* Quick Tips Section */}
+      <div className="bg-accent border border-border rounded-2xl p-6">
+        <h3 className="text-xs font-bold uppercase text-foreground mb-4 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary" />
           Quick Tips
         </h3>
-        <div className="space-y-2 text-sm text-gray-700">
-          <p className="flex items-start gap-2">
-            <span className="text-blue-600 font-semibold mt-0.5">•</span>
+        <div className="space-y-3 text-sm text-muted-foreground">
+          <div className="flex items-start gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
             <span>Copy the entire job description from the job posting for best results</span>
-          </p>
-          <p className="flex items-start gap-2">
-            <span className="text-blue-600 font-semibold mt-0.5">•</span>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
             <span>Include required skills, technologies, and role responsibilities</span>
-          </p>
-          <p className="flex items-start gap-2">
-            <span className="text-blue-600 font-semibold mt-0.5">•</span>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
             <span>The AI will automatically extract relevant topics from the job description</span>
-          </p>
+          </div>
         </div>
       </div>
     </div>
