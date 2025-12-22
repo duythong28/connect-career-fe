@@ -95,7 +95,6 @@ const PostJobPage = () => {
   const { mutate: generateDescriptionMutate, isPending } = useMutation({
     mutationFn: (data: GenerateJobDto) => generateJobDescription(data),
     onSuccess: (response) => {
-      console.log("Generated description:", response);
       setJobForm({
         ...jobForm,
         description: response?.data?.description || "",
@@ -110,7 +109,6 @@ const PostJobPage = () => {
     },
   });
 
-  // Mutation for posting job
   const postJobMutation = useMutation({
     mutationFn: (data: any) => createRecruiterJob(data),
     onSuccess: (response) => {
@@ -118,7 +116,6 @@ const PostJobPage = () => {
         title: "Job posted successfully!",
         description: "Your job is now live.",
       });
-      // Redirect to job detail page
       navigate(`/jobs/${response.id}`);
     },
     onError: (error) => {
@@ -212,26 +209,29 @@ const PostJobPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div>
+    <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Post a New Job</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl font-bold text-foreground">Post a New Job</h1>
+          <p className="text-sm text-muted-foreground mt-2">
             Create an attractive job posting to find the best candidates
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           {/* Form */}
-          <Card>
+          <Card className="rounded-3xl border-border bg-card shadow-none">
             <CardHeader>
-              <CardTitle>Job Details</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">Job Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <Label htmlFor="title">Job Title *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-xs font-bold uppercase text-muted-foreground">
+                  Job Title *
+                </Label>
                 <Input
                   id="title"
+                  className="rounded-xl border-border focus:ring-2 focus:ring-primary h-10"
                   value={jobForm.title}
                   onChange={(e) =>
                     setJobForm({ ...jobForm, title: e.target.value })
@@ -241,10 +241,13 @@ const PostJobPage = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="location">Location *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-xs font-bold uppercase text-muted-foreground">
+                    Location *
+                  </Label>
                   <Input
                     id="location"
+                    className="rounded-xl border-border focus:ring-2 focus:ring-primary h-10"
                     value={jobForm.location}
                     onChange={(e) =>
                       setJobForm({ ...jobForm, location: e.target.value })
@@ -252,18 +255,20 @@ const PostJobPage = () => {
                     placeholder="e.g., San Francisco, CA"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="type">Job Type *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="type" className="text-xs font-bold uppercase text-muted-foreground">
+                    Job Type *
+                  </Label>
                   <Select
                     value={jobForm.type}
                     onValueChange={(value) =>
                       setJobForm({ ...jobForm, type: value })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl border-border h-10">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl border-border">
                       <SelectItem value="full_time">Full-time</SelectItem>
                       <SelectItem value="part_time">Part-time</SelectItem>
                       <SelectItem value="freelance">Freelance</SelectItem>
@@ -278,8 +283,10 @@ const PostJobPage = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="seniorityLevel">Level *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="seniorityLevel" className="text-xs font-bold uppercase text-muted-foreground">
+                    Level *
+                  </Label>
                   <Select
                     value={jobForm.seniorityLevel}
                     onValueChange={(value) =>
@@ -289,10 +296,10 @@ const PostJobPage = () => {
                       })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-xl border-border h-10">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-xl border-border">
                       <SelectItem value={JobSeniorityLevel.ENTRY_LEVEL}>
                         {JobSeniorityLevel.ENTRY_LEVEL}
                       </SelectItem>
@@ -314,10 +321,13 @@ const PostJobPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="salary">Salary Range</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="salary" className="text-xs font-bold uppercase text-muted-foreground">
+                    Salary Range
+                  </Label>
                   <Input
                     id="salary"
+                    className="rounded-xl border-border focus:ring-2 focus:ring-primary h-10"
                     value={jobForm.salary}
                     onChange={(e) =>
                       setJobForm({ ...jobForm, salary: e.target.value })
@@ -327,14 +337,15 @@ const PostJobPage = () => {
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="description">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between mb-1">
+                  <Label htmlFor="description" className="text-xs font-bold uppercase text-muted-foreground">
                     Job Description * (Markdown supported)
                   </Label>
                   <Button
                     size="sm"
                     variant="outline"
+                    className="h-8 rounded-xl text-xs font-bold uppercase"
                     onClick={() => {
                       generateDescriptionMutate({
                         title: jobForm.title,
@@ -355,7 +366,7 @@ const PostJobPage = () => {
                     }
                   >
                     <Sparkles
-                      className={`h-4 w-4 mr-2 ${
+                      className={`h-3.5 w-3.5 mr-2 text-primary ${
                         isPending ? "animate-spin" : ""
                       }`}
                     />
@@ -369,35 +380,37 @@ const PostJobPage = () => {
                     setJobForm({ ...jobForm, description: e.target.value })
                   }
                   placeholder="## About the Role&#10;We are looking for...&#10;&#10;## Responsibilities&#10;- Develop and maintain...&#10;- Collaborate with teams...&#10;&#10;## Requirements&#10;- 3+ years of experience&#10;- Strong skills in..."
-                  rows={12}
-                  className="font-mono text-sm"
+                  rows={10}
+                  className="rounded-xl border-border focus:ring-2 focus:ring-primary text-sm leading-relaxed"
                 />
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Use Markdown formatting for better presentation. Include
                   responsibilities, requirements, and benefits.
                 </p>
               </div>
 
-              <div>
-                <Label htmlFor="pipeline">Pipeline *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="pipeline" className="text-xs font-bold uppercase text-muted-foreground">
+                  Pipeline *
+                </Label>
                 <Select
                   value={jobForm.hiringPipelineId}
                   onValueChange={(value) =>
                     setJobForm({ ...jobForm, hiringPipelineId: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-border h-10">
                     <SelectValue placeholder="Select pipeline" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border-border">
                     {pipelines &&
                       pipelines.length > 0 &&
                       pipelines.map((pipeline) => (
                         <SelectItem key={pipeline.id} value={pipeline.id}>
                           <div className="flex flex-col">
-                            <span>{pipeline.name}</span>
+                            <span className="font-semibold">{pipeline.name}</span>
                             {pipeline.description && (
-                              <span className="text-xs text-gray-500 truncate max-w-sm">
+                              <span className="text-xs text-muted-foreground truncate max-w-sm">
                                 {pipeline.description}
                               </span>
                             )}
@@ -407,54 +420,59 @@ const PostJobPage = () => {
                   </SelectContent>
                 </Select>
                 {pipelines && pipelines.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="text-xs text-destructive mt-1 font-semibold">
                     No active pipelines found. Please create a pipeline first.
                   </p>
                 )}
               </div>
 
-              <div>
-                <Label htmlFor="keywords">Keywords * (comma-separated)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="keywords" className="text-xs font-bold uppercase text-muted-foreground">
+                  Keywords * (comma-separated)
+                </Label>
                 <Input
                   id="keywords"
+                  className="rounded-xl border-border focus:ring-2 focus:ring-primary h-10"
                   value={keywordsInput}
                   onChange={(e) => handleKeywordsChange(e.target.value)}
                   onBlur={handleKeywordsBlur}
                   placeholder="e.g., React, JavaScript, Frontend"
                 />
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Enter relevant skills or keywords separated by commas.
                 </p>
               </div>
 
-              <div>
-                <Label htmlFor="conditions">
+              <div className="space-y-2">
+                <Label htmlFor="conditions" className="text-xs font-bold uppercase text-muted-foreground">
                   Critical Conditions * (comma-separated)
                 </Label>
                 <Input
                   id="conditions"
+                  className="rounded-xl border-border focus:ring-2 focus:ring-primary h-10"
                   value={conditionsInput}
                   onChange={(e) => handleConditionsChange(e.target.value)}
                   onBlur={handleConditionsBlur}
                   placeholder="e.g., Next.js, AWS, 3+ years experience"
                 />
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Must-have criteria for AI auto-screening and rejection.
                 </p>
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-4">
                 <Button
                   onClick={() => postJob(JobStatus.ACTIVE)}
-                  className="flex-1"
+                  className="w-full sm:flex-1 h-10 rounded-xl text-xs font-bold uppercase"
                   disabled={postJobMutation.isPending}
+                  variant="default"
                 >
                   {postJobMutation.isPending ? "Posting..." : "Publish Job"}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => postJob(JobStatus.DRAFT)}
-                  className="flex-1"
+                  className="w-full sm:flex-1 h-10 rounded-xl text-xs font-bold uppercase"
                   disabled={postJobMutation.isPending}
                 >
                   Save as Draft
@@ -462,7 +480,7 @@ const PostJobPage = () => {
                 <Button
                   variant="outline"
                   onClick={() => setShowPreview(!showPreview)}
-                  className="flex-1"
+                  className="w-full sm:flex-1 h-10 rounded-xl text-xs font-bold uppercase"
                 >
                   {showPreview ? "Hide Preview" : "Show Preview"}
                 </Button>
@@ -472,81 +490,87 @@ const PostJobPage = () => {
 
           {/* Live Preview */}
           {showPreview && (
-            <Card className="lg:sticky lg:top-6">
+            <Card className="rounded-3xl border-border bg-card shadow-none lg:sticky lg:top-6 animate-fade-in">
               <CardHeader>
-                <CardTitle>Live Preview</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">Live Preview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-4">
-                    <Avatar className="h-16 w-16">
+                <div className="space-y-6">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-14 w-14 rounded-2xl border border-border">
                       <AvatarImage src={userOrganization?.logoFile?.url} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold">
                         {userOrganization?.name?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
 
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-foreground truncate">
                         {jobForm.title || "Job Title"}
                       </h3>
-                      <p className="text-lg text-gray-700">
+                      <p className="text-sm font-semibold text-primary mt-1">
                         {userOrganization?.name || "Organization Name"}
                       </p>
 
-                      <div className="flex items-center space-x-4 mt-2 text-gray-600">
-                        <span className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-1" />
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-muted-foreground">
+                        <span className="flex items-center text-xs font-medium">
+                          <MapPin className="h-3.5 w-3.5 mr-1 text-primary" />
                           {jobForm.location || "Location"}
                         </span>
-                        <span className="flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1" />
+                        <span className="flex items-center text-xs font-medium">
+                          <DollarSign className="h-3.5 w-3.5 mr-1 text-primary" />
                           {jobForm.salary || "Salary"}
                         </span>
                       </div>
 
-                      <Badge variant="secondary" className="mt-2 capitalize">
+                      <Badge variant="secondary" className="mt-4 capitalize rounded-lg text-[10px] font-bold px-2 py-0.5">
                         {jobForm.type}
                       </Badge>
                     </div>
                   </div>
 
-                  <div className="border-t pt-4">
+                  <div className="border-t border-border pt-6">
                     {jobForm.description ? (
-                      <Markdown
-                        content={jobForm.description}
-                        className="prose-sm"
-                      />
+                      <div className="text-foreground">
+                        <Markdown
+                          content={jobForm.description}
+                          className="prose prose-sm max-w-none"
+                        />
+                      </div>
                     ) : (
-                      <p className="text-gray-500 italic">
+                      <p className="text-sm text-muted-foreground italic">
                         Job description will appear here...
                       </p>
                     )}
                   </div>
 
                   {jobForm.keywords.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      <h4 className="text-lg font-medium w-full mb-2">
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
                         Keywords
                       </h4>
-                      {jobForm.keywords.map((keyword, index) => (
-                        <Badge key={index} variant="outline">
-                          {keyword}
-                        </Badge>
-                      ))}
+                      <div className="flex flex-wrap gap-2">
+                        {jobForm.keywords.map((keyword, index) => (
+                          <Badge key={index} variant="outline" className="rounded-lg border-border bg-secondary/30 text-[10px] font-semibold px-2 py-0.5">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {jobForm.conditions.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      <h4 className="text-lg font-medium w-full mb-2 text-red-600">
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold uppercase text-destructive tracking-wider">
                         Critical Conditions (Must-Have)
                       </h4>
-                      {jobForm.conditions.map((condition, index) => (
-                        <Badge key={index} variant="destructive">
-                          {condition}
-                        </Badge>
-                      ))}
+                      <div className="flex flex-wrap gap-2">
+                        {jobForm.conditions.map((condition, index) => (
+                          <Badge key={index} variant="destructive" className="rounded-lg text-[10px] font-bold px-2 py-0.5">
+                            {condition}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

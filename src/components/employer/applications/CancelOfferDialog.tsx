@@ -74,16 +74,26 @@ export default function CancelOfferDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="rounded-xl">
+            <AlertDialogContent className="bg-card border-border rounded-3xl shadow-lg">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-xl font-bold text-red-600">Cancel Offer?</AlertDialogTitle>
-                    <AlertDialogDescription className="text-gray-600">
+                    {/* Subheader style for dialog titles */}
+                    <AlertDialogTitle className="text-xl font-bold text-destructive">
+                        Cancel Offer?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed">
                         Are you sure you want to **cancel** this pending offer? This action is highly discouraged and cannot be undone. Canceling the offer will typically move the candidate back to a previous stage or to rejected.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel className="font-bold border-gray-300 hover:bg-gray-100">Back</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleConfirm} className="bg-red-600 text-white font-bold hover:bg-red-700">
+                <AlertDialogFooter className="gap-3 mt-4">
+                    <AlertDialogCancel 
+                        className="h-9 rounded-xl border-border font-bold text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all"
+                    >
+                        Back
+                    </AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleConfirm} 
+                        className="h-9 rounded-xl bg-destructive text-destructive-foreground font-bold text-xs hover:bg-destructive/90 transition-all"
+                    >
                         Cancel Offer
                     </AlertDialogAction>
                 </AlertDialogFooter>
