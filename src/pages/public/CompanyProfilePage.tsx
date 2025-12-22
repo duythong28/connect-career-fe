@@ -424,67 +424,80 @@ const CompanyProfilePage = () => {
   const isViewMode = !editMode || previewMode;
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar bg-[#F8F9FB]">
-      <div className="max-w-[1400px] mx-auto py-8 px-6 animate-fadeIn">
+     <div className="min-h-screen bg-[#F8F9FB] py-8 px-6 animate-fade-in max-w-[1400px] w-full mx-auto">
         {/* Navigation Back */}
         <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-gray-900 mb-6 uppercase tracking-wide">
             <ArrowLeft size={12}/> Back
         </button>
 
         {isViewMode && displayData ? (
-            <div className="grid grid-cols-12 gap-8">
+            <div className="w-full grid grid-cols-12 gap-8">
                 {/* Main Content (Left) */}
                 <div className="col-span-12 lg:col-span-8 space-y-8">
                     {/* Header Card */}
-                    <div className="bg-white rounded-xl p-8 border border-gray-200 shadow-sm relative">
-                        <div className="flex gap-6 mb-6">
-                            <div className="w-20 h-20 rounded-xl border border-gray-100 flex items-center justify-center overflow-hidden bg-white shadow-sm shrink-0">
-                                <Avatar className="w-full h-full">
-                                    <AvatarImage src={displayData?.logoFile?.url} className="object-cover"/>
-                                    <AvatarFallback className="text-2xl font-bold text-[#0EA5E9] bg-blue-50">
+                    <div className="bg-card rounded-3xl p-8 border border-border relative">
+                        <div className="flex flex-col md:flex-row gap-6 mb-8">
+                            <div className="w-20 h-20 rounded-2xl border border-border flex items-center justify-center overflow-hidden bg-card shrink-0">
+                                <Avatar className="w-full h-full rounded-none">
+                                    <AvatarImage src={displayData?.logoFile?.url} className="object-cover" />
+                                    <AvatarFallback className="text-2xl font-bold text-primary bg-secondary">
                                         {displayData?.name?.charAt(0)}
                                     </AvatarFallback>
                                 </Avatar>
                             </div>
                             <div className="pt-1 w-full">
-                                <div className="flex justify-between items-start w-full">
-                                    <div>
-                                        <h1 className="text-3xl font-bold text-gray-900 mb-1">{displayData?.name}</h1>
-                                        <p className="text-gray-500 text-sm mb-3">{displayData?.shortDescription || "No slogan available"}</p>
+                                <div className="flex justify-between items-start w-full gap-4">
+                                    <div className="min-w-0 flex-1">
+                                        <h1 className="text-2xl font-bold text-foreground mb-1 truncate">
+                                            {displayData?.name}
+                                        </h1>
+                                        <p className="text-muted-foreground text-sm mb-4">
+                                            {displayData?.shortDescription || "No slogan available"}
+                                        </p>
                                     </div>
-                                    
+
                                     {/* Action Buttons */}
-                                    <div className="flex items-center gap-2">
-                                        {!editMode && myOrganizations?.some((org) => org.organizationId === companyId) && (
-                                            <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="text-xs font-bold h-8">
-                                                <Edit size={14} className="mr-1"/> Edit
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {!editMode && myOrganizations?.some((org: any) => org.organizationId === companyId) && (
+                                            <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="text-xs font-bold h-9 rounded-xl">
+                                                <Edit size={14} className="mr-1.5" /> Edit
                                             </Button>
                                         )}
-                                        {/* Report & Review */}
-                                        {!editMode && companyId && <ReportDialog entityId={companyId} entityType="organization" trigger={<Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"><Flag size={16}/></Button>} />}
-                                        {!editMode && user && companyId && <OrganizationReviewDialog organizationId={companyId} trigger={<Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-[#0EA5E9]"><MessageSquare size={16}/></Button>} />}
+                                        {/* Report & Review triggers */}
+                                        {!editMode && companyId && (
+                                            <div className="flex items-center gap-1">
+                                                {/* Note: ReportDialog component handles its own trigger */}
+                                                {/* <ReportDialog ... /> */}
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-xl">
+                                                    <Flag size={16} />
+                                                </Button>
+                                                <Button size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-primary rounded-xl">
+                                                    <MessageSquare size={16} />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 text-xs font-bold text-gray-500">
+                                <div className="flex items-center gap-2 text-xs font-bold">
                                     {displayData?.website && (
-                                        <a href={displayData.website} target="_blank" rel="noreferrer" className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
-                                            <Globe2 size={12}/> Website
+                                        <a href={displayData.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-xl text-muted-foreground hover:bg-secondary hover:text-primary transition-colors">
+                                            <Globe2 size={14} /> Website
                                         </a>
                                     )}
-                                    <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors">
-                                        <Share2 size={12}/> Share
-                                    </button>
+                                    <Button variant="outline" className="h-8 text-xs font-bold gap-1.5 border-border rounded-xl text-muted-foreground px-3">
+                                        <Share2 size={14} /> Share
+                                    </Button>
                                 </div>
                             </div>
                         </div>
 
                         {/* Description Section */}
-                        <div className="mb-8">
-                            <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <Building size={18} className="text-gray-400"/> Overview
+                        <div className="mb-10">
+                            <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                                <Building size={20} className="text-primary" /> Overview
                             </h2>
-                            <div className="text-sm text-gray-600 leading-7 text-justify">
+                            <div className="text-sm text-muted-foreground leading-relaxed text-justify">
                                 {isHtmlContent(displayData.longDescription || "") ? 
                                     <RenderHtml content={displayData.longDescription || ""} /> : 
                                     <Markdown content={displayData.longDescription || "No detailed description provided."} />
@@ -494,27 +507,31 @@ const CompanyProfilePage = () => {
 
                         {/* Work Environment */}
                         {(displayData?.workingDays?.length > 0 || displayData?.workScheduleTypes?.length > 0) && (
-                            <div className="mb-8 border-t border-gray-100 pt-6">
-                                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <Calendar size={18} className="text-gray-400"/> Work Culture
+                            <div className="mb-4 border-t border-border pt-8">
+                                <h2 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+                                    <Calendar size={20} className="text-primary" /> Work Culture
                                 </h2>
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                                     {displayData.workingDays?.length > 0 && (
                                         <div>
-                                            <div className="text-xs font-bold text-gray-500 uppercase mb-2">Working Days</div>
+                                            <div className="text-xs font-bold text-muted-foreground uppercase mb-3 tracking-wider">Working Days</div>
                                             <div className="flex flex-wrap gap-2">
                                                 {displayData.workingDays.map((day: string) => (
-                                                    <span key={day} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-medium capitalize border border-gray-200">{day.toLowerCase()}</span>
+                                                    <Badge key={day} variant="secondary" className="bg-muted text-muted-foreground px-2.5 py-1 rounded-lg text-xs font-bold border-none capitalize">
+                                                        {day.toLowerCase()}
+                                                    </Badge>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
                                     {displayData.workScheduleTypes?.length > 0 && (
                                         <div>
-                                            <div className="text-xs font-bold text-gray-500 uppercase mb-2">Schedule</div>
+                                            <div className="text-xs font-bold text-muted-foreground uppercase mb-3 tracking-wider">Schedule</div>
                                             <div className="flex flex-wrap gap-2">
                                                 {displayData.workScheduleTypes.map((type: string) => (
-                                                    <span key={type} className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-100 capitalize">{formatEnumValue(type)}</span>
+                                                    <Badge key={type} className="bg-secondary text-primary px-2.5 py-1 rounded-lg text-xs font-bold border-none capitalize">
+                                                        {formatEnumValue(type)}
+                                                    </Badge>
                                                 ))}
                                             </div>
                                         </div>
@@ -524,58 +541,60 @@ const CompanyProfilePage = () => {
                         )}
 
                         {/* REVIEWS SECTION */}
-                        <div className="border-t border-gray-100 pt-6 mt-8">
-                            <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <Star size={18} className="text-yellow-400 fill-yellow-400"/> Employee Reviews
+                        <div className="border-t border-border pt-8 mt-10">
+                            <h2 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
+                                <Star size={20} className="text-yellow-400 fill-yellow-400" /> Employee Reviews
                             </h2>
                             
                             {reviews.length > 0 ? (
                                 <div className="space-y-6">
-                                    {reviews.map((review) => (
-                                        <div key={review.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                                            <div className="flex justify-between items-start mb-3">
+                                    {reviews.map((review: any) => (
+                                        <div key={review.id} className="bg-card border border-border rounded-2xl p-6">
+                                            <div className="flex justify-between items-start mb-4">
                                                 <div>
-                                                    <div className="flex items-center gap-2 mb-1">
+                                                    <div className="flex items-center gap-2 mb-1.5">
                                                         {renderStars(review.overallRating)}
-                                                        <span className="text-xs font-bold text-gray-900">{review.overallRating}.0</span>
+                                                        <span className="text-xs font-bold text-foreground ml-1">{review.overallRating}.0</span>
                                                     </div>
-                                                    <div className="font-bold text-gray-900 text-sm">{review.summary}</div>
+                                                    <div className="font-bold text-foreground text-sm leading-tight">{review.summary}</div>
                                                 </div>
-                                                <span className="text-[10px] text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</span>
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{new Date(review.createdAt).toLocaleDateString()}</span>
                                             </div>
 
-                                            <p className="text-xs text-gray-600 leading-relaxed mb-4">"{review.whatMakesYouLoveWorkingHere}"</p>
+                                            <p className="text-xs text-muted-foreground leading-relaxed mb-4 italic">
+                                                "{review.whatMakesYouLoveWorkingHere}"
+                                            </p>
 
-                                            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/30 p-4 rounded-xl border border-border">
                                                 <div className="text-xs">
-                                                    <span className="text-gray-500 font-medium block mb-1">Pros</span>
-                                                    <span className="text-gray-700">{review.overtimePolicySatisfaction === 'satisfied' ? 'Good Work-Life Balance' : 'Heavy Workload'}</span>
+                                                    <span className="text-muted-foreground font-bold uppercase text-[10px] block mb-1.5">Pros</span>
+                                                    <span className="text-foreground font-medium">{review.overtimePolicySatisfaction === 'satisfied' ? 'Good Work-Life Balance' : 'Heavy Workload'}</span>
                                                 </div>
                                                 <div className="text-xs">
-                                                    <span className="text-gray-500 font-medium block mb-1">Areas to Improve</span>
-                                                    <span className="text-gray-700">{review.suggestionForImprovement || "None"}</span>
+                                                    <span className="text-muted-foreground font-bold uppercase text-[10px] block mb-1.5">Areas to Improve</span>
+                                                    <span className="text-foreground font-medium">{review.suggestionForImprovement || "None"}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-10 bg-gray-50 rounded-xl border border-gray-200 border-dashed">
-                                    <MessageSquare size={24} className="mx-auto text-gray-300 mb-2"/>
-                                    <p className="text-sm text-gray-500 font-medium">No reviews yet.</p>
-                                    <p className="text-xs text-gray-400">Be the first to share your experience!</p>
+                                <div className="text-center py-12 bg-muted/20 rounded-2xl border border-border border-dashed">
+                                    <MessageSquare size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+                                    <p className="text-sm text-muted-foreground font-bold">No reviews yet.</p>
+                                    <p className="text-xs text-muted-foreground/60 mt-1">Be the first to share your experience!</p>
                                 </div>
                             )}
                         </div>
                         
                         {/* Preview Actions */}
                         {previewMode && (
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)} className="bg-white/90 backdrop-blur">
-                                    <Edit size={14} className="mr-1"/> Edit
+                            <div className="absolute top-6 right-6 flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)} className="bg-card/90 backdrop-blur rounded-xl h-9 font-bold">
+                                    <Edit size={14} className="mr-1.5" /> Edit
                                 </Button>
-                                <Button size="sm" onClick={handleSubmit(onSubmit)} disabled={isSubmitting} className="bg-[#0EA5E9] hover:bg-[#0284c7]">
-                                    <Save size={14} className="mr-1"/> Save
+                                <Button size="sm" onClick={handleSubmit(onSubmit)} disabled={isSubmitting} className="bg-primary hover:bg-primary/90 rounded-xl h-9 font-bold">
+                                    <Save size={14} className="mr-1.5" /> Save
                                 </Button>
                             </div>
                         )}
@@ -584,84 +603,97 @@ const CompanyProfilePage = () => {
 
                 {/* Sidebar (Right) */}
                 <div className="col-span-12 lg:col-span-4 space-y-6">
-                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm sticky top-6">
-                        <h3 className="font-bold text-gray-900 mb-4 text-sm">Company Details</h3>
-                        <div className="space-y-4 text-xs text-gray-500">
-                            <div>
-                                <div className="font-bold text-gray-400 mb-1">Industry</div>
-                                <div className="font-medium text-gray-900 flex items-center gap-2">
-                                    <Factory size={14} className="text-gray-400"/>
-                                    {getIndustryName(displayData.industryId) || "N/A"}
+                    <div className="bg-card border border-border rounded-3xl p-6 sticky top-6">
+                        <h3 className="font-bold text-foreground mb-6 text-sm uppercase tracking-wider">Company Details</h3>
+                        <div className="space-y-6 text-xs">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-secondary rounded-lg shrink-0">
+                                    <Factory size={16} className="text-primary" />
                                 </div>
-                            </div>
-                            <div>
-                                <div className="font-bold text-gray-400 mb-1">Company Size</div>
-                                <div className="font-medium text-gray-900 flex items-center gap-2">
-                                    <Users size={14} className="text-gray-400"/>
-                                    {displayData.organizationSize || "N/A"}
-                                </div>
-                            </div>
-                            {displayData.employeeCount && (
                                 <div>
-                                    <div className="font-bold text-gray-400 mb-1">Employees</div>
-                                    <div className="font-medium text-gray-900">{displayData.employeeCount}</div>
+                                    <div className="font-bold text-muted-foreground uppercase text-[10px] mb-1">Industry</div>
+                                    <div className="font-bold text-foreground text-sm">
+                                        {getIndustryName(displayData.industryId) || "N/A"}
+                                    </div>
                                 </div>
-                            )}
-                            <div>
-                                <div className="font-bold text-gray-400 mb-1">Type</div>
-                                <div className="font-medium text-gray-900 capitalize">{displayData.organizationType ? formatEnumValue(displayData.organizationType) : "N/A"}</div>
                             </div>
-                            <div>
-                                <div className="font-bold text-gray-400 mb-1">Headquarters</div>
-                                <div className="font-medium text-gray-900 flex items-center gap-2">
-                                    <MapPin size={14} className="text-gray-400"/>
+
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 bg-secondary rounded-lg shrink-0">
+                                    <Users size={16} className="text-primary" />
+                                </div>
+                                <div>
+                                    <div className="font-bold text-muted-foreground uppercase text-[10px] mb-1">Company Size</div>
+                                    <div className="font-bold text-foreground text-sm">
+                                        {displayData.organizationSize || "N/A"}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 border-t border-border pt-6">
+                                <div>
+                                    <div className="font-bold text-muted-foreground uppercase text-[10px] mb-1">Type</div>
+                                    <div className="font-bold text-foreground capitalize">{displayData.organizationType ? formatEnumValue(displayData.organizationType) : "N/A"}</div>
+                                </div>
+                                <div>
+                                    <div className="font-bold text-muted-foreground uppercase text-[10px] mb-1">Founded</div>
+                                    <div className="font-bold text-foreground">
+                                        {displayData.foundedDate ? new Date(displayData.foundedDate).getFullYear() : "N/A"}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-border pt-6">
+                                <div className="font-bold text-muted-foreground uppercase text-[10px] mb-2 flex items-center gap-1.5">
+                                    <MapPin size={12} /> Headquarters
+                                </div>
+                                <div className="font-bold text-foreground text-sm leading-relaxed">
                                     {displayData.headquartersAddress || "N/A"}
-                                </div>
-                            </div>
-                            <div>
-                                <div className="font-bold text-gray-400 mb-1">Founded</div>
-                                <div className="font-medium text-gray-900 flex items-center gap-2">
-                                    <Clock size={14} className="text-gray-400"/>
-                                    {displayData.foundedDate ? new Date(displayData.foundedDate).getFullYear() : "N/A"}
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Jobs Section (In Sidebar) */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                <Briefcase size={16} className="text-gray-400"/> Open Roles
+                    <div className="bg-card border border-border rounded-3xl p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-foreground text-sm uppercase tracking-wider flex items-center gap-2">
+                                <Briefcase size={16} className="text-primary" /> Open Roles
                             </h3>
-                            <span className="text-[#0EA5E9] bg-blue-50 px-2 py-1 rounded-full text-[10px] font-bold">
+                            <Badge className="bg-primary text-white rounded-full text-[10px] font-bold border-none h-5 min-w-[20px] flex items-center justify-center">
                                 {companyJobs?.length || 0}
-                            </span>
+                            </Badge>
                         </div>
                         
                         {companyJobs && companyJobs.length > 0 ? (
                             <div className="space-y-3">
-                                {companyJobs.map((job) => (
+                                {companyJobs.slice(0, 5).map((job: any) => (
                                     <div 
                                         key={job.id} 
                                         onClick={() => navigate(`/jobs/${job.id}`)}
-                                        className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer bg-white group"
+                                        className="p-4 border border-border rounded-2xl hover:border-primary/30 hover:bg-secondary/20 transition-all cursor-pointer bg-card group"
                                     >
-                                        <div className="font-bold text-gray-900 text-xs group-hover:text-[#0EA5E9] line-clamp-1 mb-1">{job.title}</div>
-                                        <div className="flex justify-between items-center">
-                                            <div className="text-[10px] text-gray-500 flex items-center gap-1">
-                                                <MapPin size={10}/> {job.location}
+                                        <div className="font-bold text-foreground text-xs group-hover:text-primary transition-colors line-clamp-1 mb-2">
+                                            {job.title}
+                                        </div>
+                                        <div className="flex justify-between items-center text-[10px] text-muted-foreground font-bold">
+                                            <div className="flex items-center gap-1">
+                                                <MapPin size={10} className="text-primary/60" /> {job.location}
                                             </div>
-                                            <div className="text-[10px] font-bold text-gray-400">{job.type}</div>
+                                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-border rounded-md uppercase font-extrabold text-muted-foreground">
+                                                {job.type}
+                                            </Badge>
                                         </div>
                                     </div>
                                 ))}
-                                <Button variant="outline" className="w-full mt-2 text-xs font-bold h-8" onClick={() => navigate('/jobs')}>View All Jobs</Button>
+                                <Button variant="outline" className="w-full mt-4 text-xs font-bold h-10 rounded-xl border-border hover:bg-secondary" onClick={() => navigate('/jobs')}>
+                                    View All Jobs
+                                </Button>
                             </div>
                         ) : (
-                            <div className="text-xs text-gray-500 italic bg-gray-50 p-3 rounded-lg text-center">
-                                <Lightbulb size={16} className="mx-auto mb-1 text-gray-400"/>
-                                No active job listings found.
+                            <div className="text-center py-8 bg-muted/10 rounded-2xl border border-border border-dashed">
+                                <Lightbulb size={24} className="mx-auto mb-2 text-muted-foreground/30" />
+                                <p className="text-xs text-muted-foreground font-bold">No active job listings.</p>
                             </div>
                         )}
                     </div>
@@ -669,22 +701,42 @@ const CompanyProfilePage = () => {
             </div>
         ) : (
             // Edit Mode Form - Updated UI to match Simplify
-            <div className="max-w-4xl mx-auto">
-                <div className="flex items-center justify-between mb-8">
+           <div className="w-full">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-1">{pathname.includes("create") ? "Create Company Profile" : "Edit Profile"}</h1>
-                        <p className="text-sm text-gray-500">Update your organization's public information.</p>
+                        <h1 className="text-2xl font-bold text-foreground mb-1">
+                            {pathname.includes("create") ? "Create Company Profile" : "Edit Profile"}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Update your organization's public information.
+                        </p>
                     </div>
-                    <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => setPreviewMode(true)} className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-sm h-10 px-4">
-                            <Eye size={16} className="mr-2"/> Preview
+                    <div className="flex items-center gap-3">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setPreviewMode(true)} 
+                            className="h-10 px-4 rounded-xl font-bold text-sm border-border bg-card text-foreground"
+                        >
+                            <Eye size={16} className="mr-2 text-primary" /> Preview
                         </Button>
-                        <Button variant="outline" onClick={() => {
-                             if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION) navigate(-1);
-                             else { setEditMode(false); reset(); }
-                        }} className="bg-white border-gray-200 text-gray-700 hover:bg-gray-50 font-bold text-sm h-10 px-4">Cancel</Button>
-                        <Button onClick={handleSubmit(onSubmit)} disabled={isSubmitting} className="bg-[#0EA5E9] hover:bg-[#0284c7] font-bold text-sm text-white shadow-sm h-10 px-6">
-                            <Save size={16} className="mr-2"/> Save Changes
+                        <Button 
+                            variant="outline" 
+                            onClick={() => {
+                                if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION) navigate(-1);
+                                else { setEditMode(false); reset(); }
+                            }} 
+                            className="h-10 px-4 rounded-xl font-bold text-sm border-border bg-card text-foreground"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="default"
+                            onClick={handleSubmit(onSubmit)} 
+                            disabled={isSubmitting} 
+                            className="h-10 px-6 rounded-xl font-bold text-sm bg-primary text-white"
+                        >
+                            <Save size={16} className="mr-2" /> Save Changes
                         </Button>
                     </div>
                 </div>
@@ -692,61 +744,104 @@ const CompanyProfilePage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Left Column: Basic Info */}
                     <div className="space-y-6">
-                        <Card>
-                            <CardHeader className="pb-4 border-b border-gray-100">
-                                <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <Building className="text-[#0EA5E9]" size={18}/> Basic Information
+                        <Card className="rounded-3xl border-border bg-card shadow-none overflow-hidden">
+                            <CardHeader className="pb-4 border-b border-border">
+                                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                                    <Building className="text-primary" size={18} /> Basic Information
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6 space-y-5">
-                                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100 border-dashed">
-                                    <Avatar className="h-16 w-16 border-2 border-white shadow-sm">
+                                <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-2xl border border-border border-dashed">
+                                    <Avatar className="h-16 w-16 border-2 border-white rounded-xl shadow-sm">
                                         <AvatarImage src={avatar?.url || companydata?.logoFile?.url} />
-                                        <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-xl">{(watchedValues.name || "C").charAt(0)}</AvatarFallback>
+                                        <AvatarFallback className="bg-secondary text-primary font-bold text-xl rounded-xl">
+                                            {(watchedValues.name || "C").charAt(0)}
+                                        </AvatarFallback>
                                     </Avatar>
                                     <div className="flex-1">
                                         <label className="cursor-pointer">
-                                            <span className="text-sm font-bold text-[#0EA5E9] hover:underline">Upload Logo</span>
-                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files?.[0] && handleLogoFile(e.target.files[0])}/>
+                                            <span className="text-sm font-bold text-primary hover:underline">Upload Logo</span>
+                                            <input 
+                                                type="file" 
+                                                className="hidden" 
+                                                accept="image/*" 
+                                                onChange={(e) => e.target.files?.[0] && handleLogoFile(e.target.files[0])} 
+                                            />
                                         </label>
-                                        <p className="text-xs text-gray-400 mt-1">Recommended: Square JPG, PNG</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Recommended: Square JPG, PNG</p>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Company Name *</label>
-                                    <Controller control={control} name="name" render={({field}) => <Input {...field} placeholder="e.g. Acme Corp" />} />
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase block">Company Name *</label>
+                                    <Controller 
+                                        control={control} 
+                                        name="name" 
+                                        render={({ field }) => (
+                                            <Input {...field} placeholder="e.g. Acme Corp" className="rounded-xl border-border focus:ring-2 focus:ring-primary" />
+                                        )} 
+                                    />
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Tagline</label>
-                                    <Controller control={control} name="shortDescription" render={({field}) => <Textarea {...field} rows={2} placeholder="Brief catchy description" />} />
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase block">Tagline</label>
+                                    <Controller 
+                                        control={control} 
+                                        name="shortDescription" 
+                                        render={({ field }) => (
+                                            <Textarea {...field} rows={2} placeholder="Brief catchy description" className="rounded-xl border-border focus:ring-2 focus:ring-primary resize-none" />
+                                        )} 
+                                    />
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Website</label>
-                                    <Controller control={control} name="website" render={({field}) => <Input {...field} placeholder="https://..." />} />
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase block">Website</label>
+                                    <Controller 
+                                        control={control} 
+                                        name="website" 
+                                        render={({ field }) => (
+                                            <Input {...field} placeholder="https://..." className="rounded-xl border-border focus:ring-2 focus:ring-primary" />
+                                        )} 
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader className="pb-4 border-b border-gray-100">
-                                <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <MapPin className="text-[#0EA5E9]" size={18}/> Location
+                        <Card className="rounded-3xl border-border bg-card shadow-none overflow-hidden">
+                            <CardHeader className="pb-4 border-b border-border">
+                                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                                    <MapPin className="text-primary" size={18} /> Location
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6 space-y-4">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Headquarters</label>
-                                    <Controller control={control} name="headquartersAddress" render={({field}) => <Input {...field} placeholder="Full Address" />} />
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase block">Headquarters</label>
+                                    <Controller 
+                                        control={control} 
+                                        name="headquartersAddress" 
+                                        render={({ field }) => (
+                                            <Input {...field} placeholder="Full Address" className="rounded-xl border-border focus:ring-2 focus:ring-primary" />
+                                        )} 
+                                    />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">City</label>
-                                        <Controller control={control} name="city" render={({field}) => <Input {...field} placeholder="City" />} />
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase block">City</label>
+                                        <Controller 
+                                            control={control} 
+                                            name="city" 
+                                            render={({ field }) => (
+                                                <Input {...field} placeholder="City" className="rounded-xl border-border focus:ring-2 focus:ring-primary" />
+                                            )} 
+                                        />
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Country</label>
-                                        <Controller control={control} name="country" render={({field}) => <Input {...field} placeholder="Country" />} />
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase block">Country</label>
+                                        <Controller 
+                                            control={control} 
+                                            name="country" 
+                                            render={({ field }) => (
+                                                <Input {...field} placeholder="Country" className="rounded-xl border-border focus:ring-2 focus:ring-primary" />
+                                            )} 
+                                        />
                                     </div>
                                 </div>
                             </CardContent>
@@ -755,102 +850,151 @@ const CompanyProfilePage = () => {
 
                     {/* Right Column: Details & Culture */}
                     <div className="space-y-6">
-                        <Card>
-                            <CardHeader className="pb-4 border-b border-gray-100">
-                                <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <LayoutGrid className="text-[#0EA5E9]" size={18}/> Classification
+                        <Card className="rounded-3xl border-border bg-card shadow-none overflow-hidden">
+                            <CardHeader className="pb-4 border-b border-border">
+                                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                                    <LayoutGrid className="text-primary" size={18} /> Classification
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6 space-y-4">
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Industry</label>
-                                    <Controller control={control} name="industryId" render={({field}) => (
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger><SelectValue placeholder="Select Industry" /></SelectTrigger>
-                                            <SelectContent>
-                                                {industriesData?.data?.map(i => <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    )} />
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase block">Industry</label>
+                                    <Controller 
+                                        control={control} 
+                                        name="industryId" 
+                                        render={({ field }) => (
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <SelectTrigger className="rounded-xl border-border focus:ring-2 focus:ring-primary">
+                                                    <SelectValue placeholder="Select Industry" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl">
+                                                    {industriesData?.data?.map((i: any) => (
+                                                        <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )} 
+                                    />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Type</label>
-                                        <Controller control={control} name="organizationType" render={({field}) => (
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                                                <SelectContent>
-                                                    {Object.values(OrganizationType).map(t => <SelectItem key={t} value={t}>{formatEnumValue(t)}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        )} />
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase block">Type</label>
+                                        <Controller 
+                                            control={control} 
+                                            name="organizationType" 
+                                            render={({ field }) => (
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <SelectTrigger className="rounded-xl border-border focus:ring-2 focus:ring-primary">
+                                                        <SelectValue placeholder="Select" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-xl">
+                                                        {Object.values(OrganizationType).map((t: any) => (
+                                                            <SelectItem key={t} value={t}>{formatEnumValue(t)}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )} 
+                                        />
                                     </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Size</label>
-                                        <Controller control={control} name="organizationSize" render={({field}) => (
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                                                <SelectContent>
-                                                    {Object.values(OrganizationSize).map(s => <SelectItem key={s} value={s}>{formatEnumValue(s)}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        )} />
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-muted-foreground uppercase block">Size</label>
+                                        <Controller 
+                                            control={control} 
+                                            name="organizationSize" 
+                                            render={({ field }) => (
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <SelectTrigger className="rounded-xl border-border focus:ring-2 focus:ring-primary">
+                                                        <SelectValue placeholder="Select" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-xl">
+                                                        {Object.values(OrganizationSize).map((s: any) => (
+                                                            <SelectItem key={s} value={s}>{formatEnumValue(s)}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )} 
+                                        />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Employee Count</label>
-                                    <Controller control={control} name="employeeCount" render={({field}) => <Input type="number" {...field} onChange={e => field.onChange(e.target.value ? Number(e.target.value) : "")} />} />
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase block">Employee Count</label>
+                                    <Controller 
+                                        control={control} 
+                                        name="employeeCount" 
+                                        render={({ field }) => (
+                                            <Input 
+                                                type="number" 
+                                                {...field} 
+                                                onChange={e => field.onChange(e.target.value ? Number(e.target.value) : "")} 
+                                                className="rounded-xl border-border focus:ring-2 focus:ring-primary"
+                                            />
+                                        )} 
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader className="pb-4 border-b border-gray-100">
-                                <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <Calendar className="text-[#0EA5E9]" size={18}/> Work Culture
+                        <Card className="rounded-3xl border-border bg-card shadow-none overflow-hidden">
+                            <CardHeader className="pb-4 border-b border-border">
+                                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                                    <Calendar className="text-primary" size={18} /> Work Culture
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6 space-y-6">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-2 block">Working Days</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {Object.values(WorkingDay).map(day => (
+                                    <label className="text-xs font-bold text-muted-foreground uppercase mb-3 block">Working Days</label>
+                                    <div className="grid grid-cols-3 gap-y-3 gap-x-2">
+                                        {Object.values(WorkingDay).map((day: any) => (
                                             <div key={day} className="flex items-center gap-2">
                                                 <Checkbox 
                                                     id={day} 
                                                     checked={workingDaysValue?.includes(day)}
                                                     onCheckedChange={(c) => handleWorkingDayChange(day, c as boolean)}
+                                                    className="rounded-md border-border data-[state=checked]:bg-primary"
                                                 />
-                                                <label htmlFor={day} className="text-sm text-gray-600 capitalize cursor-pointer select-none">{day.toLowerCase()}</label>
+                                                <label htmlFor={day} className="text-sm text-muted-foreground capitalize cursor-pointer select-none font-medium">
+                                                    {day.toLowerCase()}
+                                                </label>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-2 block">Schedule Types</label>
-                                    <div className="flex flex-wrap gap-3">
-                                        {Object.values(WorkScheduleType).map(type => (
-                                            <div key={type} className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase mb-3 block">Schedule Types</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.values(WorkScheduleType).map((type: any) => (
+                                            <div key={type} className="flex items-center gap-2 bg-secondary/40 px-3 py-2 rounded-xl border border-border">
                                                 <Checkbox 
                                                     id={type} 
                                                     checked={workScheduleTypesValue?.includes(type)}
                                                     onCheckedChange={(c) => handleWorkScheduleTypeChange(type, c as boolean)}
+                                                    className="rounded-md border-border data-[state=checked]:bg-primary"
                                                 />
-                                                <label htmlFor={type} className="text-xs font-bold text-gray-600 capitalize cursor-pointer select-none">{formatEnumValue(type)}</label>
+                                                <label htmlFor={type} className="text-xs font-bold text-foreground capitalize cursor-pointer select-none">
+                                                    {formatEnumValue(type)}
+                                                </label>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Overtime Policy</label>
-                                    <Controller control={control} name="overtimePolicy" render={({field}) => (
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <SelectTrigger><SelectValue placeholder="Select Policy" /></SelectTrigger>
-                                            <SelectContent>
-                                                {Object.values(OvertimePolicy).map(p => <SelectItem key={p} value={p}>{formatEnumValue(p)}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
-                                    )} />
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase block">Overtime Policy</label>
+                                    <Controller 
+                                        control={control} 
+                                        name="overtimePolicy" 
+                                        render={({ field }) => (
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <SelectTrigger className="rounded-xl border-border focus:ring-2 focus:ring-primary">
+                                                    <SelectValue placeholder="Select Policy" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl">
+                                                    {Object.values(OvertimePolicy).map((p: any) => (
+                                                        <SelectItem key={p} value={p}>{formatEnumValue(p)}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )} 
+                                    />
                                 </div>
                             </CardContent>
                         </Card>
@@ -858,17 +1002,26 @@ const CompanyProfilePage = () => {
 
                     {/* Long Description (Full Width) */}
                     <div className="md:col-span-2">
-                        <Card>
-                            <CardHeader className="pb-4 border-b border-gray-100">
-                                <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-                                    <UploadCloud className="text-[#0EA5E9]" size={18}/> Detailed Description
+                        <Card className="rounded-3xl border-border bg-card shadow-none overflow-hidden">
+                            <CardHeader className="pb-4 border-b border-border">
+                                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                                    <UploadCloud className="text-primary" size={18} /> Detailed Description
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                <Controller control={control} name="longDescription" render={({field}) => (
-                                    <Textarea {...field} rows={12} className="font-mono text-sm leading-relaxed" placeholder="Tell us about your company (Markdown supported)..." />
-                                )} />
-                                <p className="text-xs text-gray-400 mt-2 text-right">Supports Markdown</p>
+                                <Controller 
+                                    control={control} 
+                                    name="longDescription" 
+                                    render={({ field }) => (
+                                        <Textarea 
+                                            {...field} 
+                                            rows={12} 
+                                            className="rounded-xl border-border focus:ring-2 focus:ring-primary text-sm leading-relaxed min-h-[300px]" 
+                                            placeholder="Tell us about your company (Markdown supported)..." 
+                                        />
+                                    )} 
+                                />
+                                <p className="text-xs text-muted-foreground mt-3 text-right font-medium">Supports Markdown</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -876,7 +1029,6 @@ const CompanyProfilePage = () => {
             </div>
         )}
       </div>
-    </div>
   );
 };
 

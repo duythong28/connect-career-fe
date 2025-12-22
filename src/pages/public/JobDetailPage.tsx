@@ -22,30 +22,36 @@ import RenderMarkDown, {
 } from "@/components/shared/RenderMarkDown";
 import ApplyJobDialog from "@/components/candidate/applications/ApplyJobDialog";
 import { Markdown } from "@/components/ui/markdown";
-import {
-  Job,
-  JobsResponse,
-  JobType,
-  JobTypeLabel,
-} from "@/api/types/jobs.types";
+import { Job, JobType, JobTypeLabel } from "@/api/types/jobs.types";
 import { toast } from "@/hooks/use-toast";
 import ReportDialog from "@/components/reports/ReportDialog";
 import {
   getSimilarJobsRecommendations,
   getJobsByIds,
+  getCandidateRecommendationsForJob,
+  getUsersByIds,
 } from "@/api/endpoints/recommendations.api";
-import { SimilarJobRecommendationResponse } from "@/api/types/recommendations.types";
 
 const JobDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const handleGetSimilarJobs = async (jobId: string) => {
+  const handleGetSimilarJobs = async (jobId: string): Promise<Job[]> => {
     try {
+      // const candidates = await getCandidateRecommendationsForJob(jobId);
+      // const users = await getUsersByIds(candidates.userIds);
       const response = await getSimilarJobsRecommendations(jobId);
       if (response.jobIds && response.jobIds.length > 0) {
         const result = await getJobsByIds(response.jobIds);
-        console.log("Similar Jobs:", result);
+        return result;
+      } else {
+        const result = await getCandidateJobs({
+          pageNumber: 1,
+          pageSize: 8,
+          companyName: jobData?.companyName,
+          keywords: jobData?.keywords?.slice(0, 3),
+        });
+        return result.data;
       }
     } catch (error) {
       console.error("Error fetching similar jobs:", error);
@@ -60,24 +66,10 @@ const JobDetailPage = () => {
   });
 
   // Fetch similar jobs
-  const { data: similarJobs, isLoading: loadingSimilar } =
-    useQuery({
-      queryKey: ["similar-jobs", id],
-      queryFn: () => handleGetSimilarJobs(id!),
-      enabled: !!id,
-    });
-
-  // Fallback: fetch 5 jobs from same company or with similar keywords
-  const { data: fallbackJobs } = useQuery<JobsResponse>({
-    queryKey: ["fallback-jobs", jobData?.organizationId, jobData?.keywords],
-    queryFn: () =>
-      getCandidateJobs({
-        pageNumber: 1,
-        pageSize: 5,
-        companyName: jobData?.companyName,
-        keywords: jobData?.keywords?.slice(0, 3),
-      }),
-    enabled: !!jobData && (!similarJobs || similarJobs.length === 0),
+  const { data: similarJobs, isLoading: loadingSimilar } = useQuery({
+    queryKey: ["similar-jobs", id],
+    queryFn: () => handleGetSimilarJobs(id!),
+    enabled: !!id,
   });
 
   if (!jobData) {
@@ -124,7 +116,7 @@ const JobDetailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background animate-fade-in">
+    <div className="min-h-screen bg-[#F8F9FB] animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
           <Button
@@ -138,7 +130,7 @@ const JobDetailPage = () => {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card className="rounded-3xl border border-border shadow-sm bg-card">
               <CardHeader className="p-8 border-b border-border">
                 <div className="flex items-start justify-between">
@@ -239,6 +231,124 @@ const JobDetailPage = () => {
                 </div>
               </CardContent>
             </Card>
+            <div className="space-y-6">
+              {/* Section Header tách biệt khỏi Card */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-foreground">
+                  Similar Jobs
+                </h2>
+                {!loadingSimilar && (similarJobs?.length || 0) > 0 && (
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {similarJobs?.length} Results
+                  </span>
+                )}
+              </div>
+
+              {/* Grid Layout cho các Job Items */}
+              {loadingSimilar ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="h-32 bg-muted/50 animate-pulse rounded-2xl border border-border"
+                    />
+                  ))}
+                </div>
+              ) : (similarJobs?.length || 0) > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {similarJobs?.slice(0, 8).map((similarJob) => {
+                    const companyName =
+                      similarJob?.organization?.name ||
+                      similarJob.companyName ||
+                      "Unknown";
+                    const logoInitials =
+                      (companyName.match(/\b\w/g) || [])
+                        .join("")
+                        .toUpperCase()
+                        .substring(0, 2) ||
+                      similarJob?.title?.charAt(0) ||
+                      "CO";
+
+                    const salary =
+                      similarJob.salary ||
+                      (similarJob.salaryDetails?.minAmount &&
+                      similarJob.salaryDetails?.maxAmount
+                        ? `${similarJob.salaryDetails.minAmount.toLocaleString()} - ${similarJob.salaryDetails.maxAmount.toLocaleString()} ${
+                            similarJob.salaryDetails.currency || ""
+                          }`
+                        : similarJob.salaryMin && similarJob.salaryMax
+                        ? `${similarJob.salaryMin.toLocaleString()} - ${similarJob.salaryMax.toLocaleString()} ${
+                            similarJob.salaryCurrency || ""
+                          }`
+                        : "");
+
+                    return (
+                      <div
+                        key={similarJob.id}
+                        className="p-5 bg-card border border-border rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/30 transition-all group"
+                        onClick={() => navigate(`/jobs/${similarJob.id}`)}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Logo Công ty */}
+                          <Avatar className="w-12 h-12 rounded-xl border border-border flex-shrink-0 bg-white shadow-sm">
+                            <AvatarImage
+                              src={
+                                similarJob?.organization?.logoFile?.url ||
+                                similarJob.companyLogo
+                              }
+                              alt={companyName}
+                            />
+                            <AvatarFallback className="bg-secondary text-primary font-bold text-sm rounded-xl">
+                              {logoInitials}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          {/* Thông tin Job */}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-bold text-base text-foreground truncate group-hover:text-primary transition-colors leading-tight mb-1">
+                              {similarJob.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground truncate font-medium mb-3">
+                              {companyName}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+                                <MapPin size={12} className="text-primary/70" />
+                                <span className="truncate max-w-[100px]">
+                                  {similarJob.location}
+                                </span>
+                              </div>
+
+                              <Badge
+                                variant="secondary"
+                                className="capitalize bg-secondary/50 text-primary border-transparent text-[10px] px-2 py-0 rounded-md font-bold"
+                              >
+                                {JobTypeLabel[similarJob.type as JobType] ||
+                                  similarJob.type}
+                              </Badge>
+
+                              {salary && (
+                                <div className="flex items-center gap-1 text-[11px] text-brand-success font-bold">
+                                  <DollarSign size={12} />
+                                  <span>{salary}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center bg-card border border-border rounded-3xl border-dashed">
+                  <p className="text-muted-foreground text-sm italic">
+                    No similar jobs found in this area.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -339,72 +449,6 @@ const JobDetailPage = () => {
                       </Button>
                     )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-border rounded-3xl shadow-sm bg-card">
-              <CardHeader className="border-b border-border p-6">
-                <CardTitle className="text-lg font-bold text-foreground">
-                  Similar Jobs
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-3">
-                  {loadingSimilar ? (
-                    <div className="text-muted-foreground text-sm">
-                      Loading...
-                    </div>
-                  ) : (similarJobs?.length || 0) > 0 ? (
-                    similarJobs?.slice(0, 5).map((similarJob) => (
-                      <div
-                        key={similarJob.id}
-                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all bg-card"
-                        onClick={() => navigate(`/jobs/${similarJob.id}`)}
-                      >
-                        <h4 className="font-bold text-sm mb-1.5 text-foreground hover:text-primary transition-colors">
-                          {similarJob.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-2.5 flex items-center gap-1.5 font-medium">
-                          <MapPin size={12} className="text-primary" />{" "}
-                          {similarJob.location}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className="capitalize bg-secondary/50 text-primary border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold"
-                        >
-                          {JobTypeLabel[similarJob.type as JobType] ||
-                            similarJob.type}
-                        </Badge>
-                      </div>
-                    ))
-                  ) : fallbackJobs && (fallbackJobs?.data?.length || 0) > 0 ? (
-                    fallbackJobs.data.map((job) => (
-                      <div
-                        key={job.id}
-                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all bg-card"
-                        onClick={() => navigate(`/jobs/${job.id}`)}
-                      >
-                        <h4 className="font-bold text-sm mb-1.5 text-foreground hover:text-primary transition-colors">
-                          {job.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-2.5 flex items-center gap-1.5 font-medium">
-                          <MapPin size={12} className="text-primary" />{" "}
-                          {job.location}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className="capitalize bg-secondary/50 text-primary border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold"
-                        >
-                          {JobTypeLabel[job.type as JobType] || job.type}
-                        </Badge>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-muted-foreground text-sm italic">
-                      No similar jobs found.
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>

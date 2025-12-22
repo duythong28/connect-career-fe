@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Briefcase,
   Building2,
@@ -44,7 +44,9 @@ import {
   Legend,
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
-import { getBackOfficeDashboardStats } from "@/api/endpoints/back-office.api";
+import {
+  getBackOfficeDashboardStats,
+} from "@/api/endpoints/back-office.api";
 import { StatsPeriod } from "@/api/types/back-office.types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -87,7 +89,9 @@ const AdminDashboard = () => {
     const periodsSet = new Set<string>();
     data.trends.usersByPeriod?.forEach((item) => periodsSet.add(item.period));
     data.trends.jobsByPeriod?.forEach((item) => periodsSet.add(item.period));
-    data.trends.applicationsByPeriod?.forEach((item) => periodsSet.add(item.period));
+    data.trends.applicationsByPeriod?.forEach((item) =>
+      periodsSet.add(item.period)
+    );
 
     return Array.from(periodsSet).sort();
   };
@@ -95,7 +99,8 @@ const AdminDashboard = () => {
   const trendsChartData = getAllPeriods().map((period) => ({
     period: formatPeriodLabel(period),
     applications:
-      data?.trends.applicationsByPeriod?.find((a) => a.period === period)?.count || 0,
+      data?.trends.applicationsByPeriod?.find((a) => a.period === period)
+        ?.count || 0,
     users:
       data?.trends.usersByPeriod?.find((u) => u.period === period)?.count || 0,
     jobs:
@@ -144,7 +149,7 @@ const AdminDashboard = () => {
 
   // --- Helper Components matching EmployerDashboard Style ---
 
-  const iconBaseStyle = "h-10 w-10 p-2 rounded-xl text-white"; 
+  const iconBaseStyle = "h-10 w-10 p-2 rounded-xl text-white";
   const secondaryIconBaseStyle = "h-8 w-8 p-1.5 rounded-lg text-white";
 
   const OverviewCard = ({
@@ -165,7 +170,9 @@ const AdminDashboard = () => {
         ) : (
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                {title}
+              </p>
               <p className="text-2xl font-extrabold text-gray-900 mt-1">
                 {value}
               </p>
@@ -181,7 +188,7 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className={`${iconBgClass} ${iconBaseStyle} flex-shrink-0`}>
-                <Icon className="h-full w-full" />
+              <Icon className="h-full w-full" />
             </div>
           </div>
         )}
@@ -205,11 +212,17 @@ const AdminDashboard = () => {
         ) : (
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase">{title}</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase">
+                {title}
+              </p>
               <p className="text-lg font-bold text-gray-900">{value}</p>
-              {subValue && <p className="text-xs text-gray-500 mt-0.5">{subValue}</p>}
+              {subValue && (
+                <p className="text-xs text-gray-500 mt-0.5">{subValue}</p>
+              )}
             </div>
-            <div className={`${iconBgClass} ${secondaryIconBaseStyle} flex-shrink-0`}>
+            <div
+              className={`${iconBgClass} ${secondaryIconBaseStyle} flex-shrink-0`}
+            >
               <Icon className="h-full w-full" />
             </div>
           </div>
@@ -220,7 +233,9 @@ const AdminDashboard = () => {
 
   const ActivityItem = ({ icon: Icon, title, value, color, borderColor }) => (
     // Basic 1px border and hover border
-    <div className={`flex items-center justify-between p-4 border border-gray-200 bg-white rounded-xl hover:border-${borderColor}-500 transition-colors`}>
+    <div
+      className={`flex items-center justify-between p-4 border border-gray-200 bg-white rounded-xl hover:border-${borderColor}-500 transition-colors`}
+    >
       <div className="flex items-center gap-3">
         <Icon className={`h-5 w-5 text-${color}-600`} />
         <span className="font-semibold text-sm text-gray-800">{title}</span>
@@ -233,10 +248,34 @@ const AdminDashboard = () => {
 
   const GrowthMetricsTable = () => {
     const metrics = [
-      { name: "New Users", value: data?.growth.newUsers || 0, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-      { name: "New Organizations", value: data?.growth.newOrganizations || 0, icon: Building2, color: "text-purple-600", bg: "bg-purple-50" },
-      { name: "New Jobs", value: data?.growth.newJobs || 0, icon: Briefcase, color: "text-green-600", bg: "bg-green-50" },
-      { name: "New Applications", value: data?.growth.newApplications || 0, icon: FileText, color: "text-orange-600", bg: "bg-orange-50" },
+      {
+        name: "New Users",
+        value: data?.growth.newUsers || 0,
+        icon: Users,
+        color: "text-blue-600",
+        bg: "bg-blue-50",
+      },
+      {
+        name: "New Organizations",
+        value: data?.growth.newOrganizations || 0,
+        icon: Building2,
+        color: "text-purple-600",
+        bg: "bg-purple-50",
+      },
+      {
+        name: "New Jobs",
+        value: data?.growth.newJobs || 0,
+        icon: Briefcase,
+        color: "text-green-600",
+        bg: "bg-green-50",
+      },
+      {
+        name: "New Applications",
+        value: data?.growth.newApplications || 0,
+        icon: FileText,
+        color: "text-orange-600",
+        bg: "bg-orange-50",
+      },
     ];
 
     return (
@@ -245,11 +284,15 @@ const AdminDashboard = () => {
           <div
             key={metric.name}
             // Basic 1px border and implicit light hover
-            className={`flex items-center justify-between p-3 ${metric.bg} rounded-lg border border-gray-100 hover:border-gray-200 transition-colors`} 
+            className={`flex items-center justify-between p-3 ${metric.bg} rounded-lg border border-gray-100 hover:border-gray-200 transition-colors`}
           >
             <div className="flex items-center gap-3">
-              <metric.icon className={`h-5 w-5 ${metric.color} flex-shrink-0`} />
-              <span className="font-semibold text-sm text-gray-800">{metric.name}</span>
+              <metric.icon
+                className={`h-5 w-5 ${metric.color} flex-shrink-0`}
+              />
+              <span className="font-semibold text-sm text-gray-800">
+                {metric.name}
+              </span>
             </div>
             <span className={`text-xl font-extrabold ${metric.color}`}>
               {metric.value.toLocaleString()}
@@ -259,7 +302,7 @@ const AdminDashboard = () => {
       </div>
     );
   };
-  
+
   const TopPerformerItem = ({
     name,
     subtext,
@@ -275,19 +318,23 @@ const AdminDashboard = () => {
     >
       <div className="flex items-center gap-3">
         {/* Basic 1px border for the rank circle */}
-        <div className={`flex items-center justify-center w-8 h-8 rounded-full text-base font-extrabold flex-shrink-0 ${rankBg} ${rankColor} border border-gray-200`}>
+        <div
+          className={`flex items-center justify-center w-8 h-8 rounded-full text-base font-extrabold flex-shrink-0 ${rankBg} ${rankColor} border border-gray-200`}
+        >
           {rank}
         </div>
         <div>
           <h4 className="font-sm font-semibold text-gray-900">{name}</h4>
-          <p className="text-xs text-gray-500 truncate max-w-[140px]">{subtext}</p>
-          {extraSubtext && <p className="text-[10px] text-gray-400">{extraSubtext}</p>}
+          <p className="text-xs text-gray-500 truncate max-w-[140px]">
+            {subtext}
+          </p>
+          {extraSubtext && (
+            <p className="text-[10px] text-gray-400">{extraSubtext}</p>
+          )}
         </div>
       </div>
       <div className="text-right">
-        <p className="text-lg font-extrabold text-green-600">
-          {value}
-        </p>
+        <p className="text-lg font-extrabold text-green-600">{value}</p>
         <p className="text-xs text-gray-500">hires</p>
       </div>
     </div>
@@ -314,8 +361,10 @@ const AdminDashboard = () => {
               value={selectedPeriod}
               onValueChange={(value) => setSelectedPeriod(value as StatsPeriod)}
             >
-              <SelectTrigger className="w-[160px] border border-gray-300 hover:border-blue-400 focus:ring-2 focus:ring-blue-500 h-9 text-xs font-medium"> {/* Basic 1px border */}
-                <Filter className="w-3 h-3 text-gray-400 mr-2"/>
+              <SelectTrigger className="w-[160px] border border-gray-300 hover:border-blue-400 focus:ring-2 focus:ring-blue-500 h-9 text-xs font-medium">
+                {" "}
+                {/* Basic 1px border */}
+                <Filter className="w-3 h-3 text-gray-400 mr-2" />
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
@@ -331,9 +380,17 @@ const AdminDashboard = () => {
 
         {/* Period Info - Clean box with border */}
         {data?.period && (
-          <div className="mb-6 text-xs text-gray-700 bg-white px-3 py-1.5 rounded-lg border border-gray-200 inline-block"> {/* Basic 1px border */}
-            📅 Data period: <span className="font-semibold">{formatDate(data.period.startDate)}</span> to{" "}
-            <span className="font-semibold">{formatDate(data.period.endDate)}</span>
+          <div className="mb-6 text-xs text-gray-700 bg-white px-3 py-1.5 rounded-lg border border-gray-200 inline-block">
+            {" "}
+            {/* Basic 1px border */}
+            📅 Data period:{" "}
+            <span className="font-semibold">
+              {formatDate(data.period.startDate)}
+            </span>{" "}
+            to{" "}
+            <span className="font-semibold">
+              {formatDate(data.period.endDate)}
+            </span>
           </div>
         )}
 
@@ -438,11 +495,16 @@ const AdminDashboard = () => {
         {/* Activity & Growth Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Activity Stats */}
-          <Card className="border border-gray-200 rounded-xl"> {/* Basic 1px border */}
+          <Card className="border border-gray-200 rounded-xl">
+            {" "}
+            {/* Basic 1px border */}
             <CardHeader className="border-b border-gray-100 p-4">
-              <CardTitle className="text-base font-bold text-gray-900">Activity Overview</CardTitle>
+              <CardTitle className="text-base font-bold text-gray-900">
+                Activity Overview
+              </CardTitle>
               <CardDescription className="text-xs text-gray-500">
-                Key activities during {periodLabels[selectedPeriod].toLowerCase()}
+                Key activities during{" "}
+                {periodLabels[selectedPeriod].toLowerCase()}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
@@ -495,13 +557,16 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Growth Metrics - Simplified Table */}
-          <Card className="border border-gray-200 rounded-xl"> {/* Basic 1px border */}
+          <Card className="border border-gray-200 rounded-xl">
+            {" "}
+            {/* Basic 1px border */}
             <CardHeader className="border-b border-gray-100 p-4">
               <CardTitle className="flex items-center gap-2 text-base font-bold text-gray-900">
                 <Zap className="h-5 w-5 text-yellow-500" /> New Additions
               </CardTitle>
               <CardDescription className="text-xs text-gray-500">
-                Quantity of new entities created during {periodLabels[selectedPeriod].toLowerCase()}
+                Quantity of new entities created during{" "}
+                {periodLabels[selectedPeriod].toLowerCase()}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
@@ -517,9 +582,13 @@ const AdminDashboard = () => {
         {/* Top Performers Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Top Organizations */}
-          <Card className="border border-gray-200 rounded-xl"> {/* Basic 1px border */}
+          <Card className="border border-gray-200 rounded-xl">
+            {" "}
+            {/* Basic 1px border */}
             <CardHeader className="border-b border-gray-100 p-4">
-              <CardTitle className="text-base font-bold text-gray-900">Top Organizations</CardTitle>
+              <CardTitle className="text-base font-bold text-gray-900">
+                Top Organizations
+              </CardTitle>
               <CardDescription className="text-xs text-gray-500">
                 Best performing organizations by hires
               </CardDescription>
@@ -540,15 +609,33 @@ const AdminDashboard = () => {
                       name={org.name}
                       subtext={`${org.jobsPosted} jobs posted`}
                       value={org.hires}
-                      rankColor={index === 0 ? "text-white" : index === 1 ? "text-white" : index === 2 ? "text-white" : "text-gray-700"}
-                      rankBg={index === 0 ? "bg-amber-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-orange-400" : "bg-gray-200"}
+                      rankColor={
+                        index === 0
+                          ? "text-white"
+                          : index === 1
+                          ? "text-white"
+                          : index === 2
+                          ? "text-white"
+                          : "text-gray-700"
+                      }
+                      rankBg={
+                        index === 0
+                          ? "bg-amber-500"
+                          : index === 1
+                          ? "bg-gray-400"
+                          : index === 2
+                          ? "bg-orange-400"
+                          : "bg-gray-200"
+                      }
                     />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <Building2 className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-                  <p className="font-semibold">No organization data available</p>
+                  <p className="font-semibold">
+                    No organization data available
+                  </p>
                   <p className="text-sm">Check back later for top performers</p>
                 </div>
               )}
@@ -556,10 +643,16 @@ const AdminDashboard = () => {
           </Card>
 
           {/* Top Recruiters */}
-          <Card className="border border-gray-200 rounded-xl"> {/* Basic 1px border */}
+          <Card className="border border-gray-200 rounded-xl">
+            {" "}
+            {/* Basic 1px border */}
             <CardHeader className="border-b border-gray-100 p-4">
-              <CardTitle className="text-base font-bold text-gray-900">Top Recruiters</CardTitle>
-              <CardDescription className="text-xs text-gray-500">Best performing recruiters by hires</CardDescription>
+              <CardTitle className="text-base font-bold text-gray-900">
+                Top Recruiters
+              </CardTitle>
+              <CardDescription className="text-xs text-gray-500">
+                Best performing recruiters by hires
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
               {isLoading ? (
@@ -577,9 +670,27 @@ const AdminDashboard = () => {
                       name={recruiter.name || "Unknown"}
                       subtext={recruiter.email}
                       value={recruiter.hires}
-                      extraSubtext={`${recruiter.organizations} organization${recruiter.organizations !== 1 ? "s" : ""}`}
-                      rankColor={index === 0 ? "text-white" : index === 1 ? "text-white" : index === 2 ? "text-white" : "text-gray-700"}
-                      rankBg={index === 0 ? "bg-amber-500" : index === 1 ? "bg-gray-400" : index === 2 ? "bg-orange-400" : "bg-gray-200"}
+                      extraSubtext={`${recruiter.organizations} organization${
+                        recruiter.organizations !== 1 ? "s" : ""
+                      }`}
+                      rankColor={
+                        index === 0
+                          ? "text-white"
+                          : index === 1
+                          ? "text-white"
+                          : index === 2
+                          ? "text-white"
+                          : "text-gray-700"
+                      }
+                      rankBg={
+                        index === 0
+                          ? "bg-amber-500"
+                          : index === 1
+                          ? "bg-gray-400"
+                          : index === 2
+                          ? "bg-orange-400"
+                          : "bg-gray-200"
+                      }
                     />
                   ))}
                 </div>
@@ -595,9 +706,13 @@ const AdminDashboard = () => {
         </div>
 
         {/* Trends Chart */}
-        <Card className="border border-gray-200 rounded-xl"> {/* Basic 1px border */}
+        <Card className="border border-gray-200 rounded-xl">
+          {" "}
+          {/* Basic 1px border */}
           <CardHeader className="border-b border-gray-100 p-4">
-            <CardTitle className="text-base font-bold text-gray-900">Platform Trends</CardTitle>
+            <CardTitle className="text-base font-bold text-gray-900">
+              Platform Trends
+            </CardTitle>
             <CardDescription className="text-xs text-gray-500">
               Users, jobs, and applications over time
             </CardDescription>
@@ -608,20 +723,26 @@ const AdminDashboard = () => {
             ) : trendsChartData.length > 0 ? (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendsChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <LineChart
+                    data={trendsChartData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis dataKey="period" stroke="#6b7280" />
                     <YAxis stroke="#6b7280" />
                     <Tooltip
-                        contentStyle={{
-                            borderRadius: '8px',
-                            border: '1px solid #e5e7eb',
-                            backgroundColor: '#fff',
-                            padding: '10px',
-                            fontSize: '11px',
-                        }}
+                      contentStyle={{
+                        borderRadius: "8px",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "#fff",
+                        padding: "10px",
+                        fontSize: "11px",
+                      }}
                     />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} />
+                    <Legend
+                      iconType="circle"
+                      wrapperStyle={{ paddingTop: "10px", fontSize: "11px" }}
+                    />
                     <Line
                       type="monotone"
                       dataKey="users"
@@ -654,7 +775,9 @@ const AdminDashboard = () => {
                 <div className="text-center">
                   <BarChart3 className="h-12 w-12 mx-auto mb-3 text-gray-400" />
                   <p className="font-semibold">No trend data available</p>
-                  <p className="text-sm">Try selecting a different time period</p>
+                  <p className="text-sm">
+                    Try selecting a different time period
+                  </p>
                 </div>
               </div>
             )}
