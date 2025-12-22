@@ -89,7 +89,7 @@ export interface CV {
   templateId: string | null;
   templateData: any | null;
   fileName: string;
-  content: string | null;
+  content: ExtractedCvData | null;
   extractedText: string | null;
   builderData: any | null;
   metadata: CvMetadata;

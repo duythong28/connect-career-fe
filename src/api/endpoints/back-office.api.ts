@@ -118,6 +118,26 @@ const getBackOfficeDashboardStats = async (
   return response.data;
 };
 
+const getBillableActions = async () => {
+  const response = await axios.get(`backoffice/billable-actions`, {
+    params: {
+      pageSize: 10,
+      pageNumber: 1,
+    },
+  });
+  return response.data;
+};
+
+const createBillableAction = async (data: any) => {
+  const response = await axios.post(`backoffice/billable-actions`, data);
+  return response.data;
+};
+
+const updateBillableAction = async (id: string, data: any) => {
+  const response = await axios.put(`backoffice/billable-actions/${id}`, data);
+  return response.data;
+};
+
 export {
   getAllUsers,
   updateUserStatus,
@@ -131,4 +151,7 @@ export {
   getJobDetails,
   updateJobStatus,
   getBackOfficeDashboardStats,
+  getBillableActions,
+  createBillableAction,
+  updateBillableAction,
 };

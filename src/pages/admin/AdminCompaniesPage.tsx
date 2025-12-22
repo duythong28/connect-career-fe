@@ -140,7 +140,7 @@ const AdminCompaniesPage = () => {
   const totalPages = pagination.totalPages;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-8 font-sans">
+    <div className="min-h-screen bg-[#F8F9FB] p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-6">

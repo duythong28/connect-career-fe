@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
   const getMenuTitle = (isMyCompanyPage: boolean): string => {
     if (!user) return "";
     if (user?.roles?.[0]?.name === "admin") return "Admin Panel";
-    if (isMyCompanyPage) return "Company Management";
+    if (isMyCompanyPage) return "Company Dashboard";
     return "Candidate Dashboard";
   };
 

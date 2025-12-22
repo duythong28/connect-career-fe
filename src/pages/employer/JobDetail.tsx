@@ -265,7 +265,7 @@ export default function JobDetail() {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6 space-y-6 font-sans bg-gray-50">
+    <div className="max-w-[1600px] mx-auto p-6 space-y-6 bg-gray-50">
       {/* Job Header */}
       <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
         <CardHeader className="p-4 border-b border-gray-100">

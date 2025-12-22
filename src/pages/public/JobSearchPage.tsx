@@ -278,7 +278,7 @@ export default function JobSearchPage() {
   );
 
   return (
-    <div className="h-full overflow-hidden bg-[#F8F9FB] font-sans flex flex-col">
+    <div className="h-full overflow-hidden bg-[#F8F9FB] flex flex-col">
       {/* --- Filter Bar (Simplify Design) --- */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 shadow-sm">
         <div className="max-w-[1600px] mx-auto">

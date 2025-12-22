@@ -226,7 +226,7 @@ const EmployerJobsPage = () => {
     ) || [];
 
   return (
-    <div className="max-w-[1400px] mx-auto py-6 px-4 md:px-6 lg:px-8 space-y-6 font-sans bg-gray-50 min-h-screen">
+    <div className="max-w-[1400px] mx-auto py-6 px-4 md:px-6 lg:px-8 space-y-6  bg-gray-50 min-h-screen">
       <div className="flex items-start justify-between border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Jobs Management</h1>

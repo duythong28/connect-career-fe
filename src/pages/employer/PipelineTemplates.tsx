@@ -286,7 +286,7 @@ export default function PipelineTemplates() {
   return (
     <>
       <style>{CustomScrollbarStyles}</style> {/* Áp dụng Custom Scrollbar */}
-      <div className="max-w-[1400px] mx-auto p-6 space-y-6 font-sans bg-gray-50 min-h-screen">
+      <div className="max-w-[1400px] mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
         <div className="flex items-start justify-between border-b border-gray-200 pb-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">

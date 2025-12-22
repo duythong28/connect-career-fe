@@ -150,7 +150,7 @@ export default function OrganizationMembersPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 font-sans bg-gray-50 min-h-screen">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 bg-gray-50 min-h-screen">
       <div className="border-b border-gray-200 pb-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           Organization Members
