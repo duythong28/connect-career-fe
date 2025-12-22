@@ -13,8 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InterviewResponse } from "@/api/types/interviews.types";
 import { deleteInterview } from "@/api/endpoints/interviews.api";
 
-// This dialog uses native AlertDialog from shadcn/ui but we wrap it for completeness.
-
+// Refactored to align with the CareerHub Design System
 export default function DeleteInterviewDialog({
     open,
     onOpenChange,
@@ -48,16 +47,42 @@ export default function DeleteInterviewDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="rounded-xl">
+            {/* 4. Radii: Main Container uses rounded-3xl. Shadows: No custom box-shadows added. */}
+            <AlertDialogContent className="bg-card border-border rounded-3xl shadow-lg">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-xl font-bold">Delete Interview</AlertDialogTitle>
-                    <AlertDialogDescription className="text-gray-600">
-                        Are you sure you want to delete the interview with <span className="font-semibold text-gray-900">{interview?.interviewerName}</span> scheduled for <span className="font-semibold text-gray-900">{interview?.scheduledDate ? new Date(interview.scheduledDate).toLocaleString() : 'N/A'}</span>? This action cannot be undone.
+                    {/* 1. Typography: text-xl font-bold for subheaders. text-foreground color variable. */}
+                    <AlertDialogTitle className="text-xl font-bold text-foreground">
+                        Delete Interview
+                    </AlertDialogTitle>
+                    
+                    {/* 1. Color Variables: text-muted-foreground. 5. Copywriting: Preserved exact text. */}
+                    <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed">
+                        Are you sure you want to delete the interview with{" "}
+                        <span className="font-semibold text-foreground">
+                            {interview?.interviewerName}
+                        </span>{" "}
+                        scheduled for{" "}
+                        <span className="font-semibold text-foreground">
+                            {interview?.scheduledDate 
+                                ? new Date(interview.scheduledDate).toLocaleString() 
+                                : 'N/A'}
+                        </span>? This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel className="font-bold border-gray-300 hover:bg-gray-100">Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={confirmDeleteInterview} className="bg-red-600 text-white font-bold hover:bg-red-700">
+
+                {/* 2. Button Hierarchy: Secondary Actions use outline. h-9 size. rounded-xl radius for inner items. */}
+                <AlertDialogFooter className="gap-2 sm:gap-3">
+                    <AlertDialogCancel 
+                        className="h-9 rounded-xl font-bold border-border text-muted-foreground hover:bg-accent transition-all duration-200"
+                    >
+                        Cancel
+                    </AlertDialogCancel>
+                    
+                    {/* 2. Button Hierarchy: Standard Primary Actions use solid background. h-9 size. */}
+                    <AlertDialogAction 
+                        onClick={confirmDeleteInterview} 
+                        className="h-9 rounded-xl bg-destructive text-destructive-foreground font-bold hover:bg-destructive/90 transition-all duration-200"
+                    >
                         Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>
