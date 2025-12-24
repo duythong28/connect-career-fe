@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getReports, updateReportStatus } from "@/api/endpoints/reports.api";
 import { Report, ReportStatus } from "@/api/types/reports.types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,7 +67,7 @@ const AdminReports = () => {
       [ReportStatus.CLOSED]: { variant: "outline", label: "Closed" },
     };
     const config = variants[status];
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return <Badge variant={config.variant} className="rounded-lg px-2.5 py-0.5 font-medium">{config.label}</Badge>;
   };
 
   const handleUpdateStatus = () => {
@@ -80,150 +80,185 @@ const AdminReports = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Reports Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p>Loading reports...</p>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Entity Type</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reportsData?.data.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell>
-                        <Badge variant="outline">{report.entityType}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">{report.reason}</TableCell>
-                      <TableCell>{getStatusBadge(report.status)}</TableCell>
-                      <TableCell className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(report.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setSelectedReport(report)}
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          View Details
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+    <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
+      <div className="max-w-[1400px] mx-auto space-y-6">
+        
+        {/* Page Header */}
+        <div className="flex items-center gap-2">
+           <h1 className="text-2xl font-bold text-foreground">Reports Management</h1>
+        </div>
 
-              {reportsData && reportsData.totalPages > 1 && (
-                <div className="flex justify-center gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    disabled={page === 1}
-                    onClick={() => setPage(page - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <span className="py-2 px-4">
-                    Page {page} of {reportsData.totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    disabled={page === reportsData.totalPages}
-                    onClick={() => setPage(page + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+        {/* Main Content Card */}
+        <Card className="rounded-3xl border-border bg-card shadow-none">
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-8 text-center text-muted-foreground">Loading reports...</div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Entity Type</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Reason</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Status</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Created At</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12 text-right pr-6">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reportsData?.data.map((report) => (
+                      <TableRow key={report.id} className="border-border hover:bg-muted/30">
+                        <TableCell className="py-4 font-medium text-foreground">
+                          <Badge variant="outline" className="rounded-md border-border text-foreground">
+                            {report.entityType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-muted-foreground">
+                          {report.reason}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(report.status)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            {new Date(report.createdAt).toLocaleDateString()}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right pr-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9"
+                            onClick={() => setSelectedReport(report)}
+                          >
+                            <FileText className="h-4 w-4 mr-2 text-primary" />
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {reportsData && reportsData.totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 p-4 border-t border-border">
+                    <Button
+                      variant="outline"
+                      className="h-9"
+                      disabled={page === 1}
+                      onClick={() => setPage(page - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm font-medium text-muted-foreground px-4">
+                      Page {page} of {reportsData.totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      className="h-9"
+                      disabled={page === reportsData.totalPages}
+                      onClick={() => setPage(page + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Report Details</DialogTitle>
+        <DialogContent className="max-w-2xl bg-card border-border sm:rounded-3xl p-0 overflow-hidden gap-0">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-xl font-bold text-foreground">Report Details</DialogTitle>
           </DialogHeader>
+          
           {selectedReport && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold mb-2">Entity Type</h4>
-                <Badge variant="outline">{selectedReport.entityType}</Badge>
+            <div className="p-6 space-y-6">
+              
+              {/* Report Information Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground">Entity Type</h4>
+                  <Badge variant="outline" className="rounded-md">{selectedReport.entityType}</Badge>
+                </div>
+                <div className="space-y-1.5">
+                   <h4 className="text-xs font-bold uppercase text-muted-foreground">Current Status</h4>
+                   {getStatusBadge(selectedReport.status)}
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">Reason</h4>
-                <p>{selectedReport.reason}</p>
+
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">Subject</h4>
+                <p className="text-sm font-medium text-foreground">{selectedReport.subject}</p>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">Subject</h4>
-                <p>{selectedReport.subject}</p>
+
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">Reason</h4>
+                <p className="text-sm font-medium text-foreground">{selectedReport.reason}</p>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">Description</h4>
-                <p className="text-muted-foreground">{selectedReport.description}</p>
+
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">Description</h4>
+                <div className="bg-muted/30 p-3 rounded-xl border border-border">
+                  <p className="text-sm text-muted-foreground">{selectedReport.description}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">Priority</h4>
-                <p>{selectedReport.priority}</p>
+              
+              <div className="space-y-1.5">
+                 <h4 className="text-xs font-bold uppercase text-muted-foreground">Priority</h4>
+                 <p className="text-sm font-medium text-foreground">{selectedReport.priority}</p>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">Current Status</h4>
-                {getStatusBadge(selectedReport.status)}
-              </div>
+
               {selectedReport.adminNotes && (
-                <div>
-                  <h4 className="font-semibold mb-2">Admin Notes</h4>
-                  <p className="text-muted-foreground">{selectedReport.adminNotes}</p>
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground">Previous Admin Notes</h4>
+                  <p className="text-sm text-muted-foreground italic">{selectedReport.adminNotes}</p>
                 </div>
               )}
-              <div>
-                <h4 className="font-semibold mb-2">Update Status</h4>
-                <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReportStatus)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select new status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ReportStatus.PENDING}>Pending</SelectItem>
-                    <SelectItem value={ReportStatus.UNDER_REVIEW}>Under Review</SelectItem>
-                    <SelectItem value={ReportStatus.RESOLVED}>Resolved</SelectItem>
-                    <SelectItem value={ReportStatus.DISMISSED}>Dismissed</SelectItem>
-                    <SelectItem value={ReportStatus.CLOSED}>Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Admin Notes</h4>
-                <Textarea
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add notes about this report..."
-                  rows={4}
-                />
+
+              {/* Action Area */}
+              <div className="bg-[#F8F9FB] -mx-6 -mb-6 p-6 space-y-4 border-t border-border mt-4">
+                 <div className="space-y-1.5">
+                    <h4 className="text-xs font-bold uppercase text-muted-foreground">Update Status</h4>
+                    <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReportStatus)}>
+                      <SelectTrigger className="h-10 rounded-xl bg-card border-border">
+                        <SelectValue placeholder="Select new status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={ReportStatus.PENDING}>Pending</SelectItem>
+                        <SelectItem value={ReportStatus.UNDER_REVIEW}>Under Review</SelectItem>
+                        <SelectItem value={ReportStatus.RESOLVED}>Resolved</SelectItem>
+                        <SelectItem value={ReportStatus.DISMISSED}>Dismissed</SelectItem>
+                        <SelectItem value={ReportStatus.CLOSED}>Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                 </div>
+
+                 <div className="space-y-1.5">
+                    <h4 className="text-xs font-bold uppercase text-muted-foreground">Admin Notes</h4>
+                    <Textarea
+                      value={adminNotes}
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      placeholder="Add notes about this report..."
+                      rows={3}
+                      className="rounded-xl border-border bg-card focus:ring-primary"
+                    />
+                 </div>
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedReport(null)}>
+
+          <DialogFooter className="p-6 bg-[#F8F9FB] border-t border-border mt-0">
+            <Button variant="outline" onClick={() => setSelectedReport(null)} className="h-9">
               Cancel
             </Button>
             <Button
+              variant="default"
+              className="h-9"
               onClick={handleUpdateStatus}
               disabled={!newStatus || updateStatusMutation.isPending}
             >
