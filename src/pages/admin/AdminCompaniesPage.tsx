@@ -35,35 +35,31 @@ import {
 } from "@/api/types/back-office.types";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const StatCard = ({
   icon: Icon,
   title,
   value,
-  color,
 }: {
   icon: React.ElementType;
   title: string;
   value: string | number;
-  color: string;
 }) => (
-  <div
-    className={`p-4 rounded-xl border shadow-sm flex flex-col justify-between ${color}`}
-  >
-    <div className="flex justify-between items-start">
-      <div className="p-2 bg-white rounded-lg shadow-sm">
-        <Icon size={20} className="text-[#0EA5E9]" />
+  <div className="p-4 rounded-xl border border-border bg-card shadow-none flex flex-col justify-between h-full">
+    <div className="flex justify-between items-start mb-3">
+      <div className="p-2 bg-secondary rounded-lg">
+        <Icon size={18} className="text-primary" />
       </div>
     </div>
     <div>
-      <div className="font-bold text-gray-800 text-xl leading-tight">
+      <div className="font-bold text-foreground text-xl leading-tight">
         {value}
       </div>
-      <div className="text-xs text-gray-500 mt-0.5">{title}</div>
+      <div className="text-xs font-medium text-muted-foreground mt-0.5">{title}</div>
     </div>
   </div>
 );
-
 
 const AdminCompaniesPage = () => {
   const [pagination, setPagination] = useState({
@@ -140,40 +136,37 @@ const AdminCompaniesPage = () => {
   const totalPages = pagination.totalPages;
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
+      <div className="max-w-[1400px] mx-auto">
         {/* Header Section */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-200 pb-6">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Building2 size={30} className="text-[#0EA5E9]" />
-              <b>Companies Management</b>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+              Companies Management
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Manage company profiles, verifications, and user access.
             </p>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 w-full sm:w-64">
+            <div className="relative flex-1 w-full sm:w-72">
               <Input
                 placeholder="Search by company name or city"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-10 h-11"
+                className="pl-10 h-10 rounded-xl border-border focus:ring-2 focus:ring-primary"
               />
-              <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
-            {/* Không có nút Add Company */}
           </div>
         </div>
 
-        {/* Total Stats Card (Revamped to Simplify style) */}
+        {/* Total Stats Card */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
           <StatCard
             icon={Building2}
             title="Total Companies"
             value={pagination.total || 0}
-            color="bg-blue-50/70 border-blue-100"
           />
           <StatCard
             icon={Briefcase}
@@ -184,7 +177,6 @@ const AdminCompaniesPage = () => {
                 0
               ) || 0
             }
-            color="bg-emerald-50/70 border-emerald-100"
           />
           <StatCard
             icon={Briefcase}
@@ -193,7 +185,6 @@ const AdminCompaniesPage = () => {
               data?.data.reduce((acc, item) => acc + item.stats.totalJobs, 0) ||
               0
             }
-            color="bg-yellow-50/70 border-yellow-100"
           />
           <StatCard
             icon={CheckCircle2}
@@ -204,7 +195,6 @@ const AdminCompaniesPage = () => {
                 0
               ) || 0
             }
-            color="bg-purple-50/70 border-purple-100"
           />
           <StatCard
             icon={Users}
@@ -215,7 +205,6 @@ const AdminCompaniesPage = () => {
                 0
               ) || 0
             }
-            color="bg-pink-50/70 border-pink-100"
           />
           <StatCard
             icon={ArrowRight}
@@ -226,44 +215,42 @@ const AdminCompaniesPage = () => {
                 0
               ) || 0
             }
-            color="bg-sky-50/70 border-sky-100"
           />
           <StatCard
             icon={ArrowRight}
             title="Per Page"
             value={pagination.limit}
-            color="bg-gray-100/70 border-gray-200"
           />
         </div>
 
-        <Card className="p-0 overflow-hidden">
+        <Card className="p-0 overflow-hidden bg-card border-border rounded-3xl shadow-none">
           <CardContent className="p-0">
             <Table>
-              <TableHeader className="bg-gray-50">
-                <TableRow className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <TableHead className="px-6 py-3 text-left">
-                    <b>Company</b>
+              <TableHeader className="bg-muted/50">
+                <TableRow className="hover:bg-transparent border-b border-border">
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground">
+                    Company
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-left">
-                    <b>Active Jobs</b>
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground">
+                    Active Jobs
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-left">
-                    <b>Total Jobs</b>
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground">
+                    Total Jobs
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-left">
-                    <b>Total Applications</b>
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground">
+                    Total Applications
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-left">
-                    <b>Total Hires</b>
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground">
+                    Total Hires
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-left">
-                    <b>Total Members</b>
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground">
+                    Total Members
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-left">
-                    <b>Status</b>
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground">
+                    Status
                   </TableHead>
-                  <TableHead className="px-6 py-3 text-center">
-                    <b>Actions</b>
+                  <TableHead className="px-6 h-12 text-xs font-bold uppercase text-muted-foreground text-center">
+                    Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -272,29 +259,10 @@ const AdminCompaniesPage = () => {
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="px-6 py-6 text-center text-sm text-gray-500"
+                      className="px-6 py-12 text-center text-sm text-muted-foreground"
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <svg
-                          className="animate-spin h-5 w-5 text-[#0EA5E9]"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
                         Loading Companies...
                       </div>
                     </TableCell>
@@ -303,7 +271,7 @@ const AdminCompaniesPage = () => {
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="px-6 py-6 text-center text-sm text-gray-500"
+                      className="px-6 py-12 text-center text-sm text-muted-foreground"
                     >
                       No companies found.
                     </TableCell>
@@ -315,11 +283,11 @@ const AdminCompaniesPage = () => {
                     return (
                       <TableRow
                         key={org.id}
-                        className="hover:bg-blue-50/30 transition-colors"
+                        className="hover:bg-muted/30 transition-colors border-b border-border last:border-0"
                       >
                         <TableCell className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <Avatar className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+                            <Avatar className="w-10 h-10 rounded-xl border border-border shrink-0">
                               <AvatarImage
                                 src={
                                   org.logoFileId
@@ -327,69 +295,66 @@ const AdminCompaniesPage = () => {
                                     : undefined
                                 }
                               />
-                              <AvatarFallback className="w-10 h-10 bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-700">
+                              <AvatarFallback className="bg-muted text-xs font-bold text-muted-foreground">
                                 {org.name?.charAt(0) || "C"}
                               </AvatarFallback>
                             </Avatar>
 
                             <div>
-                              <p className="font-bold text-gray-900 text-sm">
+                              <p className="font-bold text-foreground text-sm">
                                 {org.name}
                               </p>
-                              <p className="text-xs text-gray-500">
-                                {org.city || org.country}
+                              <p className="text-xs text-muted-foreground">
+                                {org.city || org.country || "Global"}
                               </p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm font-medium text-gray-700">
+                        <TableCell className="px-6 text-sm font-semibold text-foreground">
                           {stats.activeJobs}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="px-6 text-sm text-muted-foreground">
                           {stats.totalJobs}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="px-6 text-sm text-muted-foreground">
                           {stats.totalApplications}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="px-6 text-sm text-muted-foreground">
                           {stats.totalHires}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="px-6 text-sm text-muted-foreground">
                           {stats.totalMembers}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-6">
                           <Badge
-                            variant={org.isActive ? "default" : "destructive"}
-                            className={
+                            className={cn(
+                              "uppercase text-[10px] font-bold px-2 py-0.5 rounded-md border-transparent shadow-none",
                               org.isActive
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-red-100 text-red-800"
-                            }
+                                ? "bg-[hsl(var(--brand-success))] text-white"
+                                : "bg-destructive text-white"
+                            )}
                           >
                             {org.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="px-6 text-center">
                           <div className="flex justify-center gap-2">
                             <Button
-                              variant={org.isActive ? "secondary" : "default"}
+                              variant={org.isActive ? "outline" : "default"}
                               size="sm"
                               disabled={statusMutation.isPending}
                               onClick={() =>
                                 handleStatusChange(org.id, org.isActive)
                               }
-                              className={`
-                                ${
-                                  org.isActive
-                                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
-                                    : "bg-[#0EA5E9] text-white hover:bg-[#0284c7]"
-                                }
-                              `}
+                              className={cn(
+                                "h-9 px-4 rounded-xl text-xs font-bold",
+                                org.isActive ? "hover:bg-destructive/10 hover:text-destructive hover:border-destructive" : ""
+                              )}
                             >
                               {org.isActive ? (
-                                <Ban size={14} />
+                                <Ban size={14} className="mr-1.5" />
                               ) : (
-                                <CheckCircle2 size={14} />
+                                <CheckCircle2 size={14} className="mr-1.5" />
                               )}
                               {org.isActive ? "Deactivate" : "Activate"}
                             </Button>
@@ -397,9 +362,9 @@ const AdminCompaniesPage = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleViewDetails(org.id)}
-                              className="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                              className="h-9 w-9 p-0 rounded-xl border-border"
                             >
-                              <Eye className="h-4 w-4 text-gray-500" />
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                             </Button>
                           </div>
                         </TableCell>
@@ -409,14 +374,15 @@ const AdminCompaniesPage = () => {
                 )}
               </TableBody>
             </Table>
+
             {/* Pagination */}
-            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-100 bg-white rounded-b-xl">
-              <span className="text-sm text-gray-600">
-                Showing <b>{data?.data.length || 0}</b> of{" "}
-                <b>{pagination.total}</b> results
+            <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 gap-4 border-t border-border bg-card rounded-b-3xl">
+              <span className="text-sm text-muted-foreground">
+                Showing <b className="text-foreground">{data?.data.length || 0}</b> of{" "}
+                <b className="text-foreground">{pagination.total}</b> results
               </span>
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-xs font-bold uppercase text-muted-foreground">
                   Page {currentPage} of {totalPages}
                 </span>
                 <div className="flex gap-2">
@@ -430,7 +396,7 @@ const AdminCompaniesPage = () => {
                         page: Math.max(1, p.page - 1),
                       }))
                     }
-                    className="w-8 h-8 p-0 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    className="w-9 h-9 p-0 rounded-xl border-border"
                   >
                     <ChevronLeft size={16} />
                   </Button>
@@ -444,7 +410,7 @@ const AdminCompaniesPage = () => {
                         page: Math.min(totalPages, p.page + 1),
                       }))
                     }
-                    className="w-8 h-8 p-0 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    className="w-9 h-9 p-0 rounded-xl border-border"
                   >
                     <ChevronRight size={16} />
                   </Button>

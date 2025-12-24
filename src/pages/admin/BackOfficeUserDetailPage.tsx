@@ -5,10 +5,7 @@ import {
   getUserDetails,
   updateUserStatus,
 } from "@/api/endpoints/back-office.api";
-import {
-  UserDetailsResponse,
-  OrganizationMembership,
-} from "@/api/types/back-office.types";
+import { UserDetailsResponse } from "@/api/types/back-office.types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,19 +16,18 @@ import {
   Phone,
   MapPin,
   Briefcase,
-  Zap,
   CheckCircle2,
   Factory,
-  Globe2,
   Users,
   Calendar,
   Link as LinkIcon,
-  Edit,
   Power,
+  Info,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-// Helper function để format ngày
+// Helper function to format date
 const formatJoinedDate = (isoString: string | undefined) => {
   if (!isoString) return "-";
   return new Date(isoString).toLocaleDateString("en-US", {
@@ -41,19 +37,19 @@ const formatJoinedDate = (isoString: string | undefined) => {
   });
 };
 
-// Helper function để lấy màu Badge (TÔNG MÀU SIMPLIFY TINH TẾ)
+// Helper function to get Badge styles based on Design System
 const getStatusBadgeClass = (status: string) => {
   switch (status) {
     case "active":
-      return "bg-emerald-50 text-emerald-700 border border-emerald-300";
+      return "bg-[hsl(var(--brand-success))] text-white border-transparent";
     case "inactive":
-      return "bg-red-50 text-red-700 border border-red-300";
+      return "bg-secondary text-secondary-foreground border-transparent";
     case "banned":
-      return "bg-red-500 hover:bg-red-600 text-white";
+      return "bg-destructive text-white border-transparent";
     case "pending":
-      return "bg-yellow-50 text-yellow-700 border border-yellow-300";
+      return "bg-amber-100 text-amber-700 border-amber-200";
     default:
-      return "bg-gray-200 text-gray-700";
+      return "bg-muted text-muted-foreground border-transparent";
   }
 };
 
@@ -68,7 +64,6 @@ const BackOfficeUserDetailPage = () => {
     enabled: !!userId,
   });
 
-  // Mutation để thay đổi trạng thái người dùng
   const statusMutation = useMutation({
     mutationFn: ({ status }: { status: string }) =>
       updateUserStatus(userId!, status as "active" | "inactive" | "banned"),
@@ -96,13 +91,13 @@ const BackOfficeUserDetailPage = () => {
 
   useEffect(() => {
     if (error) {
-      // Handle error
+      // Error handling logic
     }
   }, [error]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 text-center flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center text-sm text-muted-foreground animate-fade-in">
         Loading user details...
       </div>
     );
@@ -110,9 +105,13 @@ const BackOfficeUserDetailPage = () => {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8 text-center flex items-center justify-center flex-col">
-        <p className="text-xl font-bold text-gray-900 mb-4">User not found.</p>
-        <Button onClick={() => navigate(-1)} className="mt-4">
+      <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center flex-col gap-4 animate-fade-in">
+        <p className="text-2xl font-bold text-foreground">User not found.</p>
+        <Button
+          variant="outline"
+          onClick={() => navigate(-1)}
+          className="h-10 rounded-xl border-border"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to User List
         </Button>
@@ -121,88 +120,101 @@ const BackOfficeUserDetailPage = () => {
   }
 
   const { user, candidateProfile, organizationMemberships } = data;
+  const hasMemberships = organizationMemberships && organizationMemberships.length > 0;
 
-  const InfoItem = ({ icon, label, value }) => (
-    <div className="flex items-start gap-3 text-sm text-gray-700">
-      <div className="text-gray-400 mt-1">{icon}</div>
+  const InfoItem = ({
+    icon,
+    label,
+    value,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | null | undefined;
+  }) => (
+    <div className="flex items-start gap-3">
+      <div className="text-primary mt-1">{icon}</div>
       <div className="flex-1">
-        <span className="font-semibold text-gray-500 text-xs uppercase block">
+        <span className="text-xs font-bold uppercase text-muted-foreground block">
           {label}
         </span>
-        <span className="text-gray-900 font-medium">{value || "N/A"}</span>
+        <span className="text-foreground font-medium text-sm">
+          {value || "N/A"}
+        </span>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
+      <div className="max-w-[1400px] mx-auto">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
-          className="mb-6 text-sm font-bold text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          className="mb-6 h-9 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to User List
         </Button>
 
         {/* --- 1. User Details Header --- */}
-        <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl">
+        <Card className="mb-6 bg-card border-border rounded-3xl overflow-hidden shadow-none">
           <CardContent className="p-6">
-            <div className="flex items-start gap-6">
-              <Avatar className="h-20 w-20 border-2 border-white shadow-md rounded-xl shrink-0">
+            <div className="flex flex-col md:flex-row items-start gap-6">
+              <Avatar className="h-20 w-20 border border-border rounded-2xl shrink-0">
                 <AvatarImage src={user.avatarUrl || undefined} />
-                <AvatarFallback className="bg-[#0EA5E9] text-white text-3xl font-bold rounded-xl">
+                <AvatarFallback className="bg-primary text-white text-3xl font-bold">
                   {user.fullName?.charAt(0) || user.username?.charAt(0) || "U"}
                 </AvatarFallback>
               </Avatar>
 
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="text-2xl font-bold text-gray-900">
+              <div className="flex-1 w-full">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold text-foreground">
                     {user.fullName ||
                       [user.firstName, user.lastName]
                         .filter(Boolean)
                         .join(" ") ||
                       user.username}
-                  </div>
+                  </h1>
                   <Badge
-                    className={`uppercase font-bold text-xs ${getStatusBadgeClass(
-                      user.status
-                    )}`}
+                    className={cn(
+                      "uppercase font-bold text-[10px] tracking-wider rounded-md px-2 py-0.5",
+                      getStatusBadgeClass(user.status)
+                    )}
                   >
                     {user.status}
                   </Badge>
                   {user.emailVerified && (
                     <Badge
                       variant="outline"
-                      className="text-xs font-bold bg-green-50 text-green-700 border-green-300"
+                      className="text-[10px] font-bold uppercase bg-[hsl(var(--brand-blue-light))] text-primary border-primary/20"
                     >
                       Verified
                     </Badge>
                   )}
                 </div>
 
-                <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                  <Mail size={16} className="text-gray-400" /> {user.email}
+                <div className="flex flex-col gap-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Mail size={14} className="text-primary" /> {user.email}
+                  </div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Calendar size={14} className="text-primary" /> Joined:{" "}
+                    {formatJoinedDate(user.createdAt)}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                  <Calendar size={16} className="text-gray-400" /> Joined:{" "}
-                  {formatJoinedDate(user.createdAt)}
-                </div>
-                <div className="mt-3 flex items-center gap-4">
-                  {/* Nút Activate/Deactivate */}
+
+                <div className="mt-4">
                   <Button
+                    variant={
+                      user.status === "active" ? "destructive" : "default"
+                    }
                     size="sm"
                     onClick={handleStatusToggle}
                     disabled={statusMutation.isPending}
-                    className={`text-xs font-bold h-8 transition-colors ${
-                      user.status === "active"
-                        ? "bg-red-500 hover:bg-red-600"
-                        : "bg-green-500 hover:bg-green-600"
-                    }`}
+                    className="h-9 px-6 rounded-xl text-xs font-bold transition-all shadow-none"
                   >
-                    <Power size={14} className="mr-1" />
+                    <Power size={14} className="mr-2" />
                     {statusMutation.isPending
                       ? "Updating..."
                       : user.status === "active"
@@ -215,177 +227,119 @@ const BackOfficeUserDetailPage = () => {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* --- 2. Candidate Profile (Column 1) --- */}
-          {candidateProfile && (
-            <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl lg:col-span-1">
-              <CardHeader className="border-b border-gray-100 pb-3">
-                <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Briefcase size={20} className="text-[#0EA5E9]" /> Candidate
-                  Profile
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="pt-4 space-y-4">
-                <InfoItem
-                  icon={<Mail size={16} />}
-                  label="Email"
-                  value={candidateProfile.email}
-                />
-                <InfoItem
-                  icon={<Phone size={16} />}
-                  label="Phone"
-                  value={candidateProfile.phone}
-                />
-                <InfoItem
-                  icon={<MapPin size={16} />}
-                  label="Location"
-                  value={`${candidateProfile.city}, ${candidateProfile.country}`}
-                />
-                <div className="pt-3 border-t border-gray-100">
-                  <div className="text-sm font-semibold text-gray-700 mb-1">
-                    Links:
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(candidateProfile.socialLinks).map(
-                      ([key, value]) =>
-                        value ? (
-                          <a
-                            key={key}
-                            href={value}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs font-bold text-[#0EA5E9] bg-blue-50 px-2 py-1 rounded-full border border-blue-100 flex items-center gap-1 hover:bg-blue-100"
-                          >
-                            <LinkIcon size={12} />
-                            {key.charAt(0).toUpperCase() + key.slice(1)}
-                          </a>
-                        ) : null
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <strong>Skills:</strong>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {candidateProfile.skills &&
-                    candidateProfile.skills.length > 0 ? (
-                      candidateProfile.skills.slice(0, 5).map((skill, i) => (
-                        <Badge
-                          key={i}
-                          variant="outline"
-                          className="text-xs font-medium bg-gray-100 text-gray-700 border-gray-200"
-                        >
-                          {skill}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-gray-500 text-sm">N/A</span>
-                    )}
-                    {candidateProfile.skills.length > 5 && (
-                      <span className="text-xs font-medium text-[#0EA5E9] mt-1">
-                        + {candidateProfile.skills.length - 5} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-gray-100">
-                  <div className="text-sm font-semibold text-gray-700 mb-1">
-                    Profile Completeness:
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Zap
-                      size={16}
-                      className="text-yellow-500 fill-yellow-500"
+        {/* --- Grid Layout for Profile Data --- */}
+        {!candidateProfile && !hasMemberships ? (
+          <Card className="bg-card border-border rounded-3xl shadow-none">
+            <CardContent className="p-16 text-center">
+              <CheckCircle2 size={40} className="mx-auto mb-4 text-muted/30" />
+              <p className="text-lg font-bold text-foreground">
+                No Profile Data Available
+              </p>
+              <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
+                This user has not set up their public profile or linked any organizations.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* --- 2. Candidate Profile Column --- */}
+            <div className="lg:col-span-1">
+              {candidateProfile ? (
+                <Card className="bg-card border-border rounded-3xl shadow-none h-full">
+                  <CardHeader className="border-b border-border pb-4">
+                    <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                      <Briefcase size={18} className="text-primary" /> Candidate Profile
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-5">
+                    <InfoItem icon={<Mail size={16} />} label="Email" value={candidateProfile.email} />
+                    <InfoItem icon={<Phone size={16} />} label="Phone" value={candidateProfile.phone} />
+                    <InfoItem 
+                      icon={<MapPin size={16} />} 
+                      label="Location" 
+                      value={candidateProfile.city && candidateProfile.country ? `${candidateProfile.city}, ${candidateProfile.country}` : "N/A"} 
                     />
-                    <span className="font-bold text-gray-900">
-                      {candidateProfile.completionPercentage}% Complete
-                    </span>
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full">
-                      <div
-                        className="bg-[#0EA5E9] h-1.5 rounded-full"
-                        style={{
-                          width: `${candidateProfile.completionPercentage}%`,
-                        }}
-                      />
+                    <div className="pt-4 border-t border-border">
+                      <span className="text-xs font-bold uppercase text-muted-foreground block mb-3">Links</span>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(candidateProfile.socialLinks || {}).map(([key, value]) =>
+                          value ? (
+                            <a key={key} href={value as string} target="_blank" rel="noopener noreferrer"
+                               className="text-[10px] font-bold text-primary bg-[hsl(var(--brand-blue-light))] px-3 py-1.5 rounded-xl border border-primary/10 flex items-center gap-1.5 hover:bg-primary hover:text-white transition-all">
+                              <LinkIcon size={12} />
+                              {key.charAt(0).toUpperCase() + key.slice(1)}
+                            </a>
+                          ) : null
+                        )}
+                      </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-card border-border border-dashed rounded-3xl shadow-none h-full flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <Briefcase size={32} className="mx-auto mb-3 text-muted/20" />
+                    <p className="text-sm font-bold text-muted-foreground">No Candidate Profile</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </Card>
+              )}
+            </div>
 
-          {/* --- 3. Organization Memberships (Column 2-3) --- */}
-          {organizationMemberships && organizationMemberships.length > 0 && (
-            <Card className="border border-gray-200 shadow-sm rounded-xl lg:col-span-2">
-              <CardHeader className="border-b border-gray-100 pb-3">
-                <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Factory size={20} className="text-[#0EA5E9]" /> Organization
-                  Memberships
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent className="pt-4">
-                <ul className="space-y-4">
-                  {organizationMemberships.map((m) => (
-                    <li
-                      key={m.id}
-                      className="border border-gray-100 p-3 rounded-lg hover:bg-gray-50/50 transition-colors"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="font-semibold text-gray-900 flex items-center gap-2">
-                          <Users size={16} className="text-gray-500" />
-                          {m.organization.name}
+            {/* --- 3. Organization Memberships Column --- */}
+            <div className="lg:col-span-2">
+              {hasMemberships ? (
+                <Card className="bg-card border-border rounded-3xl shadow-none h-full">
+                  <CardHeader className="border-b border-border pb-4">
+                    <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                      <Factory size={18} className="text-primary" /> Organization Memberships
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      {organizationMemberships.map((m) => (
+                        <div key={m.id} className="border border-border p-4 rounded-2xl hover:bg-muted/30 transition-colors">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="font-bold text-foreground flex items-center gap-2">
+                              <Users size={16} className="text-primary" />
+                              {m.organization.name}
+                            </div>
+                            <Badge className={cn("uppercase text-[10px] font-bold rounded-md px-2 py-0.5", getStatusBadgeClass(m.status))}>
+                              {m.status}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-xs font-bold uppercase text-muted-foreground block mb-1">Role</span>
+                              <span className="text-sm font-semibold text-foreground">{m.role?.name || "N/A"}</span>
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold uppercase text-muted-foreground block mb-1">Joined</span>
+                              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                <Calendar size={14} />
+                                {m.joinedAt ? formatJoinedDate(m.joinedAt) : "N/A"}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm">
-                        <div className="text-gray-600 font-medium">
-                          Role:{" "}
-                          <span className="font-bold text-gray-900">
-                            {m.role?.name || "N/A"}
-                          </span>
-                        </div>
-                        <div className="text-gray-600 font-medium">
-                          Status:{" "}
-                          <Badge
-                            className={`uppercase text-xs font-bold ${getStatusBadgeClass(
-                              m.status
-                            )}`}
-                          >
-                            {m.status}
-                          </Badge>
-                        </div>
-                        <div className="text-gray-600 text-xs flex items-center gap-1">
-                          <Calendar size={14} className="text-gray-400" />
-                          Joined:{" "}
-                          {m.joinedAt ? formatJoinedDate(m.joinedAt) : "N/A"}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* --- 4. No Profile Data Available (Placeholder) --- */}
-          {!candidateProfile && !organizationMemberships && (
-            <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl lg:col-span-3">
-              <CardContent className="p-12 text-center text-gray-500">
-                <CheckCircle2
-                  size={32}
-                  className="mx-auto mb-3 text-gray-400"
-                />
-                <p className="font-semibold">No Profile Data Available</p>
-                <p className="text-sm mt-1">
-                  This user has not set up their public profile or linked any
-                  organizations.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-card border-border border-dashed rounded-3xl shadow-none h-full flex items-center justify-center p-12">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Info size={24} className="text-muted-foreground/40" />
+                    </div>
+                    <p className="text-md font-bold text-foreground">No Organizations Linked</p>
+                    <p className="text-sm text-muted-foreground mt-1">This user is not currently a member of any organization.</p>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

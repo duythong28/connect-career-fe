@@ -7,6 +7,11 @@ import {
   RefundRequest,
   RefundResponse,
   WalletListResponse,
+  BillableActionResponse,
+  CreateBillableActionRequest,
+  CreateBillableActionResponse,
+  UpdateBillableActionPriceRequest,
+  UpdateBillableActionPriceResponse,
 } from "../types/wallet.types";
 
 // Get wallet balance
@@ -54,6 +59,7 @@ export const getWalletTransactions = async (
   return response.data;
 };
 
+
 // Get wallet usage history (admin)
 export const getWalletUsageHistory = async (
   userId: string,
@@ -80,5 +86,30 @@ export const createRefund = async (
   data: RefundRequest
 ): Promise<RefundResponse> => {
   const response = await axios.post(`/backoffice/refunds`, data);
+  return response.data;
+};
+
+export const getBillableActions = async (
+  params?: { pageNumber?: number; pageSize?: number }
+): Promise<BillableActionResponse> => {
+  const response = await axios.get("/backoffice/billable-actions", { params });
+  return response.data;
+};
+
+export const createBillableAction = async (
+  data: CreateBillableActionRequest
+): Promise<CreateBillableActionResponse> => {
+  const response = await axios.post("/backoffice/billable-actions", data);
+  return response.data;
+};
+
+export const updateBillableActionPrice = async (
+  actionId: string,
+  data: UpdateBillableActionPriceRequest
+): Promise<UpdateBillableActionPriceResponse> => {
+  const response = await axios.patch(
+    `/backoffice/billable-actions/${actionId}/price`,
+    data
+  );
   return response.data;
 };

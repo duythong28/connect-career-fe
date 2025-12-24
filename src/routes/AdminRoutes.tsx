@@ -10,6 +10,7 @@ import BackOfficeCompanyPage from "@/pages/admin/BackOfficeCompanyPage";
 import BackOfficeJobDetailPage from "@/pages/admin/BackOfficeJobDetailPage";
 import WalletManagementPage from "@/pages/admin/WalletManagementPage";
 import RefundManagementPage from "@/pages/admin/RefundManagementPage";
+import BillableActionPage from "@/pages/admin/BillableActionPage";
 
 export const AdminRoutes = () => {
   return (
@@ -25,6 +26,7 @@ export const AdminRoutes = () => {
       <Route path="reports" element={<AdminReports />} />
       <Route path="wallets" element={<WalletManagementPage />} />
       <Route path="refunds" element={<RefundManagementPage />} />
+      <Route path="billable-actions" element={<BillableActionPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
