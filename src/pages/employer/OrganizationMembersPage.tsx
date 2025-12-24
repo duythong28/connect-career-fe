@@ -30,7 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useOrganization } from "@/context/OrganizationContext";
 import { useAuth } from "@/hooks/useAuth";
-import { Edit, Trash2, Mail, Users, Check } from "lucide-react";
+import { Edit, Trash2, Mail, Users, Check, X, Copy } from "lucide-react";
 
 const statusLabel: Record<string, string> = {
   active: "Active",
@@ -39,7 +39,7 @@ const statusLabel: Record<string, string> = {
 };
 
 export default function OrganizationMembersPage() {
-  const { jobId, companyId } = useParams();
+  const { companyId } = useParams();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("");
   const [inviteMessage, setInviteMessage] = useState("");
@@ -125,14 +125,12 @@ export default function OrganizationMembersPage() {
     });
   };
 
-  const handleRoleChange = (memberId: string, roleId: string) => {
-    changeRoleMutation.mutate({ memberId, roleId });
-  };
-
-  const handleRemoveMember = (memberId: string) => {
-    if (window.confirm("Are you sure you want to remove this member?")) {
-      removeMemberMutation.mutate(memberId);
-    }
+  const handleCopyToken = (token: string) => {
+    navigator.clipboard.writeText(token);
+    toast({
+      title: "Token copied",
+      description: "The invitation token has been copied to your clipboard.",
+    });
   };
 
   const handleSaveRole = (memberId: string, newRoleId: string | null) => {
@@ -142,154 +140,181 @@ export default function OrganizationMembersPage() {
       roleToSave &&
       roleToSave !== members.find((m) => m.id === memberId)?.role.id
     ) {
-      handleRoleChange(memberId, roleToSave);
+      changeRoleMutation.mutate({ memberId, roleId: roleToSave });
     } else {
       setEditingMemberId(null);
       setEditingRoleId(null);
     }
   };
 
+  const handleRemoveMember = (memberId: string) => {
+    if (window.confirm("Are you sure you want to remove this member?")) {
+      removeMemberMutation.mutate(memberId);
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 bg-gray-50 min-h-screen">
-      <div className="border-b border-gray-200 pb-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Organization Members
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Manage your team, roles, and invitations here.
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-foreground">
+            Organization Members
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your team, roles, and invitations here.
+          </p>
+        </div>
 
-      <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl">
-        <CardHeader className="border-b border-gray-100 p-4">
-          <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-            <Mail className="h-5 w-5 text-[#0EA5E9]" />
-            Invite New Member
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          {isOwner ? (
-            <form
-              className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
-              onSubmit={handleInvite}
-            >
-              <div className="md:col-span-1">
-                <Input
-                  type="email"
-                  placeholder="Email Address"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  required
-                  className="border-gray-300 h-10"
-                />
+        {/* Invite Card */}
+        <Card className="mb-6 border-border bg-card rounded-3xl shadow-none overflow-hidden">
+          <CardHeader className="border-b border-border p-5">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Invite New Member
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {isOwner ? (
+              <form
+                className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
+                onSubmit={handleInvite}
+              >
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase text-muted-foreground ml-1">
+                    Email Address
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="Email Address"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    required
+                    className="border-border h-10 rounded-xl focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase text-muted-foreground ml-1">
+                    Role
+                  </label>
+                  <Select
+                    value={inviteRole}
+                    onValueChange={setInviteRole}
+                    disabled={!isOwner}
+                  >
+                    <SelectTrigger className="border-border h-10 rounded-xl focus:ring-2 focus:ring-primary">
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          {role.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase text-muted-foreground ml-1">
+                    Message
+                  </label>
+                  <Input
+                    placeholder="Message (optional)"
+                    value={inviteMessage}
+                    onChange={(e) => setInviteMessage(e.target.value)}
+                    className="border-border h-10 rounded-xl focus:ring-2 focus:ring-primary"
+                    disabled={!isOwner}
+                  />
+                </div>
+                <div>
+                  <Button
+                    type="submit"
+                    disabled={
+                      inviteMutation.isPending ||
+                      !isOwner ||
+                      !inviteRole ||
+                      !inviteEmail
+                    }
+                    className="w-full h-10 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-none"
+                    variant="default"
+                  >
+                    Send Invitation
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl text-sm font-medium text-center">
+                You do not have permission (Owner role required) to invite new
+                members.
               </div>
-              <div className="md:col-span-1">
-                <Select
-                  value={inviteRole}
-                  onValueChange={setInviteRole}
-                  disabled={!isOwner}
-                >
-                  <SelectTrigger className="border-gray-300 h-10">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="md:col-span-1">
-                <Input
-                  placeholder="Message (optional)"
-                  value={inviteMessage}
-                  onChange={(e) => setInviteMessage(e.target.value)}
-                  className="border-gray-300 h-10"
-                  disabled={!isOwner}
-                />
-              </div>
-              <div className="md:col-span-1">
-                <Button
-                  type="submit"
-                  disabled={
-                    inviteMutation.isPending ||
-                    !isOwner ||
-                    !inviteRole ||
-                    !inviteEmail
-                  }
-                  className="w-full bg-[#0EA5E9] hover:bg-[#0284c7] font-bold h-10"
-                >
-                  Send Invitation
-                </Button>
-              </div>
-            </form>
-          ) : (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium">
-              You do not have permission (Owner role required) to invite new
-              members.
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
 
-      <Card className="mb-6 border border-gray-200 shadow-sm rounded-xl">
-        <CardHeader className="border-b border-gray-100 p-4">
-          <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-            <Users className="h-5 w-5 text-[#0EA5E9]" />
-            Team Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b text-xs font-bold text-gray-600 uppercase bg-gray-50">
-                <th className="py-3 px-4 w-12"></th>
-                <th className="py-3 px-4 min-w-[120px]">Name</th>
-                <th className="py-3 px-4 min-w-[150px]">Email</th>
-                <th className="py-3 px-4 min-w-[150px]">Role</th>
-                <th className="py-3 px-4 w-20">Status</th>
-                <th className="py-3 px-4 w-32">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((member) => (
-                <tr
-                  key={member.id}
-                  className="align-middle border-b last:border-0 hover:bg-gray-50/50"
-                >
-                  <td className="py-3 px-4">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={member.user.avatarUrl || undefined} />
-                      <AvatarFallback className="bg-gray-200 text-xs font-bold">
-                        {member.user.fullName
-                          ? member.user.fullName[0]
-                          : member.user.email[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                  </td>
-                  <td className="py-3 px-4 text-sm font-semibold text-gray-800">
-                    <div className="truncate">
-                      {member.user.fullName ||
-                        [member.user.firstName, member.user.lastName]
-                          .filter(Boolean)
-                          .join(" ") ||
-                        member.user.username}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {member.user.email}
-                  </td>
-                  <td className="py-3 px-4">
-                    {editingMemberId === member.id ? (
-                      <div className="flex gap-2 items-center">
+        {/* Team Members Card */}
+        <Card className="mb-6 border-border bg-card rounded-3xl shadow-none overflow-hidden">
+          <CardHeader className="border-b border-border p-5">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Team Members
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="py-4 px-6 w-16"></th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase text-muted-foreground">
+                    Name
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase text-muted-foreground">
+                    Email
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase text-muted-foreground">
+                    Role
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="py-4 px-6 text-xs font-bold uppercase text-muted-foreground text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => (
+                  <tr
+                    key={member.id}
+                    className="group border-b border-border last:border-0 hover:bg-muted/10 transition-colors"
+                  >
+                    <td className="py-4 px-6">
+                      <Avatar className="h-9 w-9 rounded-xl">
+                        <AvatarImage src={member.user.avatarUrl || undefined} />
+                        <AvatarFallback className="bg-muted text-xs font-bold text-muted-foreground">
+                          {member.user.fullName
+                            ? member.user.fullName[0]
+                            : member.user.email[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="text-sm font-bold text-foreground truncate max-w-[150px]">
+                        {member.user.fullName ||
+                          [member.user.firstName, member.user.lastName]
+                            .filter(Boolean)
+                            .join(" ") ||
+                          member.user.username}
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 text-sm text-muted-foreground">
+                      {member.user.email}
+                    </td>
+                    <td className="py-4 px-4">
+                      {editingMemberId === member.id ? (
                         <Select
                           value={editingRoleId || member.role.id}
                           onValueChange={setEditingRoleId}
-                          disabled={changeRoleMutation.isPending || !isOwner}
                         >
-                          <SelectTrigger className="w-32 h-9 text-xs border-gray-300">
+                          <SelectTrigger className="w-32 h-9 text-xs border-border rounded-xl">
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
@@ -300,161 +325,173 @@ export default function OrganizationMembersPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="capitalize text-foreground font-semibold rounded-xl border-border px-3"
+                        >
+                          {member.role?.name}
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <Badge
+                        variant={
+                          member.status === "active" ? "default" : "secondary"
+                        }
+                        className={`capitalize font-bold rounded-xl px-2.5 py-0.5 ${
+                          member.status === "active"
+                            ? "bg-[hsl(var(--brand-success))] hover:bg-[hsl(var(--brand-success))]/90"
+                            : ""
+                        }`}
+                      >
+                        {statusLabel[member.status] || member.status}
+                      </Badge>
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex justify-end items-center gap-1">
+                        {editingMemberId === member.id ? (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="default"
+                              onClick={() =>
+                                handleSaveRole(member.id, editingRoleId)
+                              }
+                              className="h-8 w-8 bg-primary text-white rounded-xl"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingMemberId(null);
+                                setEditingRoleId(null);
+                              }}
+                              className="h-8 w-8 text-muted-foreground rounded-xl"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingMemberId(member.id);
+                                setEditingRoleId(member.role.id);
+                              }}
+                              disabled={!isOwner}
+                              className="h-8 w-8 text-muted-foreground hover:text-primary rounded-xl"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleRemoveMember(member.id)}
+                              disabled={!isOwner}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-xl"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
-                    ) : (
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        {/* Pending Invitations Card */}
+        <Card className="border-border bg-card rounded-3xl shadow-none overflow-hidden">
+          <CardHeader className="border-b border-border p-5">
+            <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Pending Invitations
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="py-4 px-6 text-xs font-bold uppercase text-muted-foreground">
+                    Email
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase text-muted-foreground">
+                    Role
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="py-4 px-4 text-xs font-bold uppercase text-muted-foreground">
+                    Token
+                  </th>
+                  <th className="py-4 px-6 text-xs font-bold uppercase text-muted-foreground text-right">
+                    Created At
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {invitations.map((invite) => (
+                  <tr
+                    key={invite.id}
+                    className="border-b border-border last:border-0 hover:bg-muted/10 transition-colors"
+                  >
+                    <td className="py-4 px-6 text-sm font-bold text-foreground">
+                      {invite.email}
+                    </td>
+                    <td className="py-4 px-4">
                       <Badge
                         variant="outline"
-                        className="capitalize text-gray-800 font-medium"
+                        className="text-foreground font-semibold rounded-xl border-border px-3"
                       >
-                        {member.role?.name}
+                        {invite.role?.name}
                       </Badge>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    <Badge
-                      variant={
-                        member.status === "active"
-                          ? "default"
-                          : member.status === "invited"
-                          ? "secondary"
-                          : "destructive"
-                      }
-                      className={`capitalize font-bold ${
-                        member.status === "active"
-                          ? "bg-green-500 hover:bg-green-600"
-                          : ""
-                      }`}
-                    >
-                      {statusLabel[member.status] || member.status}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4">
-                    {editingMemberId === member.id ? (
-                      <div className="flex gap-1 items-center">
-                        <Button
-                          size="icon"
-                          onClick={() =>
-                            handleSaveRole(member.id, editingRoleId)
-                          }
-                          disabled={changeRoleMutation.isPending || !isOwner}
-                          className="h-8 w-8 p-0 bg-[#0EA5E9] hover:bg-[#0284c7] text-white"
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingMemberId(null);
-                            setEditingRoleId(null);
-                          }}
-                          className="h-8 w-8 p-0 text-gray-700 hover:bg-gray-200"
-                        >
-                          <span className="text-xl leading-none">×</span>
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingMemberId(member.id);
-                            setEditingRoleId(member.role.id);
-                          }}
-                          disabled={!isOwner}
-                          className="h-8 w-8 p-1 text-gray-500 hover:text-[#0EA5E9]"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleRemoveMember(member.userId)}
-                          disabled={removeMemberMutation.isPending || !isOwner}
-                          className="h-8 w-8 p-1 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
-
-      <Card className="border border-gray-200 shadow-sm rounded-xl">
-        <CardHeader className="border-b border-gray-100 p-4">
-          <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-            <Mail className="h-5 w-5 text-[#0EA5E9]" />
-            Pending Invitations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto p-0">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b text-xs font-bold text-gray-600 uppercase bg-gray-50">
-                <th className="py-3 px-4 min-w-[150px]">Email</th>
-                <th className="py-3 px-4 min-w-[100px]">Role</th>
-                <th className="py-3 px-4 w-20">Status</th>
-                <th className="py-3 px-4 min-w-[200px]">Token</th>
-                <th className="py-3 px-4 min-w-[120px]">Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invitations.map((invite) => (
-                <tr
-                  key={invite.id}
-                  className="border-b last:border-0 hover:bg-gray-50/50"
-                >
-                  <td className="py-3 px-4 text-sm text-gray-600">
-                    {invite.email}
-                  </td>
-                  <td className="py-3 px-4">
-                    <Badge
-                      variant="outline"
-                      className="text-gray-800 font-medium"
-                    >
-                      {invite.role?.name}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4 capitalize">
-                    <Badge
-                      variant={
-                        invite.status === "pending"
-                          ? "secondary"
-                          : invite.status === "accepted"
-                          ? "default"
-                          : "destructive"
-                      }
-                      className={`capitalize font-bold ${
-                        invite.status === "accepted"
-                          ? "bg-green-500 hover:bg-green-600"
-                          : ""
-                      }`}
-                    >
-                      {invite.status}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="break-all text-xs font-mono text-gray-500">
-                      {invite.token}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-xs text-gray-500">
-                    {invite.createdAt
-                      ? new Date(invite.createdAt).toLocaleDateString()
-                      : "-"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+                    </td>
+                    <td className="py-4 px-4">
+                      <Badge
+                        variant={
+                          invite.status === "accepted" ? "default" : "secondary"
+                        }
+                        className={`capitalize font-bold rounded-xl px-2.5 py-0.5 ${
+                          invite.status === "accepted"
+                            ? "bg-[hsl(var(--brand-success))] hover:bg-[hsl(var(--brand-success))]/90"
+                            : ""
+                        }`}
+                      >
+                        {invite.status}
+                      </Badge>
+                    </td>
+                    <td className="py-4 px-4">
+                      <button
+                        onClick={() => handleCopyToken(invite.token)}
+                        className="flex items-center gap-2 group hover:bg-muted/80 p-1 rounded-xl transition-colors text-left"
+                        title="Click to copy token"
+                      >
+                        <span className="break-all text-[10px] font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg group-hover:text-primary transition-colors">
+                          {invite.token}
+                        </span>
+                        <Copy className="h-3 w-3 text-muted-foreground group-hover:text-primary shrink-0" />
+                      </button>
+                    </td>
+                    <td className="py-4 px-6 text-right text-xs text-muted-foreground font-medium">
+                      {invite.createdAt
+                        ? new Date(invite.createdAt).toLocaleDateString()
+                        : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
