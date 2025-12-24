@@ -146,6 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
     },
     { title: "Wallet Management", url: "/admin/wallets", icon: Wallet },
     { title: "Refund Management", url: "/admin/refunds", icon: CreditCard },
+    { title: "Billable Actions", url: "/admin/billable-actions", icon: FileText },
   ];
 
   const getMenuItems = (): MenuItem[] => {
