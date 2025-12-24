@@ -34,8 +34,8 @@ export interface WalletBalance {
 export interface TopUpRequest {
   amount: number;
   currency: string;
-  provider: string; // e.g. "momo", "zalopay", "stripe"
-  paymentMethod: string; // e.g. "momo", "zalopay", "credit_card"
+  provider: string;
+  paymentMethod: string;
 }
 
 export interface TopUpResponse {
@@ -55,6 +55,7 @@ export interface RefundRequest {
   userId: string;
   amount: number;
   reason: string;
+  paymentTransactionId: string;
 }
 
 export interface Refund {
@@ -81,4 +82,61 @@ export interface WalletListResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface BillableAction {
+  id: string;
+  actionCode: string;
+  actionName: string;
+  description?: string;
+  category: string;
+  cost: number | string;
+  currency: string;
+  isActive: boolean;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillableActionResponse {
+  items: BillableAction[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CreateBillableActionRequest {
+  actionCode: string;
+  actionName: string;
+  description?: string;
+  category: string;
+  cost: number;
+  currency: string;
+  metadata?: Record<string, any>;
+}
+
+
+
+export interface UpdateBillableActionPriceRequest {
+  cost: number;
+}
+
+export interface UpdateBillableActionPriceResponse {
+  id: string;
+  cost: number;
+  updatedAt: string;
+}
+
+export interface CreateBillableActionResponse {
+  id: string;
+  actionCode: string;
+  actionName: string;
+  description?: string;
+  category: string;
+  cost: number;
+  currency: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
 }

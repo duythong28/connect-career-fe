@@ -17,9 +17,7 @@ import {
   CheckCircle2,
   Flag,
   List,
-  X,
   Mail,
-  Filter,
   ArrowRight,
   Settings,
   Briefcase,
@@ -27,35 +25,56 @@ import {
   Bell,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
-// Giả định có các component UI cơ bản: Button, Card, Separator, Pagination
-const Button: React.FC<React.ComponentProps<"button">> = (props) => (
-  <button
-    {...props}
-    className={
-      "px-4 py-2 rounded-lg text-sm font-bold transition-colors " +
-      (props.className || "")
-    }
-  >
-    {props.children}
-  </button>
-);
-const Card: React.FC<React.ComponentProps<"div">> = (props) => (
+// --- CareerHub Design System Atomic Components ---
+
+const Button: React.FC<React.ComponentProps<"button"> & { variant?: "default" | "outline" | "ghost" | "link"; size?: "h-9" | "h-10" }> = ({ 
+  variant = "default", 
+  size = "h-9", 
+  className, 
+  children, 
+  ...props 
+}) => {
+  const variants = {
+    default: "bg-primary text-primary-foreground hover:bg-primary/90",
+    outline: "border border-border bg-transparent text-foreground hover:bg-accent",
+    ghost: "bg-transparent text-foreground hover:bg-accent",
+    link: "bg-transparent text-primary underline-offset-4 hover:underline",
+  };
+
+  return (
+    <button
+      {...props}
+      className={cn(
+        "inline-flex items-center justify-center rounded-xl text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none px-4",
+        size,
+        variants[variant],
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Card: React.FC<React.ComponentProps<"div">> = ({ className, children, ...props }) => (
   <div
     {...props}
-    className={
-      "bg-white border border-gray-200 rounded-xl shadow-sm " +
-      (props.className || "")
-    }
+    className={cn(
+      "bg-card border border-border rounded-3xl overflow-hidden",
+      className
+    )}
   >
-    {props.children}
+    {children}
   </div>
 );
-const Separator: React.FC<React.ComponentProps<"div">> = (props) => (
+
+const Separator: React.FC<React.ComponentProps<"div">> = ({ className, ...props }) => (
   <div
     {...props}
-    className={"h-px bg-gray-100 w-full " + (props.className || "")}
-  ></div>
+    className={cn("h-px bg-border w-full", className)}
+  />
 );
 
 // --- Notification Row Component ---
@@ -70,11 +89,11 @@ const NotificationRow: React.FC<{
     switch (type) {
       case NotificationType.APPLICATION_RECEIVED:
       case NotificationType.APPLICATION_STATUS_CHANGED:
-        return { icon: <List size={16} />, color: "text-blue-500 bg-blue-50" };
+        return { icon: <List size={16} />, color: "text-primary bg-primary/10" };
       case NotificationType.OFFER_RECEIVED:
         return {
           icon: <Flag size={16} />,
-          color: "text-emerald-500 bg-emerald-50",
+          color: "text-[hsl(var(--brand-success))] bg-[hsl(var(--brand-success))]/10",
         };
       case NotificationType.INTERVIEW_SCHEDULED:
       case NotificationType.INTERVIEW_REMINDER:
@@ -97,7 +116,7 @@ const NotificationRow: React.FC<{
       default:
         return {
           icon: <Settings size={16} />,
-          color: "text-gray-500 bg-gray-100",
+          color: "text-muted-foreground bg-muted",
         };
     }
   };
@@ -117,46 +136,48 @@ const NotificationRow: React.FC<{
 
   return (
     <div
-      // Có thể thêm onClick để điều hướng: onClick={() => handleNavigation(notification.metadata)}
-      className={`flex items-start p-4 transition-colors border-b border-gray-100 ${
-        isRead ? "bg-white hover:bg-gray-50" : "bg-blue-50/30 hover:bg-blue-100"
-      } cursor-pointer`}
+      className={cn(
+        "flex items-start p-4 transition-colors border-b border-border last:border-0 cursor-pointer",
+        isRead ? "bg-card hover:bg-muted/30" : "bg-primary/5 hover:bg-primary/10"
+      )}
     >
       <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mr-4 ${color}`}
+        className={cn(
+          "w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mr-4",
+          color
+        )}
       >
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between">
           <p
-            className={`font-bold text-sm leading-snug ${
-              isRead ? "text-gray-700" : "text-gray-900"
-            }`}
+            className={cn(
+              "font-bold text-sm leading-snug",
+              isRead ? "text-muted-foreground" : "text-foreground"
+            )}
           >
             {notification.title}
           </p>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <span className="text-[10px] text-gray-400 font-medium">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase">
               {timeDisplay}
             </span>
-            {/* NÚT MARK AS READ CHO TỪNG TIN */}
             {!isRead && (
               <button
                 onClick={handleMarkAsRead}
                 title="Mark as Read"
-                className="text-gray-400 hover:text-green-600 p-1 rounded-full hover:bg-green-50 transition-colors"
+                className="text-muted-foreground hover:text-primary p-1 rounded-lg hover:bg-accent transition-colors"
               >
                 <Check size={16} />
               </button>
             )}
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">{notification.message}</p>
-        {/* Navigation Link Example */}
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notification.message}</p>
         {notification.metadata?.jobTitle && (
           <div className="mt-2">
-            <span className="text-xs font-bold text-[#0EA5E9] hover:underline flex items-center gap-1">
+            <span className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
               View {notification.metadata.jobTitle} <ArrowRight size={10} />
             </span>
           </div>
@@ -204,11 +225,9 @@ export const NotificationsPage: React.FC = () => {
   const totalPages = Math.ceil(totalNotifications / limit);
   const unreadCount = unreadCountData?.count || 0;
 
-  // MUTATION: Mark a single notification as read
   const { mutate: markAsReadMutate } = useMutation({
     mutationFn: markAsRead,
     onSuccess: () => {
-      // Invalidate các query để cập nhật UI: trang hiện tại, số lượng chưa đọc, và modal header
       queryClient.invalidateQueries({ queryKey: ["notifications-page"] });
       queryClient.invalidateQueries({ queryKey: ["unreadCount"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -222,7 +241,6 @@ export const NotificationsPage: React.FC = () => {
     },
   });
 
-  // MUTATION: Mark all as read
   const { mutate: markAllAsReadMutate, isPending: isMarkingAll } = useMutation({
     mutationFn: markAllAsRead,
     onSuccess: () => {
@@ -254,34 +272,26 @@ export const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans text-slate-900 pb-12">
-      <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8 animate-fadeIn">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-          <Bell size={24} className="text-[#0EA5E9]" />
+    <div className="min-h-screen bg-[#F8F9FB] text-foreground pb-12 animate-fade-in">
+      <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8">
+        <h1 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-3">
+          <Bell size={24} className="text-primary" />
           All Notifications
         </h1>
 
-        <div className="col-span-12 lg:col-span-9 space-y-6">
-          <Card className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex gap-4">
+        <div className="space-y-6">
+          <Card className="p-6 shadow-none">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div className="flex gap-2">
                 <Button
                   onClick={() => setStatusFilter("All")}
-                  className={
-                    statusFilter === "All"
-                      ? "bg-[#0EA5E9] text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }
+                  variant={statusFilter === "All" ? "default" : "outline"}
                 >
                   All ({totalNotifications})
                 </Button>
                 <Button
                   onClick={() => setStatusFilter("sent")}
-                  className={
-                    statusFilter === "sent"
-                      ? "bg-[#0EA5E9] text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }
+                  variant={statusFilter === "sent" ? "default" : "outline"}
                 >
                   Unread ({unreadCount})
                 </Button>
@@ -291,7 +301,7 @@ export const NotificationsPage: React.FC = () => {
                 <Button
                   onClick={() => markAllAsReadMutate()}
                   disabled={isMarkingAll}
-                  className="bg-red-500 text-white hover:bg-red-600 flex items-center gap-2"
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
                 >
                   {isMarkingAll ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -303,23 +313,23 @@ export const NotificationsPage: React.FC = () => {
               )}
             </div>
 
-            <Separator className="mb-4" />
+            <Separator className="mb-0" />
 
             <div className="min-h-[400px] relative">
               {(isLoading || isFetching) && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#0EA5E9]" />
+                <div className="absolute inset-0 flex items-center justify-center bg-card/70 z-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               )}
 
               {notifications.length === 0 && !isLoading ? (
-                <div className="p-12 text-center text-gray-500 text-lg">
+                <div className="p-12 text-center text-muted-foreground text-lg">
                   {statusFilter === "sent"
                     ? "No unread notifications."
                     : "No notifications yet."}
                 </div>
               ) : (
-                <div>
+                <div className="divide-y divide-border">
                   {notifications.map((n) => (
                     <NotificationRow
                       key={n.id}
@@ -332,25 +342,27 @@ export const NotificationsPage: React.FC = () => {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-center items-center gap-4 mt-6">
-              <Button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="bg-gray-100 text-gray-700 hover:bg-gray-200"
-              >
-                Previous
-              </Button>
-              <span className="text-sm font-medium text-gray-600">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="bg-gray-100 text-gray-700 hover:bg-gray-200"
-              >
-                Next
-              </Button>
-            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm font-bold text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </Card>
         </div>
       </div>

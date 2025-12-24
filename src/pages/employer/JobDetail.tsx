@@ -16,6 +16,7 @@ import {
   Calendar,
   XCircle,
   AlertTriangle,
+  Layout,
 } from "lucide-react";
 import {
   DragDropContext,
@@ -149,12 +150,15 @@ export default function JobDetail() {
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center animate-fade-in">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-foreground mb-4">
             Job not found
           </h2>
-          <Button onClick={() => navigate(`/company/${companyId}/jobs`)}>
+          <Button 
+            className="h-10 text-xs font-bold uppercase"
+            onClick={() => navigate(`/company/${companyId}/jobs`)}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Jobs
           </Button>
@@ -165,7 +169,7 @@ export default function JobDetail() {
 
   if (isJobLoading || isPipelineLoading) {
     return (
-      <div className="p-8 text-center text-gray-500">
+      <div className="p-8 text-center text-muted-foreground animate-fade-in">
         Loading Job Details...
       </div>
     );
@@ -260,161 +264,180 @@ export default function JobDetail() {
       case "rejected":
         return "bg-red-500";
       default:
-        return "bg-gray-500";
+        return "bg-muted-foreground";
     }
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6 space-y-6 font-sans bg-gray-50">
-      {/* Job Header */}
-      <div className="border border-gray-200 rounded-xl bg-white shadow-sm">
-        <CardHeader className="p-4 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`/company/${companyId}/jobs`)}
-              className="text-xs font-bold text-gray-500 hover:text-gray-900 uppercase"
-            >
-              <ArrowLeft className="h-3 w-3 mr-1" />
-              Back to Jobs
-            </Button>
-            <div className="flex gap-3">
+    <div className="min-h-screen bg-[#F8F9FB] p-6 space-y-6 animate-fade-in">
+      <div className="max-w-[1400px] mx-auto space-y-6">
+        {/* Job Header */}
+        <Card className="rounded-3xl bg-card border-border overflow-hidden shadow-none">
+          <CardHeader className="p-4 border-b border-border">
+            <div className="flex items-center justify-between">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={() =>
-                  navigate(`/company/${companyId}/jobs/${jobId}/edit-job`)
-                }
-                className="text-xs font-bold text-gray-700 h-8 hover:bg-gray-100"
+                onClick={() => navigate(`/company/${companyId}/jobs`)}
+                className="h-9 text-xs font-bold text-muted-foreground hover:text-foreground uppercase tracking-wider"
               >
-                <Edit className="h-3 w-3 mr-2" />
-                Edit Job
+                <ArrowLeft className="h-3 w-3 mr-1 text-primary" />
+                Back to Jobs
               </Button>
-              {job.status === JobStatus.DRAFT && (
+
+              <div className="flex items-center gap-3">
                 <Button
-                  variant="default"
+                  variant="outline"
                   size="sm"
-                  onClick={() => publishJobMutation.mutate()}
-                  disabled={publishJobMutation.isPending}
-                  className="text-xs font-bold bg-[#0EA5E9] hover:bg-[#0284c7] h-8"
+                  onClick={() =>
+                    navigate(`/company/${companyId}/jobs/${jobId}/edit-job`)
+                  }
+                  className="h-9 text-xs font-bold text-foreground border-border uppercase"
                 >
-                  Publish Job
+                  <Edit className="h-3 w-3 mr-2 text-primary" />
+                  Edit Job
                 </Button>
-              )}
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => closeJobMutation.mutate()}
-                disabled={
-                  closeJobMutation.isPending || job.status === JobStatus.CLOSED
-                }
-                className="text-xs font-bold h-8"
-              >
-                Close Job
-              </Button>
-              {job.status === JobStatus.ACTIVE && (
-                <Badge className="bg-green-500 font-bold text-xs ml-2">
-                  Active
-                </Badge>
-              )}
-              {job.status === JobStatus.DRAFT && (
-                <Badge className="bg-yellow-500 font-bold text-xs ml-2">
-                  Draft
-                </Badge>
-              )}
-              {job.status === JobStatus.CLOSED && (
-                <Badge className="bg-red-500 font-bold text-xs ml-2">
-                  Closed
-                </Badge>
-              )}
+
+                {job.status === JobStatus.DRAFT && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => publishJobMutation.mutate()}
+                    disabled={publishJobMutation.isPending}
+                    className="h-9 text-xs font-bold px-4 uppercase"
+                  >
+                    Publish Job
+                  </Button>
+                )}
+
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => closeJobMutation.mutate()}
+                  disabled={
+                    closeJobMutation.isPending || job.status === JobStatus.CLOSED
+                  }
+                  className="h-9 text-xs font-bold px-4 uppercase"
+                >
+                  Close Job
+                </Button>
+
+                {job.status === JobStatus.ACTIVE && (
+                  <Badge className="bg-[hsl(var(--brand-success))] hover:bg-[hsl(var(--brand-success))] text-white font-bold text-xs ml-2 border-none px-2 py-1 rounded-lg">
+                    Active
+                  </Badge>
+                )}
+                {job.status === JobStatus.DRAFT && (
+                  <Badge className="bg-muted text-muted-foreground font-bold text-xs ml-2 border-border px-2 py-1 rounded-lg">
+                    Draft
+                  </Badge>
+                )}
+                {job.status === JobStatus.CLOSED && (
+                  <Badge className="bg-destructive text-destructive-foreground font-bold text-xs ml-2 border-none px-2 py-1 rounded-lg">
+                    Closed
+                  </Badge>
+                )}
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        {/* Job Details */}
-        <CardContent className="p-4 flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div className="mb-4 md:mb-0">
-            <div className="flex items-center gap-3 mb-1">
-              <CardTitle className="text-xl font-bold text-gray-900">
+          </CardHeader>
+
+          {/* Job Details Content */}
+          <CardContent className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div className="mb-4 md:mb-0 space-y-1">
+              <CardTitle className="text-2xl font-bold text-foreground">
                 {job.title}
               </CardTitle>
+              <CardDescription className="text-sm text-muted-foreground font-medium">
+                {job?.organization?.name} • {job.type} • {job.salary}
+              </CardDescription>
             </div>
-            <CardDescription className="text-sm text-gray-500">
-              {job?.organization?.name} • {job.type} • {job.salary}
-            </CardDescription>
-          </div>
-          <div className="flex gap-4 text-sm text-gray-700">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-[#0EA5E9]" />
-              <span className="font-semibold">
-                {applications?.length || 0} applications
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-400" />
-              <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
-            </div>
-          </div>
-        </CardContent>
-      </div>
 
-      {/* Kanban Board */}
-      {pipeline && (
-        <div>
-          <h2 className="text-xl font-bold mb-4 text-gray-900">
-            Recruitment Pipeline
-          </h2>
-          <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-              {pipeline.stages.map((stage) => (
-                <div key={stage.key} className="flex-shrink-0 w-80">
-                  {/* Column Header */}
-                  <div className="p-3 mb-3 rounded-t-xl border border-gray-200 bg-white shadow-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-3 h-3 rounded-full ${getStageColor(
-                            stage.type
-                          )}`}
-                        />
-                        <h3 className="font-bold text-sm text-gray-900">
-                          {stage.name}
-                        </h3>
+            <div className="flex flex-wrap gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-primary/10 rounded-xl">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <span className="font-bold text-foreground">
+                  {applications?.length || 0} applications
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-muted rounded-xl">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <span className="text-muted-foreground font-medium">
+                  Posted {new Date(job.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Kanban Board */}
+        {pipeline ? (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold text-foreground">
+              Recruitment Pipeline
+            </h2>
+            <DragDropContext onDragEnd={onDragEnd}>
+              <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-thin scrollbar-thumb-border">
+                {pipeline.stages.map((stage) => (
+                  <div
+                    key={stage.key}
+                    className="flex-shrink-0 w-80 flex flex-col"
+                  >
+                    {/* Column Header */}
+                    <div className="p-4 rounded-t-2xl border-t border-x border-border bg-card">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-2.5 h-2.5 rounded-full ${getStageColor(
+                              stage.type
+                            )}`}
+                          />
+                          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
+                            {stage.name}
+                          </h3>
+                        </div>
+                        <Badge
+                          variant="secondary"
+                          className="bg-muted text-muted-foreground font-bold text-xs h-5 px-2 rounded-lg border-none"
+                        >
+                          {columns[stage.key]?.length || 0}
+                        </Badge>
                       </div>
-                      <Badge className="bg-gray-100 text-gray-600 font-bold text-xs">
-                        {columns[stage.key]?.length || 0}
-                      </Badge>
+
+                      {stage.key !== "hired" && stage.key !== "rejected" && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-8 px-3 text-[10px] font-bold mt-3 rounded-lg w-full flex items-center justify-center uppercase"
+                          onClick={() =>
+                            handleRejectAllClick(stage.key, stage.name)
+                          }
+                          disabled={
+                            !columns[stage.key] || columns[stage.key].length === 0
+                          }
+                        >
+                          <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                          Reject All
+                        </Button>
+                      )}
                     </div>
-                    {stage.key !== "hired" && stage.key !== "rejected" && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-6 px-2 text-[10px] font-bold mt-2"
-                        onClick={() =>
-                          handleRejectAllClick(stage.key, stage.name)
-                        }
-                        disabled={
-                          !columns[stage.key] ||
-                          columns[stage.key].length === 0
-                        }
-                      >
-                        <XCircle className="h-3 w-3 mr-1" />
-                        Reject All
-                      </Button>
-                    )}
-                  </div>
-                  <Droppable droppableId={stage.key}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`bg-gray-100/50 rounded-b-xl p-3 min-h-[500px] border-x border-b border-gray-200 ${
-                          snapshot.isDraggingOver ? "bg-blue-100/50" : ""
-                        }`}
-                      >
-                        {(columns[stage.key] || []).map(
-                          (application, index) => {
-                            return (
+
+                    {/* Droppable Stage Area */}
+                    <Droppable droppableId={stage.key}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`bg-muted/30 rounded-b-2xl p-3 min-h-[500px] border-x border-b border-border transition-colors duration-200 ${
+                            snapshot.isDraggingOver ? "bg-primary/5" : ""
+                          }`}
+                        >
+                          {(columns[stage.key] || []).map(
+                            (application, index) => (
                               <Draggable
                                 key={application.id}
                                 draggableId={application.id}
@@ -425,8 +448,10 @@ export default function JobDetail() {
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
                                     {...provided.dragHandleProps}
-                                    className={`mb-3 cursor-move border border-gray-200 hover:border-blue-400 transition-all bg-white shadow-sm ${
-                                      snapshot.isDragging ? "shadow-lg" : ""
+                                    className={`mb-3 cursor-grab active:cursor-grabbing border-border rounded-xl bg-card transition-all duration-200 hover:border-primary/50 shadow-none ${
+                                      snapshot.isDragging
+                                        ? "rotate-1 scale-105 border-primary shadow-xl z-50"
+                                        : ""
                                     }`}
                                     onClick={() =>
                                       navigate(
@@ -434,23 +459,21 @@ export default function JobDetail() {
                                       )
                                     }
                                   >
-                                    <CardContent className="p-3">
-                                      <div className="space-y-1.5">
-                                        <h4 className="font-bold text-sm text-gray-900 truncate">
-                                          {application?.candidateSnapshot
-                                            ?.name ||
+                                    <CardContent className="p-4">
+                                      <div className="space-y-2">
+                                        <h4 className="font-bold text-sm text-foreground truncate leading-none">
+                                          {application?.candidateSnapshot?.name ||
                                             application?.candidate?.firstName +
                                               " " +
                                               application?.candidate?.lastName}
                                         </h4>
-                                        <p className="text-xs text-gray-500 truncate">
-                                          {
-                                            application?.candidateSnapshot
-                                              ?.currentTitle
-                                          }
+                                        <p className="text-xs text-muted-foreground truncate font-medium">
+                                          {application?.candidateSnapshot
+                                            ?.currentTitle || "No title provided"}
                                         </p>
-                                        <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-100">
-                                          <span>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                                             Applied{" "}
                                             {new Date(
                                               application.appliedDate
@@ -459,7 +482,7 @@ export default function JobDetail() {
                                           {application.matchingScore && (
                                             <Badge
                                               variant="outline"
-                                              className="text-[10px] font-bold bg-blue-50 text-blue-700 border-blue-100 px-2 py-0.5 whitespace-nowrap"
+                                              className="text-[10px] font-bold bg-primary/5 text-primary border-primary/20 px-1.5 py-0 rounded-md whitespace-nowrap"
                                             >
                                               {application.matchingScore}% match
                                             </Badge>
@@ -470,73 +493,97 @@ export default function JobDetail() {
                                   </Card>
                                 )}
                               </Draggable>
-                            );
-                          }
-                        )}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </div>
-              ))}
+                            )
+                          )}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </div>
+                ))}
+              </div>
+            </DragDropContext>
+          </div>
+        ) : (
+          <Card className="rounded-3xl border-border bg-card p-12 text-center shadow-none">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <div className="p-4 bg-muted rounded-2xl">
+                <Layout className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-foreground">No Pipeline</h3>
+                <p className="text-sm text-muted-foreground max-w-xs mx-auto font-medium">
+                  This job post doesn't have an associated recruitment pipeline.
+                </p>
+              </div>
             </div>
-          </DragDropContext>
-        </div>
-      )}
+          </Card>
+        )}
 
-      {/* Reject All Confirmation Dialog */}
-      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Confirm Reject All
-            </DialogTitle>
-            <DialogDescription className="pt-2">
-              Are you sure you want to reject all{" "}
-              <span className="font-semibold">
-                {stageToReject ? columns[stageToReject.key]?.length || 0 : 0}
-              </span>{" "}
-              candidate(s) in the{" "}
-              <span className="font-semibold">{stageToReject?.name}</span>{" "}
-              stage?
-              <br />
-              <br />
-              This action cannot be undone. All candidates will be moved to the
-              Rejected stage.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setRejectDialogOpen(false);
-                setStageToReject(null);
-              }}
-              disabled={bulkRejectMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmRejectAll}
-              disabled={bulkRejectMutation.isPending}
-            >
-              {bulkRejectMutation.isPending ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Rejecting...
-                </>
-              ) : (
-                <>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Reject All
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Reject All Confirmation Dialog */}
+        <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+          <DialogContent className="sm:max-w-[400px] rounded-3xl border-border bg-card shadow-none">
+            <DialogHeader className="flex flex-col items-center text-center">
+              <div className="p-3 bg-destructive/10 rounded-2xl mb-2">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+
+              <DialogTitle className="text-xl font-bold text-foreground">
+                Confirm Reject All
+              </DialogTitle>
+
+              <DialogDescription className="text-sm text-muted-foreground pt-2">
+                Are you sure you want to reject all{" "}
+                <span className="font-bold text-foreground">
+                  {stageToReject ? columns[stageToReject.key]?.length || 0 : 0}
+                </span>{" "}
+                candidate(s) in the{" "}
+                <span className="font-bold text-foreground">
+                  {stageToReject?.name}
+                </span>{" "}
+                stage?
+                <br />
+                <br />
+                This action cannot be undone. All candidates will be moved to the
+                Rejected stage.
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="flex flex-col sm:flex-row gap-3 mt-4">
+              <Button
+                variant="outline"
+                className="h-10 rounded-xl text-xs font-bold uppercase flex-1 border-border"
+                onClick={() => {
+                  setRejectDialogOpen(false);
+                  setStageToReject(null);
+                }}
+                disabled={bulkRejectMutation.isPending}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="h-10 rounded-xl text-xs font-bold uppercase flex-1"
+                onClick={handleConfirmRejectAll}
+                disabled={bulkRejectMutation.isPending}
+              >
+                {bulkRejectMutation.isPending ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Rejecting...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject All
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

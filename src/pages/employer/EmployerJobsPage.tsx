@@ -36,7 +36,7 @@ import {
 import { JobStatus } from "@/api/types/jobs.types";
 import { toast } from "@/hooks/use-toast";
 
-// --- 1. HOOKS & LOGIC (Senior Practice: Custom Hook for Mutations) ---
+// --- 1. HOOKS & LOGIC ---
 const useJobMutations = (companyId: string | undefined) => {
   const queryClient = useQueryClient();
   const invalidate = () =>
@@ -65,30 +65,35 @@ const useJobMutations = (companyId: string | undefined) => {
   return { publishJobMutation, closeJobMutation };
 };
 
-// --- 2. SUB-COMPONENTS (Senior Practice: Modularizing Complex JSX) ---
+// --- 2. SUB-COMPONENTS ---
 const JobCardActions = ({
   job,
   navigate,
   publishJobMutation,
   closeJobMutation,
+}: {
+  job: Job;
+  navigate: any;
+  publishJobMutation: any;
+  closeJobMutation: any;
 }) => {
   const getStatusBadge = (status: Job["status"]) => {
     switch (status) {
       case "active":
         return (
-          <Badge className="bg-green-500 hover:bg-green-600 text-white font-bold text-xs px-2 py-0.5">
+          <Badge className="bg-[hsl(var(--brand-success))] text-white font-bold text-xs px-2 py-0.5 border-none shadow-none">
             Active
           </Badge>
         );
       case "draft":
         return (
-          <Badge className="bg-gray-200 text-gray-600 font-medium text-xs px-2 py-0.5 border border-gray-300">
+          <Badge className="bg-muted text-muted-foreground font-bold text-xs px-2 py-0.5 border-border shadow-none">
             Draft
           </Badge>
         );
       case "closed":
         return (
-          <Badge className="bg-red-100 text-red-600 font-medium text-xs px-2 py-0.5 border border-red-200">
+          <Badge className="bg-destructive/10 text-destructive font-bold text-xs px-2 py-0.5 border-destructive/20 shadow-none">
             Closed
           </Badge>
         );
@@ -98,28 +103,28 @@ const JobCardActions = ({
   return (
     <Card
       key={job.id}
-      className="border border-gray-200 hover:border-blue-400 transition-colors p-4 bg-white shadow-sm"
+      className="bg-card border-border rounded-2xl shadow-none transition-all duration-200 hover:border-primary/40 p-4"
     >
       <CardHeader className="p-0 mb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
               <CardTitle
-                className="text-base font-bold text-gray-900 cursor-pointer hover:text-[#0EA5E9]"
+                className="text-lg font-bold text-foreground cursor-pointer hover:text-primary transition-colors"
                 onClick={() => navigate(`${job.id}`)}
               >
                 {job.title}
               </CardTitle>
               {getStatusBadge(job.status)}
             </div>
-            <CardDescription className="text-xs text-gray-500 flex items-center gap-2">
+            <CardDescription className="text-xs text-muted-foreground flex items-center gap-2 font-medium">
               <span className="flex items-center gap-1">
-                <Building className="h-3 w-3" />
+                <Building className="h-3 w-3 text-primary" />
                 {job.location}
               </span>
-              <span className="text-gray-300">•</span>
+              <span className="text-border">•</span>
               <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
+                <Clock className="h-3 w-3 text-primary" />
                 {job.type}
               </span>
             </CardDescription>
@@ -130,30 +135,30 @@ const JobCardActions = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-xl"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="bg-white border border-gray-200 rounded-lg p-1 text-sm"
+              className="bg-popover border-border rounded-xl p-1 shadow-lg"
             >
               <DropdownMenuItem
                 onClick={() => navigate(`${job.id}/edit-job`)}
-                className="flex items-center px-2 py-1.5 text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md"
+                className="flex items-center px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent cursor-pointer rounded-lg"
               >
-                <Edit className="h-3 w-3 mr-2" />
+                <Edit className="h-3.5 w-3.5 mr-2 text-primary" />
                 Edit
               </DropdownMenuItem>
               {job.status === JobStatus.DRAFT && (
                 <DropdownMenuItem
                   onClick={() => publishJobMutation.mutate(job.id)}
                   disabled={publishJobMutation.isPending}
-                  className="flex items-center px-2 py-1.5 text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md"
+                  className="flex items-center px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent cursor-pointer rounded-lg"
                 >
-                  <span className="flex items-center text-green-600 font-bold">
-                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2" />
+                  <span className="flex items-center text-[hsl(var(--brand-success))]">
+                    <span className="h-2 w-2 rounded-full bg-[hsl(var(--brand-success))] mr-2" />
                     Publish
                   </span>
                 </DropdownMenuItem>
@@ -162,10 +167,10 @@ const JobCardActions = ({
                 <DropdownMenuItem
                   onClick={() => closeJobMutation.mutate(job.id)}
                   disabled={closeJobMutation.isPending}
-                  className="flex items-center px-2 py-1.5 text-gray-700 hover:bg-gray-100 cursor-pointer rounded-md"
+                  className="flex items-center px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent cursor-pointer rounded-lg"
                 >
-                  <span className="flex items-center text-red-600 font-bold">
-                    <span className="h-2 w-2 rounded-full bg-red-500 mr-2" />
+                  <span className="flex items-center text-destructive">
+                    <span className="h-2 w-2 rounded-full bg-destructive mr-2" />
                     Close Job
                   </span>
                 </DropdownMenuItem>
@@ -175,29 +180,30 @@ const JobCardActions = ({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="flex items-center justify-between text-xs text-gray-600">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-5 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <Users className="h-3 w-3 text-[#0EA5E9]" />
-              <span className="font-bold text-gray-900">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              <span className="font-bold text-foreground">
                 {job.applications}
               </span>
               applications
             </div>
             <div className="flex items-center gap-1.5">
-              <DollarSign className="h-3 w-3 text-emerald-500" />
-              <span className="font-bold">{job.salary}</span>
+              <DollarSign className="h-3.5 w-3.5 text-[hsl(var(--brand-success))]" />
+              <span className="font-bold text-foreground">{job.salary}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3 text-gray-400" />
+              <Clock className="h-3.5 w-3.5 text-muted-foreground/60" />
               <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
           <Button
             onClick={() => navigate(`${job.id}`)}
-            className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold h-8 px-3 rounded-lg text-xs flex items-center gap-1 shadow-sm transition-colors"
+            variant="default"
+            className="h-9 px-4 rounded-xl text-xs font-bold flex items-center gap-2"
           >
-            View Pipeline <ArrowRight className="w-3 h-3" />
+            View Pipeline <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </div>
       </CardContent>
@@ -226,65 +232,80 @@ const EmployerJobsPage = () => {
     ) || [];
 
   return (
-    <div className="max-w-[1400px] mx-auto py-6 px-4 md:px-6 lg:px-8 space-y-6 font-sans bg-gray-50 min-h-screen">
-      <div className="flex items-start justify-between border-b border-gray-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Jobs Management</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            View and manage all your job postings (
-            {organizationJobsData?.length || 0})
-          </p>
-        </div>
-        <Button
-          onClick={() => navigate(`/company/${companyId}/post-job`)}
-          className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold py-2.5 px-4 rounded-lg text-sm shadow-sm transition-colors"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create New Job
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-        <div className="relative flex-1 max-w-lg">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search jobs by title or keyword..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 text-sm border-gray-300 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 rounded-lg"
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-3">
-        {isLoading ? (
-          <div className="text-center py-10 text-gray-500">Loading jobs...</div>
-        ) : filteredJobs.length === 0 && organizationJobsData?.length === 0 ? (
-          <div className="text-center py-10 border border-gray-200 rounded-xl bg-white shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900">
-              No Jobs Posted Yet
-            </h3>
-            <p className="text-gray-500 mt-2">
-              Start your hiring process by creating your first job posting.
+    <div className="min-h-screen bg-[#F8F9FB] animate-fade-in">
+      <div className="container-custom max-w-[1400px] mx-auto py-8 px-4 md:px-6 lg:px-8 space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Jobs Management</h1>
+            <p className="text-sm text-muted-foreground mt-1 font-medium">
+              View and manage all your job postings (
+              {organizationJobsData?.length || 0})
             </p>
           </div>
-        ) : filteredJobs.length === 0 &&
-          organizationJobsData &&
-          organizationJobsData.length > 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            No results found for "{searchQuery}".
-          </div>
-        ) : (
-          filteredJobs.map((job) => (
-            <JobCardActions
-              key={job.id}
-              job={job}
-              navigate={navigate}
-              publishJobMutation={publishJobMutation}
-              closeJobMutation={closeJobMutation}
+          <Button
+            onClick={() => navigate(`/company/${companyId}/post-job`)}
+            variant="default"
+            className="h-10 px-5 rounded-xl text-sm font-bold shadow-none"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create New Job
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-4 bg-card p-2 rounded-2xl border border-border">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search jobs by title or keyword..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-11 h-11 text-sm border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 rounded-xl"
             />
-          ))
-        )}
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          {isLoading ? (
+            <div className="text-center py-20">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+              <p className="mt-4 text-xs font-bold uppercase text-muted-foreground tracking-widest">Loading jobs...</p>
+            </div>
+          ) : filteredJobs.length === 0 && organizationJobsData?.length === 0 ? (
+            <Card className="rounded-3xl border-border bg-card shadow-none py-16 text-center">
+              <CardContent>
+                <div className="mx-auto w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center mb-4">
+                    <Users className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">
+                  No Jobs Posted Yet
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto font-medium">
+                  Start your hiring process by creating your first job posting.
+                </p>
+              </CardContent>
+            </Card>
+          ) : filteredJobs.length === 0 &&
+            organizationJobsData &&
+            organizationJobsData.length > 0 ? (
+            <div className="text-center py-20 bg-card border border-border rounded-3xl border-dashed">
+              <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                No results found for "{searchQuery}".
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredJobs.map((job) => (
+                <JobCardActions
+                  key={job.id}
+                  job={job}
+                  navigate={navigate}
+                  publishJobMutation={publishJobMutation}
+                  closeJobMutation={closeJobMutation}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

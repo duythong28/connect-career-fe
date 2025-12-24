@@ -17,7 +17,7 @@ const createCandidateReport = async (
 const getMyCandidateReports = async (params?: {
   page?: number;
   limit?: number;
-}) => {
+}): Promise<ReportsResponse> => {
   const response = await axios.get("/candidates/reports/my-reports", {
     params,
   });

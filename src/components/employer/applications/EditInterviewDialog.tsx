@@ -11,24 +11,48 @@ import {
     InterviewType,
 } from "@/api/types/interviews.types";
 import { updateInterview } from "@/api/endpoints/interviews.api";
+import { X } from "lucide-react";
 
-// Assuming RecruiterDialog is a helper wrapper for consistent UI
-const RecruiterDialog = ({ open, onOpenChange, title, children, onConfirm, confirmText }) => open ? (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <div className="font-bold text-lg">{title}</div>
-                <button onClick={() => onOpenChange(false)} className="text-gray-400 hover:text-gray-600">X</button>
-            </div>
-            <div className="p-8 overflow-y-auto flex-1">{children}</div>
-            <div className="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50 rounded-b-xl">
-                <button onClick={() => onOpenChange(false)} className="px-6 py-2.5 border rounded-lg text-gray-600 font-bold text-sm">Cancel</button>
-                <button onClick={onConfirm} className="px-8 py-2.5 bg-[#0EA5E9] text-white rounded-lg font-bold text-sm">{confirmText}</button>
+/**
+ * RecruiterDialog: Standardized Dialog Wrapper for CareerHub Design System.
+ * - Radii: rounded-3xl for the main container.
+ * - Colors: bg-card, border-border.
+ * - Typography: text-xl for titles.
+ * - Animation: Omitted for dialogs per system guidelines.
+ */
+const RecruiterDialog = ({ open, onOpenChange, title, children, onConfirm, confirmText }) =>
+    open ? (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+            <div className="bg-card border border-border rounded-3xl w-full max-w-md shadow-lg max-h-[90vh] flex flex-col overflow-hidden">
+                <div className="p-6 border-b border-border flex justify-between items-center bg-card">
+                    <div className="text-xl font-bold text-foreground">{title}</div>
+                    <button
+                        onClick={() => onOpenChange(false)}
+                        className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                    >
+                        <X size={20} />
+                    </button>
+                </div>
+                <div className="p-8 overflow-y-auto flex-1 bg-card">{children}</div>
+                <div className="p-6 border-t border-border flex justify-end gap-3 bg-muted/30">
+                    <Button
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        className="h-10 rounded-xl px-6 font-bold text-sm"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="default"
+                        onClick={onConfirm}
+                        className="h-10 rounded-xl px-8 font-bold text-sm"
+                    >
+                        {confirmText}
+                    </Button>
+                </div>
             </div>
         </div>
-    </div>
-) : null;
-
+    ) : null;
 
 export default function EditInterviewDialog({
     open,
@@ -51,10 +75,13 @@ export default function EditInterviewDialog({
 
     useEffect(() => {
         if (interview) {
-            // Format to local datetime string if it's a valid date
             const date = new Date(interview.scheduledDate);
-            const localISOTime = new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-            
+            const localISOTime = new Date(
+                date.getTime() - date.getTimezoneOffset() * 60000
+            )
+                .toISOString()
+                .slice(0, 16);
+
             setInterviewDateTime(localISOTime);
             setInterviewerName(interview.interviewerName || "");
             setInterviewerEmail(interview.interviewerEmail || "");
@@ -112,91 +139,107 @@ export default function EditInterviewDialog({
             onConfirm={handleUpdateInterview}
             confirmText="Update Interview"
         >
-             <div className="space-y-5">
+            <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <Label className="text-xs font-bold text-gray-700 uppercase">Interviewer Name *</Label>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Interviewer Name *
+                        </Label>
                         <Input
                             placeholder="John Doe"
                             value={interviewerName}
                             onChange={(e) => setInterviewerName(e.target.value)}
-                            className="border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+                            className="border-border rounded-xl h-10 px-4 text-sm focus:ring-2 focus:ring-primary"
                         />
                     </div>
-                    <div className="space-y-1">
-                        <Label className="text-xs font-bold text-gray-700 uppercase">Interviewer Email</Label>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Interviewer Email
+                        </Label>
                         <Input
                             type="email"
                             placeholder="interviewer@company.com"
                             value={interviewerEmail}
                             onChange={(e) => setInterviewerEmail(e.target.value)}
-                            className="border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+                            className="border-border rounded-xl h-10 px-4 text-sm focus:ring-2 focus:ring-primary"
                         />
                     </div>
                 </div>
-                <div className="space-y-1">
-                    <Label className="text-xs font-bold text-gray-700 uppercase">Date & Time *</Label>
+                <div className="space-y-1.5">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Date & Time *
+                    </Label>
                     <Input
                         type="datetime-local"
                         value={interviewDateTime}
                         onChange={(e) => setInterviewDateTime(e.target.value)}
-                        className="border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+                        className="border-border rounded-xl h-10 px-4 text-sm focus:ring-2 focus:ring-primary"
                     />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <Label className="text-xs font-bold text-gray-700 uppercase">Interview Type</Label>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Interview Type
+                        </Label>
                         <select
                             value={interviewType}
                             onChange={(e) => setInterviewType(e.target.value as InterviewType)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm appearance-none bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full border border-border rounded-xl h-10 px-3 text-sm appearance-none bg-card focus:ring-2 focus:ring-primary outline-none transition-all"
                         >
                             <option value="video">Video</option>
                             <option value="phone">Phone</option>
                             <option value="in-person">In Person</option>
                         </select>
                     </div>
-                    <div className="space-y-1">
-                        <Label className="text-xs font-bold text-gray-700 uppercase">Duration (min)</Label>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Duration (min)
+                        </Label>
                         <Input
                             type="number"
                             placeholder="60"
                             value={duration}
                             onChange={(e) => setDuration(parseInt(e.target.value) || 60)}
-                            className="border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+                            className="border-border rounded-xl h-10 px-4 text-sm focus:ring-2 focus:ring-primary"
                         />
                     </div>
                 </div>
                 {interviewType === "video" && (
-                    <div className="space-y-1">
-                        <Label className="text-xs font-bold text-gray-700 uppercase">Meeting Link</Label>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Meeting Link
+                        </Label>
                         <Input
                             placeholder="https://meet.google.com/..."
                             value={meetingLink}
                             onChange={(e) => setMeetingLink(e.target.value)}
-                            className="border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+                            className="border-border rounded-xl h-10 px-4 text-sm focus:ring-2 focus:ring-primary"
                         />
                     </div>
                 )}
                 {interviewType === "in-person" && (
-                    <div className="space-y-1">
-                        <Label className="text-xs font-bold text-gray-700 uppercase">Location</Label>
+                    <div className="space-y-1.5">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground">
+                            Location
+                        </Label>
                         <Input
                             placeholder="Office Room 301"
                             value={location}
                             onChange={(e) => setLocation(e.target.value)}
-                            className="border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+                            className="border-border rounded-xl h-10 px-4 text-sm focus:ring-2 focus:ring-primary"
                         />
                     </div>
                 )}
-                <div className="space-y-1">
-                    <Label className="text-xs font-bold text-gray-700 uppercase">Notes</Label>
+                <div className="space-y-1.5">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Notes
+                    </Label>
                     <Textarea
                         placeholder="Additional notes..."
                         value={interviewNotes}
                         onChange={(e) => setInterviewNotes(e.target.value)}
                         rows={3}
-                        className="border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 resize-none"
+                        className="border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary resize-none"
                     />
                 </div>
             </div>

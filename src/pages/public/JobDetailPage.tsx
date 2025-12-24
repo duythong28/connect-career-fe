@@ -15,7 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
 import {
   getCandidateJobById,
-  getCandidateSimilarJobs,
   getCandidateJobs,
 } from "@/api/endpoints/jobs.api";
 import RenderMarkDown, {
@@ -23,18 +22,41 @@ import RenderMarkDown, {
 } from "@/components/shared/RenderMarkDown";
 import ApplyJobDialog from "@/components/candidate/applications/ApplyJobDialog";
 import { Markdown } from "@/components/ui/markdown";
-import {
-  Job,
-  JobsResponse,
-  JobType,
-  JobTypeLabel,
-} from "@/api/types/jobs.types";
+import { Job, JobType, JobTypeLabel } from "@/api/types/jobs.types";
 import { toast } from "@/hooks/use-toast";
 import ReportDialog from "@/components/reports/ReportDialog";
+import {
+  getSimilarJobsRecommendations,
+  getJobsByIds,
+  getCandidateRecommendationsForJob,
+  getUsersByIds,
+} from "@/api/endpoints/recommendations.api";
 
 const JobDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  const handleGetSimilarJobs = async (jobId: string): Promise<Job[]> => {
+    try {
+      // const candidates = await getCandidateRecommendationsForJob(jobId);
+      // const users = await getUsersByIds(candidates.userIds);
+      const response = await getSimilarJobsRecommendations(jobId);
+      if (response.jobIds && response.jobIds.length > 0) {
+        const result = await getJobsByIds(response.jobIds);
+        return result;
+      } else {
+        const result = await getCandidateJobs({
+          pageNumber: 1,
+          pageSize: 8,
+          companyName: jobData?.companyName,
+          keywords: jobData?.keywords?.slice(0, 3),
+        });
+        return result.data;
+      }
+    } catch (error) {
+      console.error("Error fetching similar jobs:", error);
+    }
+  };
 
   // Fetch job detail
   const { data: jobData } = useQuery({
@@ -44,33 +66,24 @@ const JobDetailPage = () => {
   });
 
   // Fetch similar jobs
-  const { data: similarJobs, isLoading: loadingSimilar } = useQuery<Job[]>({
+  const { data: similarJobs, isLoading: loadingSimilar } = useQuery({
     queryKey: ["similar-jobs", id],
-    queryFn: () => getCandidateSimilarJobs(id!),
+    queryFn: () => handleGetSimilarJobs(id!),
     enabled: !!id,
-  });
-
-  // Fallback: fetch 5 jobs from same company or with similar keywords
-  const { data: fallbackJobs } = useQuery<JobsResponse>({
-    queryKey: ["fallback-jobs", jobData?.organizationId, jobData?.keywords],
-    queryFn: () =>
-      getCandidateJobs({
-        pageNumber: 1,
-        pageSize: 5,
-        companyName: jobData?.companyName,
-        keywords: jobData?.keywords?.slice(0, 3),
-      }),
-    enabled: !!jobData && (!similarJobs || similarJobs.length === 0),
   });
 
   if (!jobData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center font-sans">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-4">
             Job not found
           </h2>
-          <Button onClick={() => navigate("/jobs")} variant="outline" className="h-10 px-6 rounded-xl border-border hover:bg-secondary">
+          <Button
+            onClick={() => navigate("/jobs")}
+            variant="outline"
+            className="h-9 px-6 rounded-xl border-border hover:bg-secondary"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Jobs
           </Button>
@@ -78,8 +91,6 @@ const JobDetailPage = () => {
       </div>
     );
   }
-
-  const isApplied = false; // TODO: Replace with real application status
 
   const stripHtml = (html: string) => {
     const tmp = document.createElement("DIV");
@@ -105,12 +116,12 @@ const JobDetailPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans animate-fade-in">
+    <div className="min-h-screen bg-[#F8F9FB] animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)} 
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
             className="text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-transparent px-0 py-0 flex items-center gap-1 uppercase tracking-wide h-auto"
           >
             <ArrowLeft className="h-3 w-3 mr-1" />
@@ -119,12 +130,12 @@ const JobDetailPage = () => {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card className="rounded-3xl border border-border shadow-sm bg-card">
               <CardHeader className="p-8 border-b border-border">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-5">
-                    <Avatar className="h-20 w-20 rounded-2xl flex items-center justify-center text-3xl font-bold bg-secondary text-primary shadow-sm shrink-0 border border-border">
+                    <Avatar className="h-20 w-20 rounded-2xl flex items-center justify-center border border-border shadow-sm shrink-0">
                       <AvatarImage
                         src={
                           jobData.organization?.logoFile?.url ??
@@ -132,7 +143,7 @@ const JobDetailPage = () => {
                         }
                         className="rounded-2xl object-cover"
                       />
-                      <AvatarFallback className="text-2xl font-bold text-muted-foreground">
+                      <AvatarFallback className="text-2xl font-bold bg-secondary text-primary">
                         {jobData.companyName?.charAt(0) || "C"}
                       </AvatarFallback>
                     </Avatar>
@@ -145,14 +156,17 @@ const JobDetailPage = () => {
                       </p>
                       <div className="flex flex-wrap gap-x-5 gap-y-2 text-muted-foreground text-sm">
                         <span className="flex items-center min-w-0 text-xs font-bold text-foreground">
-                          <MapPin className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                          <MapPin className="h-3.5 w-3.5 mr-1.5 text-primary" />
                           {jobData.location}
                         </span>
-                        <span className="flex items-center min-w-0 text-xs font-bold text-green-600">
-                          <DollarSign className="h-3.5 w-3.5 mr-1.5 text-green-600" />
+                        <span className="flex items-center min-w-0 text-xs font-bold text-brand-success">
+                          <DollarSign className="h-3.5 w-3.5 mr-1.5 text-brand-success" />
                           {jobData.salary}
                         </span>
-                        <Badge variant="secondary" className="capitalize bg-primary/10 text-primary font-bold text-[10px] px-2.5 py-0.5 rounded-lg border-transparent hover:bg-primary/20">
+                        <Badge
+                          variant="secondary"
+                          className="capitalize bg-secondary text-primary font-bold text-[10px] px-2.5 py-0.5 rounded-lg border-transparent"
+                        >
                           {JobTypeLabel[jobData.type as JobType] ||
                             jobData.type}
                         </Badge>
@@ -160,22 +174,24 @@ const JobDetailPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="icon" onClick={handleShare} className="h-10 w-10 border-border hover:bg-secondary rounded-xl">
-                      <Share className="h-4 w-4 text-muted-foreground" />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleShare}
+                      className="h-10 w-10 border-border hover:bg-secondary rounded-xl"
+                    >
+                      <Share className="h-4 w-4 text-primary" />
                     </Button>
-                    <ReportDialog
-                      entityId={jobData.id}
-                      entityType={"job"}
-                    />
+                    <ReportDialog entityId={jobData.id} entityType={"job"} />
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground mt-6 border-t border-border pt-5">
-                  <span className="flex items-center min-w-0 text-xs font-bold text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/70" />
+                  <span className="flex items-center min-w-0 text-xs font-bold">
+                    <Clock className="h-3.5 w-3.5 mr-1.5 text-primary" />
                     Posted {new Date(jobData.createdAt).toLocaleDateString()}
                   </span>
-                  <span className="flex items-center min-w-0 text-xs font-bold text-muted-foreground">
-                    <Users className="h-3.5 w-3.5 mr-1.5 text-muted-foreground/70" />
+                  <span className="flex items-center min-w-0 text-xs font-bold">
+                    <Users className="h-3.5 w-3.5 mr-1.5 text-primary" />
                     {jobData.applications} applicants
                   </span>
                 </div>
@@ -200,22 +216,143 @@ const JobDetailPage = () => {
                       Required Skills
                     </h4>
                     {jobData.keywords.map((keyword: string) => (
-                      <Badge key={keyword} variant="outline" className="text-xs font-bold bg-secondary/30 text-foreground px-3.5 py-1.5 rounded-full border border-border hover:bg-secondary/50 transition-colors">
+                      <Badge
+                        key={keyword}
+                        variant="outline"
+                        className="text-xs font-bold bg-secondary/30 text-foreground px-3.5 py-1.5 rounded-full border border-border hover:bg-secondary/50"
+                      >
                         {keyword}
                       </Badge>
                     ))}
                   </div>
                 </div>
-                {/* Sticky apply button on mobile */}
-                <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-4 shadow-xl">
+                <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-4 shadow-lg">
                   <ApplyJobDialog jobId={id ?? ""} />
                 </div>
               </CardContent>
             </Card>
+            <div className="space-y-6">
+              {/* Section Header tách biệt khỏi Card */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-foreground">
+                  Similar Jobs
+                </h2>
+                {!loadingSimilar && (similarJobs?.length || 0) > 0 && (
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {similarJobs?.length} Results
+                  </span>
+                )}
+              </div>
+
+              {/* Grid Layout cho các Job Items */}
+              {loadingSimilar ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="h-32 bg-muted/50 animate-pulse rounded-2xl border border-border"
+                    />
+                  ))}
+                </div>
+              ) : (similarJobs?.length || 0) > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {similarJobs?.slice(0, 8).map((similarJob) => {
+                    const companyName =
+                      similarJob?.organization?.name ||
+                      similarJob.companyName ||
+                      "Unknown";
+                    const logoInitials =
+                      (companyName.match(/\b\w/g) || [])
+                        .join("")
+                        .toUpperCase()
+                        .substring(0, 2) ||
+                      similarJob?.title?.charAt(0) ||
+                      "CO";
+
+                    const salary =
+                      similarJob.salary ||
+                      (similarJob.salaryDetails?.minAmount &&
+                      similarJob.salaryDetails?.maxAmount
+                        ? `${similarJob.salaryDetails.minAmount.toLocaleString()} - ${similarJob.salaryDetails.maxAmount.toLocaleString()} ${
+                            similarJob.salaryDetails.currency || ""
+                          }`
+                        : similarJob.salaryMin && similarJob.salaryMax
+                        ? `${similarJob.salaryMin.toLocaleString()} - ${similarJob.salaryMax.toLocaleString()} ${
+                            similarJob.salaryCurrency || ""
+                          }`
+                        : "");
+
+                    return (
+                      <div
+                        key={similarJob.id}
+                        className="p-5 bg-card border border-border rounded-2xl cursor-pointer hover:shadow-md hover:border-primary/30 transition-all group"
+                        onClick={() => navigate(`/jobs/${similarJob.id}`)}
+                      >
+                        <div className="flex items-start gap-4">
+                          {/* Logo Công ty */}
+                          <Avatar className="w-12 h-12 rounded-xl border border-border flex-shrink-0 bg-white shadow-sm">
+                            <AvatarImage
+                              src={
+                                similarJob?.organization?.logoFile?.url ||
+                                similarJob.companyLogo
+                              }
+                              alt={companyName}
+                            />
+                            <AvatarFallback className="bg-secondary text-primary font-bold text-sm rounded-xl">
+                              {logoInitials}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          {/* Thông tin Job */}
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-bold text-base text-foreground truncate group-hover:text-primary transition-colors leading-tight mb-1">
+                              {similarJob.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground truncate font-medium mb-3">
+                              {companyName}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+                                <MapPin size={12} className="text-primary/70" />
+                                <span className="truncate max-w-[100px]">
+                                  {similarJob.location}
+                                </span>
+                              </div>
+
+                              <Badge
+                                variant="secondary"
+                                className="capitalize bg-secondary/50 text-primary border-transparent text-[10px] px-2 py-0 rounded-md font-bold"
+                              >
+                                {JobTypeLabel[similarJob.type as JobType] ||
+                                  similarJob.type}
+                              </Badge>
+
+                              {salary && (
+                                <div className="flex items-center gap-1 text-[11px] text-brand-success font-bold">
+                                  <DollarSign size={12} />
+                                  <span>{salary}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center bg-card border border-border rounded-3xl border-dashed">
+                  <p className="text-muted-foreground text-sm italic">
+                    No similar jobs found in this area.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
+
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Application Actions (desktop only) */}
             <Card className="hidden lg:block border border-border rounded-3xl shadow-sm bg-card">
               <CardContent className="p-6">
                 <div className="mb-5">
@@ -223,17 +360,25 @@ const JobDetailPage = () => {
                 </div>
                 <div className="space-y-4 text-sm pt-5 border-t border-border">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs font-bold uppercase">Applicants</span>
-                    <span className="font-bold text-foreground text-sm">{jobData.applications}</span>
+                    <span className="text-muted-foreground text-xs font-bold uppercase">
+                      Applicants
+                    </span>
+                    <span className="font-bold text-foreground text-sm">
+                      {jobData.applications}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs font-bold uppercase">Job Type</span>
+                    <span className="text-muted-foreground text-xs font-bold uppercase">
+                      Job Type
+                    </span>
                     <span className="font-bold text-foreground text-sm capitalize">
                       {JobTypeLabel[jobData.type as JobType] || jobData.type}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs font-bold uppercase">Posted</span>
+                    <span className="text-muted-foreground text-xs font-bold uppercase">
+                      Posted
+                    </span>
                     <span className="font-bold text-foreground text-sm">
                       {new Date(jobData.postedDate).toLocaleDateString()}
                     </span>
@@ -241,10 +386,12 @@ const JobDetailPage = () => {
                 </div>
               </CardContent>
             </Card>
-            {/* Company Info */}
+
             <Card className="border border-border rounded-3xl shadow-sm bg-card">
               <CardHeader className="border-b border-border p-6">
-                <CardTitle className="text-lg font-bold text-foreground">About {jobData.companyName}</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">
+                  About {jobData.companyName}
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-5">
@@ -258,21 +405,19 @@ const JobDetailPage = () => {
                   </p>
                   <div className="space-y-3 text-sm pt-5 border-t border-border">
                     <div className="flex items-center gap-2 justify-between">
-                      <span className="text-xs font-bold text-muted-foreground uppercase">Industry</span>
-                      <span className="font-bold text-foreground text-sm text-right">
+                      <span className="text-xs font-bold text-muted-foreground uppercase">
+                        Industry
+                      </span>
+                      <span className="font-medium text-foreground text-sm text-right">
                         {jobData.organization?.industry?.name}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 justify-between">
-                      <span className="text-xs font-bold text-muted-foreground uppercase">Company Size</span>
-                      <span className="font-bold text-foreground text-sm text-right">
-                        {jobData.organization.organizationSize}
+                      <span className="text-xs font-bold text-muted-foreground uppercase">
+                        Company Size
                       </span>
-                    </div>
-                    <div className="flex items-center gap-2 justify-between">
-                      <span className="text-xs font-bold text-muted-foreground uppercase">Location</span>
-                      <span className="font-bold text-foreground text-sm text-right">
-                        {jobData.organization.headquartersAddress}
+                      <span className="font-medium text-foreground text-sm text-right">
+                        {jobData.organization.organizationSize}
                       </span>
                     </div>
                   </div>
@@ -283,7 +428,7 @@ const JobDetailPage = () => {
                       onClick={() =>
                         navigate(`/company/${jobData.organizationId}/profile`)
                       }
-                      className="flex-1 h-10 bg-background border-border rounded-xl text-sm font-bold text-primary hover:bg-secondary hover:text-primary"
+                      className="flex-1 h-9 border-border rounded-xl text-xs font-bold text-primary hover:bg-secondary"
                     >
                       View Company
                     </Button>
@@ -292,73 +437,18 @@ const JobDetailPage = () => {
                         variant="outline"
                         size="icon"
                         asChild
-                        className="flex-0 w-10 h-10 border-border hover:bg-secondary rounded-xl"
+                        className="flex-0 w-9 h-9 border-border hover:bg-secondary rounded-xl"
                       >
                         <a
                           href={jobData.organization.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-center"
                         >
-                          <Globe className="h-4 w-4 text-muted-foreground" />
+                          <Globe className="h-4 w-4 text-primary" />
                         </a>
                       </Button>
                     )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-            {/* Similar Jobs */}
-            <Card className="border border-border rounded-3xl shadow-sm bg-card">
-              <CardHeader className="border-b border-border p-6">
-                <CardTitle className="text-lg font-bold text-foreground">Similar Jobs</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-3">
-                  {loadingSimilar ? (
-                    <div className="text-muted-foreground text-sm">Loading...</div>
-                  ) : similarJobs && similarJobs.length > 0 ? (
-                    similarJobs.slice(0, 5).map((similarJob) => (
-                      <div
-                        key={similarJob.id}
-                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all shadow-sm bg-card"
-                        onClick={() => navigate(`/jobs/${similarJob.id}`)}
-                      >
-                        <h4 className="font-bold text-sm mb-1.5 text-foreground hover:text-primary transition-colors">
-                          {similarJob.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-2.5 flex items-center gap-1.5 font-medium">
-                          <MapPin size={12} className="text-muted-foreground"/> {similarJob.location}
-                        </p>
-                        <Badge variant="outline" className="capitalize bg-secondary/50 text-muted-foreground border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold">
-                          {JobTypeLabel[similarJob.type as JobType] ||
-                            similarJob.type}
-                        </Badge>
-                      </div>
-                    ))
-                  ) : fallbackJobs && fallbackJobs.data.length > 0 ? (
-                    fallbackJobs.data.map((job) => (
-                      <div
-                        key={job.id}
-                        className="p-4 border border-border rounded-xl cursor-pointer hover:bg-secondary/30 hover:border-primary/30 transition-all shadow-sm bg-card"
-                        onClick={() => navigate(`/jobs/${job.id}`)}
-                      >
-                        <h4 className="font-bold text-sm mb-1.5 text-foreground hover:text-primary transition-colors">
-                          {job.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-2.5 flex items-center gap-1.5 font-medium">
-                          <MapPin size={12} className="text-muted-foreground"/> {job.location}
-                        </p>
-                        <Badge variant="outline" className="capitalize bg-secondary/50 text-muted-foreground border-border text-[10px] px-2.5 py-0.5 rounded-lg font-bold">
-                          {JobTypeLabel[job.type as JobType] || job.type}
-                        </Badge>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-muted-foreground text-sm italic">
-                      No similar jobs found.
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>

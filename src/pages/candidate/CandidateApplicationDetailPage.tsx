@@ -271,7 +271,7 @@ export default function CandidateApplicationDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB] font-sans text-foreground pb-12">
+    <div className="min-h-screen bg-[#F8F9FB] text-foreground pb-12">
       <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8 animate-fade-in">
         
         {/* --- HEADER (Compact) --- */}

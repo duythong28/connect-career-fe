@@ -45,21 +45,21 @@ const TYPE_ORDER = {
 
 const getStageColorClasses = (stage: PipelineStage) => {
   if (stage.type === "hired" || stage.name?.toLowerCase().includes("hired")) {
-    return { border: "border-emerald-500", bg: "bg-emerald-50" };
+    return { border: "border-emerald-500" };
   }
   if (
     stage.type === "rejected" ||
     stage.name?.toLowerCase().includes("reject")
   ) {
-    return { border: "border-red-500", bg: "bg-red-50" };
+    return { border: "border-destructive" };
   }
   if (stage.type === "offer") {
-    return { border: "border-green-500", bg: "bg-green-50" };
+    return { border: "border-primary" };
   }
   if (stage.type === "interview") {
-    return { border: "border-purple-500", bg: "bg-purple-50" };
+    return { border: "border-purple-500" };
   }
-  return { border: "border-gray-300", bg: "bg-white" };
+  return { border: "border-border" };
 };
 
 export function PipelineEditor({
@@ -310,19 +310,18 @@ export function PipelineEditor({
   return (
     <>
       <Dialog open onOpenChange={onCancel}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gray-50 p-6 rounded-xl">
-          <DialogHeader className="border-b border-gray-200 pb-3">
-            <DialogTitle className="text-2xl font-bold text-gray-900">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-[#F8F9FB] p-6 rounded-3xl animate-fade-in border-none">
+          <DialogHeader className="border-b border-border pb-3">
+            <DialogTitle className="text-2xl font-bold text-foreground">
               {pipeline ? "Edit Pipeline" : "Create New Pipeline"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Pipeline Name Input */}
             <div className="space-y-2">
               <Label
                 htmlFor="name"
-                className="text-sm font-semibold text-gray-700"
+                className="text-xs font-bold uppercase text-muted-foreground"
               >
                 Pipeline Name
               </Label>
@@ -331,39 +330,37 @@ export function PipelineEditor({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Developer Pipeline"
-                className="border-gray-300 focus:border-[#0EA5E9]"
+                className="rounded-xl border-border focus:ring-2 focus:ring-primary"
               />
             </div>
 
-            {/* Pipeline Stages */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label className="text-lg font-bold text-gray-800">
+                <Label className="text-xl font-bold text-foreground">
                   Pipeline Stages
                 </Label>
                 <Button
                   type="button"
                   variant="default"
-                  size="sm"
                   onClick={addStage}
-                  className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white h-8 px-3 text-xs font-bold"
+                  className="h-9 font-bold"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Stage
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-gray-200 p-3 bg-white rounded-xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-border p-3 bg-card rounded-2xl">
                 {stages
                   .sort((a, b) => a.order - b.order)
                   .map((stage) => {
                     const stageTransitions = getStageTransitions(stage.key);
-                    const { border, bg } = getStageColorClasses(stage);
+                    const { border } = getStageColorClasses(stage);
 
                     return (
                       <Card
                         key={stage.id}
-                        className={`border-2 ${border} ${bg} rounded-xl shadow-sm ${
+                        className={`bg-card border ${border} rounded-2xl transition-all duration-200 ${
                           draggedStage?.type === stage.type
                             ? "cursor-move opacity-70"
                             : ""
@@ -373,11 +370,11 @@ export function PipelineEditor({
                         onDragOver={(e) => handleDragOver(e, stage)}
                         onDrop={(e) => handleDrop(e, stage)}
                       >
-                        <CardHeader className="pb-3 border-b border-gray-200/50">
+                        <CardHeader className="pb-3 border-b border-border">
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-2">
-                              <GripVertical className="h-4 w-4 text-gray-500 hover:text-gray-900" />
-                              <CardTitle className="text-base font-bold text-gray-900">
+                              <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-grab" />
+                              <CardTitle className="text-base font-bold text-foreground">
                                 {stage.name}
                               </CardTitle>
                             </div>
@@ -386,7 +383,7 @@ export function PipelineEditor({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setEditingStage(stage)}
-                                className="h-7 w-7 p-0 text-gray-500 hover:text-[#0EA5E9]"
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
                               >
                                 <Edit className="h-3.5 w-3.5" />
                               </Button>
@@ -394,7 +391,7 @@ export function PipelineEditor({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeStage(stage.id!)}
-                                className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive/80"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -402,11 +399,11 @@ export function PipelineEditor({
                           </div>
                         </CardHeader>
 
-                        <CardContent className="space-y-3 p-4 pt-0">
+                        <CardContent className="space-y-3 p-4 pt-4">
                           {!stage.terminal ? (
                             <>
-                              <div className="space-y-2 border-b border-gray-200/50 pb-3">
-                                <p className="text-xs font-bold text-gray-500 uppercase">
+                              <div className="space-y-2 border-b border-border pb-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase">
                                   Defined Transitions:
                                 </p>
                                 {stageTransitions.length > 0 ? (
@@ -416,14 +413,14 @@ export function PipelineEditor({
                                       variant="outline"
                                       size="sm"
                                       onClick={() => setEditingTransition(t)}
-                                      className="w-full justify-start text-left h-auto py-2 border-gray-300 hover:bg-gray-100"
+                                      className="w-full justify-start text-left h-auto py-2 border-border hover:bg-muted"
                                     >
                                       <div className="flex flex-col items-start w-full text-xs">
-                                        <span className="font-bold text-gray-800 truncate w-full">
+                                        <span className="font-bold text-foreground truncate w-full">
                                           {t.actionName || "Unnamed Action"}
                                         </span>
-                                        <div className="flex items-center text-[10px] text-gray-500 mt-0.5">
-                                          <ArrowRight className="h-3 w-3 mr-1 text-[#0EA5E9]" />
+                                        <div className="flex items-center text-[10px] text-muted-foreground mt-0.5">
+                                          <ArrowRight className="h-3 w-3 mr-1 text-primary" />
                                           <span>
                                             To: {getStageName(t.toStageKey)}
                                           </span>
@@ -432,16 +429,16 @@ export function PipelineEditor({
                                     </Button>
                                   ))
                                 ) : (
-                                  <p className="text-sm text-gray-500 italic py-2 text-center border border-dashed border-gray-200 rounded-lg">
+                                  <p className="text-sm text-muted-foreground italic py-2 text-center border border-dashed border-border rounded-xl">
                                     No transitions defined.
                                   </p>
                                 )}
                               </div>
                               <Button
-                                variant="secondary"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => addTransitionForStage(stage.key)}
-                                className="w-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700"
+                                className="w-full h-9 text-xs font-semibold"
                               >
                                 <Plus className="h-4 w-4 mr-2" />
                                 New Transition
@@ -449,7 +446,7 @@ export function PipelineEditor({
                             </>
                           ) : (
                             <div className="flex items-center justify-center py-4">
-                              <p className="text-sm text-gray-500 font-medium">
+                              <p className="text-sm text-muted-foreground font-medium">
                                 Terminal Stage (No outgoing transitions)
                               </p>
                             </div>
@@ -461,19 +458,19 @@ export function PipelineEditor({
               </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="flex justify-end gap-2 border-t border-gray-200 pt-4">
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
               <Button
                 variant="outline"
                 onClick={onCancel}
-                className="text-sm font-semibold hover:bg-gray-100"
+                className="h-9 font-semibold"
               >
                 Cancel
               </Button>
               <Button
+                variant="default"
                 onClick={handleSave}
                 disabled={!name || stages.length === 0}
-                className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold"
+                className="h-9 font-bold"
               >
                 Save Pipeline
               </Button>
@@ -491,15 +488,17 @@ export function PipelineEditor({
             setKeyError("");
           }}
         >
-          <DialogContent className="bg-white rounded-xl">
-            <DialogHeader className="border-b border-gray-100 pb-3">
-              <DialogTitle className="text-xl font-bold">
+          <DialogContent className="bg-card rounded-3xl border-border">
+            <DialogHeader className="border-b border-border pb-3">
+              <DialogTitle className="text-xl font-bold text-foreground">
                 Edit Stage
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Stage Key</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  Stage Key
+                </Label>
                 <Input
                   value={editingStage.key}
                   onChange={(e) => {
@@ -507,23 +506,29 @@ export function PipelineEditor({
                     validateKey(e.target.value, editingStage.id);
                   }}
                   placeholder="e.g., applied"
-                  className="border-gray-300"
+                  className="rounded-xl border-border"
                 />
-                {keyError && <p className="text-sm text-red-500">{keyError}</p>}
+                {keyError && (
+                  <p className="text-xs text-destructive">{keyError}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Stage Name</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  Stage Name
+                </Label>
                 <Input
                   value={editingStage.name}
                   onChange={(e) =>
                     setEditingStage({ ...editingStage, name: e.target.value })
                   }
                   placeholder="e.g., Applied"
-                  className="border-gray-300"
+                  className="rounded-xl border-border"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Stage Type</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  Stage Type
+                </Label>
                 <Select
                   value={editingStage.type}
                   onValueChange={(value) =>
@@ -533,7 +538,7 @@ export function PipelineEditor({
                     })
                   }
                 >
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="rounded-xl border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -553,7 +558,7 @@ export function PipelineEditor({
                     setEditingStage({ ...editingStage, terminal: !!checked })
                   }
                 />
-                <Label className="text-sm">
+                <Label className="text-sm font-medium text-foreground">
                   Terminal Stage (End of pipeline)
                 </Label>
               </div>
@@ -564,14 +569,15 @@ export function PipelineEditor({
                     setEditingStage(null);
                     setKeyError("");
                   }}
-                  className="text-sm font-semibold hover:bg-gray-100"
+                  className="h-9 font-semibold"
                 >
                   Cancel
                 </Button>
                 <Button
+                  variant="default"
                   onClick={() => updateStage(editingStage)}
                   disabled={!!keyError}
-                  className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold"
+                  className="h-9 font-bold"
                 >
                   Save
                 </Button>
@@ -584,15 +590,17 @@ export function PipelineEditor({
       {/* Transition Edit Dialog */}
       {editingTransition && (
         <Dialog open onOpenChange={() => setEditingTransition(null)}>
-          <DialogContent className="bg-white rounded-xl">
-            <DialogHeader className="border-b border-gray-100 pb-3">
-              <DialogTitle className="text-xl font-bold">
+          <DialogContent className="bg-card rounded-3xl border-border">
+            <DialogHeader className="border-b border-border pb-3">
+              <DialogTitle className="text-xl font-bold text-foreground">
                 Edit Transition
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Action Name</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  Action Name
+                </Label>
                 <Input
                   value={editingTransition.actionName}
                   onChange={(e) =>
@@ -602,11 +610,13 @@ export function PipelineEditor({
                     })
                   }
                   placeholder="e.g., Screen CV"
-                  className="border-gray-300"
+                  className="rounded-xl border-border"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">From Stage</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  From Stage
+                </Label>
                 <Select
                   value={editingTransition.fromStageKey}
                   onValueChange={(value) =>
@@ -616,7 +626,7 @@ export function PipelineEditor({
                     })
                   }
                 >
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="rounded-xl border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -631,7 +641,9 @@ export function PipelineEditor({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">To Stage</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  To Stage
+                </Label>
                 <Select
                   value={editingTransition.toStageKey}
                   onValueChange={(value) =>
@@ -641,7 +653,7 @@ export function PipelineEditor({
                     })
                   }
                 >
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="rounded-xl border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -654,8 +666,10 @@ export function PipelineEditor({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Allowed Roles</Label>
-                <div className="flex flex-col gap-2">
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  Allowed Roles
+                </Label>
+                <div className="flex flex-col gap-2 p-2 bg-muted/30 rounded-xl border border-border">
                   {roles.map((role) => (
                     <div key={role.id} className="flex items-center gap-2">
                       <Checkbox
@@ -674,7 +688,9 @@ export function PipelineEditor({
                           });
                         }}
                       />
-                      <Label className="text-sm">{role.name}</Label>
+                      <Label className="text-sm text-foreground">
+                        {role.name}
+                      </Label>
                     </div>
                   ))}
                 </div>
@@ -683,7 +699,7 @@ export function PipelineEditor({
                 <Button
                   variant="ghost"
                   onClick={() => removeTransition(editingTransition.id!)}
-                  className="mr-auto text-red-500 hover:bg-red-50"
+                  className="mr-auto text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
@@ -691,13 +707,14 @@ export function PipelineEditor({
                 <Button
                   variant="outline"
                   onClick={() => setEditingTransition(null)}
-                  className="text-sm font-semibold hover:bg-gray-100"
+                  className="h-9 font-semibold"
                 >
                   Cancel
                 </Button>
                 <Button
+                  variant="default"
                   onClick={() => updateTransition(editingTransition)}
-                  className="bg-[#0EA5E9] hover:bg-[#0284c7] text-white font-bold"
+                  className="h-9 font-bold"
                 >
                   Save
                 </Button>

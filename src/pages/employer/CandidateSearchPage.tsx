@@ -42,14 +42,14 @@ const CandidateCard = ({
     "Unknown User";
 
   return (
-    <Card className="border border-gray-200 hover:border-blue-400 transition-all shadow-sm rounded-xl bg-white">
+    <Card className="border border-border bg-card transition-all duration-200 hover:border-primary rounded-2xl">
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           {/* Left: Avatar & Info */}
           <div className="flex items-start gap-4 flex-1 min-w-0">
-            <Avatar className="h-14 w-14 border border-gray-100 shrink-0">
+            <Avatar className="h-14 w-14 border border-border shrink-0">
               <AvatarImage src={candidate.avatarUrl || candidate.avatar || undefined} />
-              <AvatarFallback className="bg-blue-600 text-white font-bold">
+              <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                 {getInitials(candidate.fullName, candidate.username || "U")}
               </AvatarFallback>
             </Avatar>
@@ -57,7 +57,7 @@ const CandidateCard = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h3
-                  className="text-lg font-bold text-gray-900 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                  className="text-lg font-bold text-foreground truncate cursor-pointer hover:text-primary transition-colors"
                   onClick={() => onViewProfile(candidate.id)}
                 >
                   {displayName}
@@ -65,7 +65,7 @@ const CandidateCard = ({
                 {candidate.emailVerified && (
                   <Badge
                     variant="outline"
-                    className="text-[10px] bg-green-50 text-green-700 border-green-200 font-bold"
+                    className="text-[10px] bg-[hsl(var(--brand-success)/0.1)] text-[hsl(var(--brand-success))] border-[hsl(var(--brand-success)/0.2)] font-bold uppercase"
                   >
                     Verified
                   </Badge>
@@ -73,18 +73,18 @@ const CandidateCard = ({
               </div>
 
               {candidate.email && (
-                <p className="text-sm text-gray-500 truncate mb-2">
+                <p className="text-sm text-muted-foreground truncate mb-1">
                   {candidate.email}
                 </p>
               )}
 
               {candidate.phoneNumber && (
-                <p className="text-xs text-gray-400 mb-2">
+                <p className="text-xs text-muted-foreground/80 mb-2">
                   {candidate.phoneNumber}
                 </p>
               )}
 
-              <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>
                   Joined{" "}
                   {new Date(candidate.createdAt).toLocaleDateString("en-US", {
@@ -94,7 +94,7 @@ const CandidateCard = ({
                 </span>
                 {candidate.lastLoginAt && (
                   <>
-                    <span className="text-gray-300">•</span>
+                    <span className="text-border">•</span>
                     <span>
                       Last active{" "}
                       {new Date(candidate.lastLoginAt).toLocaleDateString()}
@@ -111,13 +111,15 @@ const CandidateCard = ({
               variant="outline"
               size="sm"
               onClick={() => onViewProfile(candidate.id)}
-              className="text-xs font-bold"
+              className="h-9 text-xs font-bold border-border"
             >
-              <UserIcon className="h-3 w-3 mr-1" />
+              <UserIcon className="h-3 w-3 mr-1 text-primary" />
               View Profile
             </Button>
             {currentUserId !== candidate.id && (
-              <MessageButton senderId={currentUserId} recieverId={candidate.id} />
+              <div className="h-9">
+                <MessageButton senderId={currentUserId} recieverId={candidate.id} />
+              </div>
             )}
           </div>
         </div>
@@ -127,15 +129,15 @@ const CandidateCard = ({
 };
 
 const EmptyState = ({ hasSearch }: { hasSearch: boolean }) => (
-  <Card className="border border-gray-200 rounded-xl shadow-sm">
+  <Card className="border border-border rounded-3xl bg-card">
     <CardContent className="p-12 text-center">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <Users className="h-8 w-8 text-gray-400" />
+      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+        <Users className="h-8 w-8 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-bold text-gray-900 mb-2">
+      <h3 className="text-lg font-bold text-foreground mb-2">
         {hasSearch ? "No candidates found" : "Search for candidates"}
       </h3>
-      <p className="text-gray-500 text-sm max-w-md mx-auto">
+      <p className="text-muted-foreground text-sm max-w-md mx-auto">
         {hasSearch
           ? "Try adjusting your search query to find more candidates."
           : "Enter a name, email, or keyword to start searching for potential candidates."}
@@ -147,18 +149,18 @@ const EmptyState = ({ hasSearch }: { hasSearch: boolean }) => (
 const LoadingState = () => (
   <div className="space-y-4">
     {[...Array(3)].map((_, i) => (
-      <Card key={i} className="border border-gray-200 rounded-xl">
+      <Card key={i} className="border border-border rounded-2xl bg-card">
         <CardContent className="p-5">
           <div className="flex items-start gap-4 animate-pulse">
-            <div className="h-14 w-14 bg-gray-200 rounded-full shrink-0" />
+            <div className="h-14 w-14 bg-muted rounded-full shrink-0" />
             <div className="flex-1 space-y-3">
-              <div className="h-5 bg-gray-200 rounded w-1/3" />
-              <div className="h-4 bg-gray-200 rounded w-1/2" />
-              <div className="h-3 bg-gray-200 rounded w-1/4" />
+              <div className="h-5 bg-muted rounded w-1/3" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+              <div className="h-3 bg-muted rounded w-1/4" />
             </div>
             <div className="flex flex-col gap-2">
-              <div className="h-8 w-24 bg-gray-200 rounded" />
-              <div className="h-8 w-24 bg-gray-200 rounded" />
+              <div className="h-9 w-24 bg-muted rounded-xl" />
+              <div className="h-9 w-24 bg-muted rounded-xl" />
             </div>
           </div>
         </CardContent>
@@ -195,22 +197,22 @@ const CandidateSearchPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
+      <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Candidate Search</h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <h1 className="text-2xl font-bold text-foreground">Candidate Search</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Find and connect with talented candidates
           </p>
         </div>
 
         {/* Search Bar */}
-        <Card className="mb-6 border border-gray-200 rounded-xl shadow-sm">
+        <Card className="mb-6 border border-border bg-card rounded-3xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={search}
                   onChange={(e) => {
@@ -218,13 +220,13 @@ const CandidateSearchPage = () => {
                     setPage(1);
                   }}
                   placeholder="Search by name, email, or keyword..."
-                  className="pl-10 h-10 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 rounded-lg"
+                  className="pl-10 h-10 border-border rounded-xl focus:ring-2 focus:ring-primary"
                 />
               </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-10 px-4 text-xs font-bold text-gray-600"
+                className="h-10 px-4 text-xs font-bold text-muted-foreground border-border"
                 disabled
               >
                 <Filter className="h-4 w-4 mr-2" />
@@ -237,16 +239,16 @@ const CandidateSearchPage = () => {
         {/* Results Summary */}
         {!isLoading && candidates.length > 0 && (
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Showing{" "}
-              <span className="font-bold text-gray-900">
+              <span className="font-bold text-foreground">
                 {(page - 1) * 20 + 1}-{Math.min(page * 20, total)}
               </span>{" "}
-              of <span className="font-bold text-gray-900">{total}</span>{" "}
+              of <span className="font-bold text-foreground">{total}</span>{" "}
               candidates
             </p>
             {isFetching && (
-              <span className="text-xs text-blue-600 font-medium">
+              <span className="text-xs text-primary font-medium">
                 Updating...
               </span>
             )}
@@ -279,22 +281,22 @@ const CandidateSearchPage = () => {
               size="sm"
               disabled={page === 1 || isLoading}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="text-xs font-bold"
+              className="h-9 text-xs font-bold border-border"
             >
               Previous
             </Button>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500">Page</span>
-              <span className="font-bold text-gray-900">{page}</span>
-              <span className="text-gray-500">of</span>
-              <span className="font-bold text-gray-900">{totalPages}</span>
+              <span className="text-muted-foreground">Page</span>
+              <span className="font-bold text-foreground">{page}</span>
+              <span className="text-muted-foreground">of</span>
+              <span className="font-bold text-foreground">{totalPages}</span>
             </div>
             <Button
               variant="outline"
               size="sm"
               disabled={page >= totalPages || isLoading}
               onClick={() => setPage((p) => p + 1)}
-              className="text-xs font-bold"
+              className="h-9 text-xs font-bold border-border"
             >
               Next
             </Button>
