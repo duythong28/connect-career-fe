@@ -48,7 +48,9 @@ const CandidateCard = ({
           {/* Left: Avatar & Info */}
           <div className="flex items-start gap-4 flex-1 min-w-0">
             <Avatar className="h-14 w-14 border border-border shrink-0">
-              <AvatarImage src={candidate.avatarUrl || candidate.avatar || undefined} />
+              <AvatarImage
+                src={candidate.avatarUrl || candidate.avatar || undefined}
+              />
               <AvatarFallback className="bg-primary text-primary-foreground font-bold">
                 {getInitials(candidate.fullName, candidate.username || "U")}
               </AvatarFallback>
@@ -56,10 +58,7 @@ const CandidateCard = ({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3
-                  className="text-lg font-bold text-foreground truncate cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => onViewProfile(candidate.id)}
-                >
+                <h3 className="text-lg font-bold text-foreground truncate cursor-pointer transition-colors">
                   {displayName}
                 </h3>
                 {candidate.emailVerified && (
@@ -107,18 +106,24 @@ const CandidateCard = ({
 
           {/* Right: Actions */}
           <div className="flex flex-col gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onViewProfile(candidate.id)}
-              className="h-9 text-xs font-bold border-border"
-            >
-              <UserIcon className="h-3 w-3 mr-1 text-primary" />
-              View Profile
-            </Button>
+            {candidate?.candidateProfileId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewProfile(candidate.candidateProfileId)}
+                className="h-9 text-xs font-bold border-border"
+              >
+                <UserIcon className="h-3 w-3 mr-1 text-primary" />
+                View Profile
+              </Button>
+            )}
+
             {currentUserId !== candidate.id && (
               <div className="h-9">
-                <MessageButton senderId={currentUserId} recieverId={candidate.id} />
+                <MessageButton
+                  senderId={currentUserId}
+                  recieverId={candidate.id}
+                />
               </div>
             )}
           </div>
@@ -193,7 +198,7 @@ const CandidateSearchPage = () => {
   const totalPages = Math.ceil(total / 20);
 
   const handleViewProfile = (candidateId: string) => {
-    navigate(`/user/${candidateId}/profile`);
+    navigate(`/candidate/profile/${candidateId}`);
   };
 
   return (
@@ -201,7 +206,9 @@ const CandidateSearchPage = () => {
       <div className="max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Candidate Search</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Candidate Search
+          </h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Find and connect with talented candidates
           </p>

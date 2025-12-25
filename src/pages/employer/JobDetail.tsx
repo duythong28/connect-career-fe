@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   ArrowLeft,
   Edit,
@@ -17,6 +18,9 @@ import {
   XCircle,
   AlertTriangle,
   Layout,
+  Sparkles,
+  User as UserIcon,
+  Search,
 } from "lucide-react";
 import {
   DragDropContext,
@@ -50,22 +54,128 @@ import {
   BulkUpdateApplicationDto,
 } from "@/api/types/applications.types";
 import { JobStatus } from "@/api/types/jobs.types";
+import {
+  getCandidateRecommendationsForJob,
+  getUsersByIds,
+} from "@/api/endpoints/recommendations.api";
+import { useAuth } from "@/hooks/useAuth";
+import MessageButton from "@/components/chat/MessageButton";
+
+// --- Sub-Component: Candidate Card for Recommendations ---
+const RecommendedCandidateCard = ({
+  candidate,
+  currentUserId,
+  onViewProfile,
+}: {
+  candidate: any;
+  currentUserId: string;
+  onViewProfile: (id: string) => void;
+}) => {
+  const getInitials = (name: string | null, fallback: string) => {
+    if (name) {
+      const parts = name.split(" ");
+      return parts.length > 1
+        ? `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase()
+        : name.charAt(0).toUpperCase();
+    }
+    return fallback.charAt(0).toUpperCase();
+  };
+
+  const displayName =
+    candidate.fullName ||
+    `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim() ||
+    candidate.username ||
+    "Unknown User";
+
+  return (
+    <Card className="border border-border bg-card transition-all duration-200 hover:border-primary rounded-2xl">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
+            <Avatar className="h-12 w-12 border border-border shrink-0">
+              <AvatarImage
+                src={candidate.avatarUrl || candidate.avatar || undefined}
+              />
+              <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+                {getInitials(candidate.fullName, candidate.username || "U")}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 className="text-base font-bold text-foreground truncate cursor-pointer transition-colors">
+                  {displayName}
+                </h3>
+                {candidate.emailVerified && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] bg-[hsl(var(--brand-success)/0.1)] text-[hsl(var(--brand-success))] border-[hsl(var(--brand-success)/0.2)] font-bold uppercase"
+                  >
+                    Verified
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate mb-1">
+                {candidate.email}
+              </p>
+              {candidate.phoneNumber && (
+                <p className="text-xs text-muted-foreground/80">
+                  {candidate.phoneNumber}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 shrink-0">
+            {candidate?.candidateProfile?.id && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewProfile(candidate?.candidateProfile?.id)}
+                className="h-8 text-xs font-bold border-border"
+              >
+                <UserIcon className="h-3 w-3 mr-1 text-primary" />
+                View
+              </Button>
+            )}
+            {currentUserId !== candidate.id && (
+              <div className="h-8">
+                <MessageButton
+                  senderId={currentUserId}
+                  recieverId={candidate.id}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function JobDetail() {
   const { jobId, companyId } = useParams();
+  const { user } = useAuth();
   const [columns, setColumns] = useState<Record<string, Application[]>>({});
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [stageToReject, setStageToReject] = useState<{
     key: string;
     name: string;
   } | null>(null);
+
+  // Recommendations State
+  const [recommendedIds, setRecommendedIds] = useState<string[]>([]);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  // --- Queries ---
 
   const { data: job, isLoading: isJobLoading } = useQuery({
     queryKey: ["job", jobId],
     queryFn: async () => {
-      return await getCandidateJobById(jobId);
+      return await getCandidateJobById(jobId!);
     },
     enabled: !!jobId,
   });
@@ -73,7 +183,7 @@ export default function JobDetail() {
   const { data: pipeline, isLoading: isPipelineLoading } = useQuery({
     queryKey: ["pipeline", jobId],
     queryFn: async () => {
-      return getPipelineByJobId(jobId);
+      return getPipelineByJobId(jobId!);
     },
     enabled: !!jobId,
   });
@@ -81,10 +191,40 @@ export default function JobDetail() {
   const { data: applications } = useQuery({
     queryKey: ["job-applications", jobId],
     queryFn: async () => {
-      return getApplicationsByJob(jobId, { limit: 100, page: 1 });
+      return getApplicationsByJob(jobId!, { limit: 100, page: 1 });
     },
     enabled: !!jobId,
   });
+
+  // Recommendation Queries
+  const { mutate: fetchRecommendations, isPending: isGettingIds } = useMutation(
+    {
+      mutationFn: () => getCandidateRecommendationsForJob(jobId!),
+      onSuccess: (data) => {
+        // Assuming API returns { userIds: [...] } or { candidateIds: [...] } or just array
+        const ids = data.userIds || data.candidateIds || data || [];
+        setRecommendedIds(ids);
+        if (ids.length === 0) {
+          toast.info(
+            "No AI recommendations found based on current job details."
+          );
+        } else {
+          setShowRecommendations(true);
+        }
+      },
+      onError: () => {
+        toast.error("Failed to generate recommendations.");
+      },
+    }
+  );
+
+  const { data: recommendedUsers, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["recommended-users", recommendedIds],
+    queryFn: () => getUsersByIds(recommendedIds),
+    enabled: recommendedIds.length > 0,
+  });
+
+  // --- Mutations ---
 
   const { mutate: updateApplicationStageMutate } = useMutation({
     mutationFn: ({
@@ -134,6 +274,8 @@ export default function JobDetail() {
     },
   });
 
+  // --- Effects & Handlers ---
+
   useEffect(() => {
     if (applications) {
       const grouped: Record<string, Application[]> = {};
@@ -155,7 +297,7 @@ export default function JobDetail() {
           <h2 className="text-2xl font-bold text-foreground mb-4">
             Job not found
           </h2>
-          <Button 
+          <Button
             className="h-10 text-xs font-bold uppercase"
             onClick={() => navigate(`/company/${companyId}/jobs`)}
           >
@@ -315,7 +457,8 @@ export default function JobDetail() {
                   size="sm"
                   onClick={() => closeJobMutation.mutate()}
                   disabled={
-                    closeJobMutation.isPending || job.status === JobStatus.CLOSED
+                    closeJobMutation.isPending ||
+                    job.status === JobStatus.CLOSED
                   }
                   className="h-9 text-xs font-bold px-4 uppercase"
                 >
@@ -417,7 +560,8 @@ export default function JobDetail() {
                             handleRejectAllClick(stage.key, stage.name)
                           }
                           disabled={
-                            !columns[stage.key] || columns[stage.key].length === 0
+                            !columns[stage.key] ||
+                            columns[stage.key].length === 0
                           }
                         >
                           <XCircle className="h-3.5 w-3.5 mr-1.5" />
@@ -462,14 +606,16 @@ export default function JobDetail() {
                                     <CardContent className="p-4">
                                       <div className="space-y-2">
                                         <h4 className="font-bold text-sm text-foreground truncate leading-none">
-                                          {application?.candidateSnapshot?.name ||
+                                          {application?.candidateSnapshot
+                                            ?.name ||
                                             application?.candidate?.firstName +
                                               " " +
                                               application?.candidate?.lastName}
                                         </h4>
                                         <p className="text-xs text-muted-foreground truncate font-medium">
                                           {application?.candidateSnapshot
-                                            ?.currentTitle || "No title provided"}
+                                            ?.currentTitle ||
+                                            "No title provided"}
                                         </p>
 
                                         <div className="flex items-center justify-between pt-2 border-t border-border/50">
@@ -511,7 +657,9 @@ export default function JobDetail() {
                 <Layout className="w-8 h-8 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-xl font-bold text-foreground">No Pipeline</h3>
+                <h3 className="text-xl font-bold text-foreground">
+                  No Pipeline
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-xs mx-auto font-medium">
                   This job post doesn't have an associated recruitment pipeline.
                 </p>
@@ -519,6 +667,76 @@ export default function JobDetail() {
             </div>
           </Card>
         )}
+
+        {/* --- Candidate Recommendations Section --- */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary fill-primary/20" />
+                AI Recommendations
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Get candidate suggestions matching this job.
+              </p>
+            </div>
+            <Button
+              onClick={() => fetchRecommendations()}
+              disabled={isGettingIds || isLoadingUsers}
+              className="rounded-xl font-bold"
+            >
+              {isGettingIds || isLoadingUsers ? (
+                <>Loading...</>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Find Candidates
+                </>
+              )}
+            </Button>
+          </div>
+
+          {(showRecommendations || isGettingIds || isLoadingUsers) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {isGettingIds || isLoadingUsers ? (
+                // Loading Skeletons
+                [...Array(4)].map((_, i) => (
+                  <Card
+                    key={i}
+                    className="border border-border rounded-2xl bg-card"
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4 animate-pulse">
+                        <div className="h-12 w-12 bg-muted rounded-full shrink-0" />
+                        <div className="flex-1 space-y-3">
+                          <div className="h-4 bg-muted rounded w-3/4" />
+                          <div className="h-3 bg-muted rounded w-1/2" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : recommendedUsers && recommendedUsers.length > 0 ? (
+                recommendedUsers.map((candidate) => (
+                  <RecommendedCandidateCard
+                    key={candidate.id}
+                    candidate={candidate}
+                    currentUserId={user?.id || ""}
+                    onViewProfile={(id) =>  navigate(`/candidate/profile/${id}`)}
+                  />
+                ))
+              ) : (
+                // Empty state handled by toast, but backup here
+                <div className="col-span-full p-8 text-center bg-muted/20 rounded-2xl border border-dashed border-border">
+                  <Search className="h-8 w-8 mx-auto text-muted-foreground mb-2 opacity-50" />
+                  <p className="text-muted-foreground text-sm">
+                    No recommendations found.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Reject All Confirmation Dialog */}
         <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
@@ -544,8 +762,8 @@ export default function JobDetail() {
                 stage?
                 <br />
                 <br />
-                This action cannot be undone. All candidates will be moved to the
-                Rejected stage.
+                This action cannot be undone. All candidates will be moved to
+                the Rejected stage.
               </DialogDescription>
             </DialogHeader>
 
