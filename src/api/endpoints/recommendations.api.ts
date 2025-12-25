@@ -1,12 +1,32 @@
 import axios from "../client/axios";
 import { Job } from "../types/jobs.types";
-import { SimilarJobRecommendationResponse } from "../types/recommendations.types";
+import { JobRecommendationPreferences, SimilarJobRecommendationResponse } from "../types/recommendations.types";
 
-const getJobsRecommendations = async () => {
+const getJobsRecommendationIds = async ({
+  limit = 10,
+  userId,
+  preferences,
+}: {
+  limit?: number;
+  userId?: string;
+  preferences?: JobRecommendationPreferences;
+}): Promise<{ jobIds: string[] }> => {
   const response = await axios.post(
     `${import.meta.env.VITE_API_AI_BASE_URL}/recommendations`,
     {
-      limit: 10,
+      userId,
+      limit,
+      ...(preferences && { preferences }),
+    }
+  );
+  return response.data;
+};
+
+const getJobsByIds = async (jobIds: string[]): Promise<Job[]> => {
+  const response = await axios.post(
+    `${import.meta.env.VITE_API_BASE_URL}/candidates/jobs/by-ids`,
+    {
+      ids: jobIds,
     }
   );
   return response.data;
@@ -24,21 +44,13 @@ const getSimilarJobsRecommendations = async (
   return response.data;
 };
 
-const getJobsByIds = async (jobIds: string[]): Promise<Job[]> => {
-  const response = await axios.post(
-    `${import.meta.env.VITE_API_BASE_URL}/candidates/jobs/by-ids`,
-    {
-      ids: jobIds,
-    }
-  );
-  return response.data;
-};
+
 
 const getCandidateRecommendationsForJob = async (jobId: string) => {
   const response = await axios.post(
     `${import.meta.env.VITE_API_AI_BASE_URL}/jobs/${jobId}/candidates`,
     {
-      limit: 10,
+      limit: 20,
     }
   );
   return response.data;
@@ -55,7 +67,7 @@ const getUsersByIds = async (userIds: string[]): Promise<any[]> => {
 };
 
 export {
-  getJobsRecommendations,
+  getJobsRecommendationIds,
   getJobsByIds,
   getSimilarJobsRecommendations,
   getCandidateRecommendationsForJob,
