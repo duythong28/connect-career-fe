@@ -49,7 +49,6 @@ const JobDetailPage = () => {
           pageNumber: 1,
           pageSize: 8,
           companyName: jobData?.companyName,
-          keywords: jobData?.keywords?.slice(0, 3),
         });
         return result.data;
       }
@@ -356,7 +355,11 @@ const JobDetailPage = () => {
             <Card className="hidden lg:block border border-border rounded-3xl shadow-sm bg-card">
               <CardContent className="p-6">
                 <div className="mb-5">
-                  <ApplyJobDialog jobId={id ?? ""} />
+                  <ApplyJobDialog
+                    jobId={jobData?.id ?? ""}
+                    appliedByUserIds={jobData?.appliedByUserIds}
+                    status={jobData?.status ?? ""}
+                  />
                 </div>
                 <div className="space-y-4 text-sm pt-5 border-t border-border">
                   <div className="flex items-center justify-between">

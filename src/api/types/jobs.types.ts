@@ -71,6 +71,7 @@ export interface Job {
   userId: string;
   views: number;
   savedByUserIds?: string[];
+  appliedByUserIds?: string[];
 }
 
 export interface JobsResponse {

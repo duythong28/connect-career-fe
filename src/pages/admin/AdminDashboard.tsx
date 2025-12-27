@@ -162,6 +162,10 @@ const AdminDashboard = () => {
   if (isError)
     return <div className="p-20 text-center text-destructive font-bold">Failed to load dashboard data.</div>;
 
+
+  const topOrganizations = data?.topPerformers.topOrganizations.filter(t => t.hires > 0) ?? [];
+  const topRecruiters = data?.topPerformers.topRecruiters.filter(t=> t.hires > 0) ?? [];
+
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-6 md:p-10 text-foreground animate-fade-in">
       <div className="max-w-[1400px] mx-auto space-y-8">
@@ -211,7 +215,7 @@ const AdminDashboard = () => {
             title="Total Users"
             value={data?.overview.totalUsers.toLocaleString() || "..."}
             subValue={<span className="text-primary">+{data?.growth.newUsers} new members</span>}
-            growthValue={data?.growth.growthRate.users}
+           
             icon={Users}
             iconBgClass="bg-primary"
             isLoading={isLoading}
@@ -233,7 +237,6 @@ const AdminDashboard = () => {
             title="Organizations"
             value={data?.overview.totalOrganizations.toLocaleString() || "..."}
             subValue={<span className="text-amber-600">+{data?.growth.newOrganizations} created</span>}
-            growthValue={data?.growth.growthRate.organizations}
             icon={Building2}
             iconBgClass="bg-amber-500"
             isLoading={isLoading}
@@ -400,8 +403,8 @@ const AdminDashboard = () => {
               <Building2 className="w-5 h-5 text-muted/30" />
             </CardHeader>
             <CardContent className="p-6 space-y-3">
-              {data?.topPerformers.topOrganizations.length ? (
-                data.topPerformers.topOrganizations.map((org, i) => (
+              {topOrganizations.length ? (
+                topOrganizations.map((org, i) => (
                   <TopPerformerItem
                     key={org.id}
                     rank={i + 1}
@@ -430,8 +433,8 @@ const AdminDashboard = () => {
               <Users className="w-5 h-5 text-muted/30" />
             </CardHeader>
             <CardContent className="p-6 space-y-3">
-              {data?.topPerformers.topRecruiters.length ? (
-                data.topPerformers.topRecruiters.map((rec, i) => (
+              {topRecruiters.length ? (
+                topRecruiters.map((rec, i) => (
                   <TopPerformerItem
                     key={rec.id}
                     rank={i + 1}
