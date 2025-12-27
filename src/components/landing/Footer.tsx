@@ -1,6 +1,9 @@
 import { Linkedin, Twitter, Facebook, Instagram } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const Footer = () => {
+  const location = useLocation();
+  const currentPath = location.pathname;
   const footerLinks = {
     "For Candidates": [
       "Browse Opportunities",
@@ -25,7 +28,7 @@ const Footer = () => {
     { icon: Instagram, href: "#", label: "Instagram" },
   ];
 
-  return (
+  return currentPath === "/" ? (
     <footer className="bg-foreground text-primary-foreground">
       <div className="container-custom py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 lg:gap-12">
@@ -101,6 +104,8 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+  ) : (
+    <></>
   );
 };
 

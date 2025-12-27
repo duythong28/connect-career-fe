@@ -268,4 +268,13 @@ export const aiAgentAPI = {
       url: persisted?.secureUrl || persisted?.url,
     } as AttachmentInput;
   },
+
+  renameChatSession: async (
+    sessionId: string,
+    newTitle: string
+  ): Promise<void> => {
+    await axios.put(`${API_URL}/sessions/${sessionId}`, {
+      title: newTitle,
+    });
+  },
 };

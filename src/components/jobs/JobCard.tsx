@@ -170,7 +170,11 @@ export default function JobCard({
             </Button>
 
             <div onClick={(e) => e.stopPropagation()}>
-              <ApplyJobDialog jobId={job?.id ?? ""} />
+              <ApplyJobDialog
+                jobId={job?.id ?? ""}
+                appliedByUserIds={job?.appliedByUserIds}
+                status={job?.status ?? ""}
+              />
             </div>
           </div>
         </div>

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle, Calendar, FileText } from "lucide-react";
+import ShareButton from "../shared/ShareButton";
 
 const AdminReports = () => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -44,8 +45,15 @@ const AdminReports = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status, notes }: { id: string; status: ReportStatus; notes?: string }) =>
-      updateReportStatus(id, { status, adminNotes: notes }),
+    mutationFn: ({
+      id,
+      status,
+      notes,
+    }: {
+      id: string;
+      status: ReportStatus;
+      notes?: string;
+    }) => updateReportStatus(id, { status, adminNotes: notes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
       toast({ title: "Report status updated successfully" });
@@ -54,20 +62,39 @@ const AdminReports = () => {
       setAdminNotes("");
     },
     onError: () => {
-      toast({ title: "Failed to update report status", variant: "destructive" });
+      toast({
+        title: "Failed to update report status",
+        variant: "destructive",
+      });
     },
   });
 
   const getStatusBadge = (status: ReportStatus) => {
-    const variants: Record<ReportStatus, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+    const variants: Record<
+      ReportStatus,
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+      }
+    > = {
       [ReportStatus.PENDING]: { variant: "outline", label: "Pending" },
-      [ReportStatus.UNDER_REVIEW]: { variant: "secondary", label: "Under Review" },
+      [ReportStatus.UNDER_REVIEW]: {
+        variant: "secondary",
+        label: "Under Review",
+      },
       [ReportStatus.RESOLVED]: { variant: "default", label: "Resolved" },
       [ReportStatus.DISMISSED]: { variant: "destructive", label: "Dismissed" },
       [ReportStatus.CLOSED]: { variant: "outline", label: "Closed" },
     };
     const config = variants[status];
-    return <Badge variant={config.variant} className="rounded-lg px-2.5 py-0.5 font-medium">{config.label}</Badge>;
+    return (
+      <Badge
+        variant={config.variant}
+        className="rounded-lg px-2.5 py-0.5 font-medium"
+      >
+        {config.label}
+      </Badge>
+    );
   };
 
   const handleUpdateStatus = () => {
@@ -82,43 +109,60 @@ const AdminReports = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
       <div className="max-w-[1400px] mx-auto space-y-6">
-        
         {/* Page Header */}
         <div className="flex items-center gap-2">
-           <h1 className="text-2xl font-bold text-foreground">Reports Management</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Reports Management
+          </h1>
         </div>
 
         {/* Main Content Card */}
         <Card className="rounded-3xl border-border bg-card shadow-none">
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="p-8 text-center text-muted-foreground">Loading reports...</div>
+              <div className="p-8 text-center text-muted-foreground">
+                Loading reports...
+              </div>
             ) : (
               <>
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Entity Type</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Reason</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Status</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">Created At</TableHead>
-                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12 text-right pr-6">Actions</TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">
+                        Entity Type
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">
+                        Reason
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">
+                        Status
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12">
+                        Created At
+                      </TableHead>
+                      <TableHead className="text-xs font-bold uppercase text-muted-foreground h-12 text-right pr-6">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {reportsData?.data.map((report) => (
-                      <TableRow key={report.id} className="border-border hover:bg-muted/30">
+                      <TableRow
+                        key={report.id}
+                        className="border-border hover:bg-muted/30"
+                      >
                         <TableCell className="py-4 font-medium text-foreground">
-                          <Badge variant="outline" className="rounded-md border-border text-foreground">
+                          <Badge
+                            variant="outline"
+                            className="rounded-md border-border text-foreground"
+                          >
                             {report.entityType}
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate text-muted-foreground">
                           {report.reason}
                         </TableCell>
-                        <TableCell>
-                          {getStatusBadge(report.status)}
-                        </TableCell>
+                        <TableCell>{getStatusBadge(report.status)}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-primary" />
@@ -170,90 +214,157 @@ const AdminReports = () => {
         </Card>
       </div>
 
-      <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
+      <Dialog
+        open={!!selectedReport}
+        onOpenChange={() => setSelectedReport(null)}
+      >
         <DialogContent className="max-w-2xl bg-card border-border sm:rounded-3xl p-0 overflow-hidden gap-0">
           <DialogHeader className="p-6 pb-2">
-            <DialogTitle className="text-xl font-bold text-foreground">Report Details</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-foreground">
+              Report Details
+            </DialogTitle>
           </DialogHeader>
-          
+
           {selectedReport && (
             <div className="p-6 space-y-6">
-              
               {/* Report Information Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase text-muted-foreground">Entity Type</h4>
-                  <Badge variant="outline" className="rounded-md">{selectedReport.entityType}</Badge>
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                    Entity Type
+                  </h4>
+                  <Badge variant="outline" className="rounded-md">
+                    {selectedReport.entityType}
+                  </Badge>
+                  {["job", "organization", "user"].includes(
+                    selectedReport.entityType
+                  )}
+                  <ShareButton
+                    pathname={
+                      selectedReport.entityType === "job"
+                        ? `admin/jobs/${selectedReport.entityId}`
+                        : selectedReport.entityType === "organization"
+                        ? `admin/companies/${selectedReport.entityId}`
+                        : selectedReport.entityType === "user"
+                        ? `admin/users/${selectedReport.entityId}`
+                        : ""
+                    }
+                  />
                 </div>
                 <div className="space-y-1.5">
-                   <h4 className="text-xs font-bold uppercase text-muted-foreground">Current Status</h4>
-                   {getStatusBadge(selectedReport.status)}
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                    Current Status
+                  </h4>
+                  {getStatusBadge(selectedReport.status)}
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground">Subject</h4>
-                <p className="text-sm font-medium text-foreground">{selectedReport.subject}</p>
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                  Subject
+                </h4>
+                <p className="text-sm font-medium text-foreground">
+                  {selectedReport.subject}
+                </p>
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground">Reason</h4>
-                <p className="text-sm font-medium text-foreground">{selectedReport.reason}</p>
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                  Reason
+                </h4>
+                <p className="text-sm font-medium text-foreground">
+                  {selectedReport.reason}
+                </p>
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-bold uppercase text-muted-foreground">Description</h4>
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                  Description
+                </h4>
                 <div className="bg-muted/30 p-3 rounded-xl border border-border">
-                  <p className="text-sm text-muted-foreground">{selectedReport.description}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedReport.description}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="space-y-1.5">
-                 <h4 className="text-xs font-bold uppercase text-muted-foreground">Priority</h4>
-                 <p className="text-sm font-medium text-foreground">{selectedReport.priority}</p>
+                <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                  Priority
+                </h4>
+                <p className="text-sm font-medium text-foreground">
+                  {selectedReport.priority}
+                </p>
               </div>
 
               {selectedReport.adminNotes && (
                 <div className="space-y-1.5">
-                  <h4 className="text-xs font-bold uppercase text-muted-foreground">Previous Admin Notes</h4>
-                  <p className="text-sm text-muted-foreground italic">{selectedReport.adminNotes}</p>
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                    Previous Admin Notes
+                  </h4>
+                  <p className="text-sm text-muted-foreground italic">
+                    {selectedReport.adminNotes}
+                  </p>
                 </div>
               )}
 
               {/* Action Area */}
               <div className="bg-[#F8F9FB] -mx-6 -mb-6 p-6 space-y-4 border-t border-border mt-4">
-                 <div className="space-y-1.5">
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground">Update Status</h4>
-                    <Select value={newStatus} onValueChange={(value) => setNewStatus(value as ReportStatus)}>
-                      <SelectTrigger className="h-10 rounded-xl bg-card border-border">
-                        <SelectValue placeholder="Select new status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={ReportStatus.PENDING}>Pending</SelectItem>
-                        <SelectItem value={ReportStatus.UNDER_REVIEW}>Under Review</SelectItem>
-                        <SelectItem value={ReportStatus.RESOLVED}>Resolved</SelectItem>
-                        <SelectItem value={ReportStatus.DISMISSED}>Dismissed</SelectItem>
-                        <SelectItem value={ReportStatus.CLOSED}>Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                 </div>
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                    Update Status
+                  </h4>
+                  <Select
+                    value={newStatus}
+                    onValueChange={(value) =>
+                      setNewStatus(value as ReportStatus)
+                    }
+                  >
+                    <SelectTrigger className="h-10 rounded-xl bg-card border-border">
+                      <SelectValue placeholder="Select new status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ReportStatus.PENDING}>
+                        Pending
+                      </SelectItem>
+                      <SelectItem value={ReportStatus.UNDER_REVIEW}>
+                        Under Review
+                      </SelectItem>
+                      <SelectItem value={ReportStatus.RESOLVED}>
+                        Resolved
+                      </SelectItem>
+                      <SelectItem value={ReportStatus.DISMISSED}>
+                        Dismissed
+                      </SelectItem>
+                      <SelectItem value={ReportStatus.CLOSED}>
+                        Closed
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                 <div className="space-y-1.5">
-                    <h4 className="text-xs font-bold uppercase text-muted-foreground">Admin Notes</h4>
-                    <Textarea
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Add notes about this report..."
-                      rows={3}
-                      className="rounded-xl border-border bg-card focus:ring-primary"
-                    />
-                 </div>
+                <div className="space-y-1.5">
+                  <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                    Admin Notes
+                  </h4>
+                  <Textarea
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Add notes about this report..."
+                    rows={3}
+                    className="rounded-xl border-border bg-card focus:ring-primary"
+                  />
+                </div>
               </div>
             </div>
           )}
 
           <DialogFooter className="p-6 bg-[#F8F9FB] border-t border-border mt-0">
-            <Button variant="outline" onClick={() => setSelectedReport(null)} className="h-9">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedReport(null)}
+              className="h-9"
+            >
               Cancel
             </Button>
             <Button

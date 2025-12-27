@@ -51,6 +51,20 @@ const getCandidateJobs = async (
   return response.data;
 };
 
+const getCandidateSemanticJobs = async (
+  query: string,
+  limit: number,
+  page: number
+) => {
+  const response = await axios.get(
+    `search/semantic/jobs`,
+    {
+      params: { q: query, limit, page },
+    }
+  );
+  return response.data;
+};
+
 const getCandidateJobStats = async () => {
   const response = await axios.get(`${API_CANDIDATE_JOB_URL}/stats`);
   return response.data;
@@ -159,4 +173,5 @@ export {
   createRecruiterJob,
   generateJobDescription,
   updateRecruiterJob,
+  getCandidateSemanticJobs,
 };

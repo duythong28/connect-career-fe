@@ -9,6 +9,7 @@ interface CircularProgressProps {
   className?: string;
   showValueLabel?: boolean;
   valueLabel?: React.ReactNode;
+  colorClassName?: string;
 }
 
 export function CircularProgress({
@@ -20,20 +21,23 @@ export function CircularProgress({
   className,
   showValueLabel = true,
   valueLabel,
+  colorClassName = "text-indigo-600",
 }: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const normalizedValue = Math.max(minValue, Math.min(maxValue, value));
-  const percentage = ((normalizedValue - minValue) / (maxValue - minValue)) * 100;
+  const percentage =
+    ((normalizedValue - minValue) / (maxValue - minValue)) * 100;
   const offset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className={cn("relative inline-flex items-center justify-center", className)}>
-      <svg
-        width={size}
-        height={size}
-        className="transform -rotate-90"
-      >
+    <div
+      className={cn(
+        "relative inline-flex items-center justify-center",
+        className
+      )}
+    >
+      <svg width={size} height={size} className="transform -rotate-90">
         {/* Background circle */}
         <circle
           cx={size / 2}
@@ -42,7 +46,7 @@ export function CircularProgress({
           stroke="currentColor"
           strokeWidth={strokeWidth}
           fill="none"
-          className="text-indigo-600/10"
+          className={cn("opacity-10", colorClassName)}
         />
         {/* Progress circle */}
         <circle
@@ -55,14 +59,14 @@ export function CircularProgress({
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
-          className="text-indigo-600 transition-all duration-300"
+          className={cn("transition-all duration-300", colorClassName)}
         />
       </svg>
       {/* Value label */}
       {showValueLabel && (
         <div className="absolute inset-0 flex items-center justify-center">
           {valueLabel || (
-            <span className="text-3xl font-semibold text-indigo-600">
+            <span className={cn("text-3xl font-semibold", colorClassName)}>
               {Math.round(normalizedValue)}
             </span>
           )}

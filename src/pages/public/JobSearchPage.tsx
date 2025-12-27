@@ -61,13 +61,14 @@ import { toast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getCandidateJobs,
+  getCandidateSemanticJobs,
   saveCandidateJobById,
 } from "@/api/endpoints/jobs.api";
 import {
   getJobsByIds,
   getJobsRecommendationIds,
-  JobRecommendationPreferences,
 } from "@/api/endpoints/recommendations.api";
+import { JobRecommendationPreferences } from "@/api/types/recommendations.types";
 import {
   JobFilters,
   JobSortBy,
@@ -86,6 +87,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
+import ShareButton from "@/components/shared/ShareButton";
 
 // --- Helper Hook: Debounce ---
 function useDebounce<T>(value: T, delay: number): T {
@@ -140,7 +142,9 @@ const TagInput = ({
           <Icon
             className={cn(
               "absolute left-3 top-1/2 -translate-y-1/2",
-              variant === "destructive" ? "text-red-400" : "text-muted-foreground"
+              variant === "destructive"
+                ? "text-red-400"
+                : "text-muted-foreground"
             )}
             size={16}
           />
@@ -320,10 +324,9 @@ export default function JobSearchPage() {
   const [locationOpen, setLocationOpen] = useState(false);
 
   // --- Preference Search State ---
-  const [preferences, setPreferences] = useState<JobRecommendationPreferences>(
-    DEFAULT_PREFERENCES
-  );
-  const [recommendedJobIds, setRecommendedJobIds] = useState<string[]>([]);
+  const [preferences, setPreferences] =
+    useState<JobRecommendationPreferences>(DEFAULT_PREFERENCES);
+  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
 
   // Debounce for Basic Search
   const debouncedSearchTerm = useDebounce(searchTermInput, 500);
@@ -338,7 +341,6 @@ export default function JobSearchPage() {
     }
   }, [debouncedSearchTerm, isPreferenceMode]);
 
-  // --- Query 1: Basic Search Jobs ---
   const basicJobsQuery = useQuery({
     queryKey: ["jobs", searchFilters],
     queryFn: () => getCandidateJobs(searchFilters),
@@ -347,22 +349,89 @@ export default function JobSearchPage() {
     refetchOnWindowFocus: false,
   });
 
+  // const handleGetCandidateSemanticJobs = async () => {
+  //   try {
+  //     const response = await getCandidateSemanticJobs(
+  //       searchFilters.searchTerm || "",
+  //       searchFilters.pageSize || 20,
+  //       searchFilters.pageNumber || 1
+  //     );
+  //     const jobs = response?.items?.map((job: { job: Job }) => {
+  //       return job?.job;
+  //     });
+  //     return {
+  //       data: jobs,
+  //       total: response?.total || 0,
+  //       page: response?.page || 1,
+  //       limit: response?.limit || 20,
+  //       totalPages: response?.totalPages || 1,
+  //     };
+  //   } catch (error) {
+  //     console.error("Error fetching semantic jobs:", error);
+  //     return {
+  //       data: [],
+  //       total: 0,
+  //       page: 1,
+  //       limit: 20,
+  //       totalPages: 0,
+  //     };
+  //   }
+  // };
+
+  // const basicJobsQuery = useQuery({
+  //   queryKey: ["jobs", searchFilters],
+  //   queryFn: () => handleGetCandidateSemanticJobs(),
+  //   enabled: !isPreferenceMode,
+  //   staleTime: 1000 * 30,
+  //   refetchOnWindowFocus: false,
+  // });
+
+  const handleRecommendJobs = async (prefs: JobRecommendationPreferences) => {
+    try {
+      let jobs: Job[] = [];
+
+      try {
+        const jobIdsResponse = await getJobsRecommendationIds({
+          limit: 20,
+          userId: user?.id,
+          preferences: prefs,
+        });
+        if (jobIdsResponse.jobIds.length === 0) {
+          jobs = await getJobsByIds(jobIdsResponse.jobIds);
+        }
+      } catch (error) {
+        console.error("Error getting recommended job IDs:", error);
+      }
+
+      if (jobs.length === 0) {
+        const searchJobsResponse = await getCandidateJobs({
+          pageNumber: 1,
+          pageSize: 20,
+          searchTerm: "",
+          location: prefs.preferredLocations?.[0] || "",
+          type: prefs.preferredRoleTypes?.[0] || undefined,
+          seniorityLevel: undefined,
+          status: undefined,
+          keywords: prefs.skillsLike,
+          postedAfter: undefined,
+          postedBefore: undefined,
+          sortBy: JobSortBy.POSTED_DATE,
+          sortOrder: "DESC",
+        });
+        jobs = searchJobsResponse.data;
+      }
+      return jobs;
+    } catch (error) {
+      console.error("Error fetching similar jobs:", error);
+    }
+  };
+
   // --- Mutation: Get Recommended IDs ---
   const recommendationIdsMutation = useMutation({
     mutationFn: (prefs: JobRecommendationPreferences) =>
-      getJobsRecommendationIds({
-        limit: 20,
-        userId: user?.id,
-        preferences: prefs,
-      }),
+      handleRecommendJobs(prefs),
     onSuccess: (data) => {
-      setRecommendedJobIds(data.jobIds || []);
-      if (data.jobIds && data.jobIds.length === 0) {
-        toast({
-          title: "No matches found",
-          description: "Try adjusting your preferences to be less specific.",
-        });
-      }
+      setRecommendedJobs(data || []);
     },
     onError: () => {
       toast({
@@ -373,20 +442,13 @@ export default function JobSearchPage() {
     },
   });
 
-  // --- Query 2: Recommended Jobs (by IDs) ---
-  const recommendedJobsQuery = useQuery({
-    queryKey: ["jobs-recommended", recommendedJobIds],
-    queryFn: () => getJobsByIds(recommendedJobIds),
-    enabled: isPreferenceMode && recommendedJobIds.length > 0,
-    staleTime: 1000 * 60 * 5, // Cache recommendations for 5 mins
-  });
-
   // Derived Data based on Mode
   const displayedJobsData = isPreferenceMode
     ? {
-        data: recommendedJobsQuery.data || [],
-        total: recommendedJobsQuery.data?.length || 0,
-        totalPages: 1, // Recommendation usually returns a flat list
+        data: (recommendationIdsMutation.isSuccess && recommendedJobs) || [],
+        total:
+          (recommendationIdsMutation.isSuccess && recommendedJobs.length) || 0,
+        totalPages: 1,
       }
     : {
         data: basicJobsQuery.data?.data || [],
@@ -395,7 +457,7 @@ export default function JobSearchPage() {
       };
 
   const isFetching = isPreferenceMode
-    ? recommendationIdsMutation.isPending || recommendedJobsQuery.isFetching
+    ? recommendationIdsMutation.isPending
     : basicJobsQuery.isFetching;
 
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -437,8 +499,8 @@ export default function JobSearchPage() {
     return "Salary not disclosed";
   };
 
-  const timeAgo = (dateString: string) => {
-    const date = new Date(dateString);
+  const timeAgo = (dateString: string | null) => {
+    const date = dateString ? new Date(dateString) : new Date();
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     if (seconds < 86400) return "Today";
@@ -477,17 +539,23 @@ export default function JobSearchPage() {
     setPreferences(DEFAULT_PREFERENCES);
   };
 
-  const addPreferenceArrayItem = (key: keyof JobRecommendationPreferences, value: string) => {
+  const addPreferenceArrayItem = (
+    key: keyof JobRecommendationPreferences,
+    value: string
+  ) => {
     setPreferences((prev) => ({
       ...prev,
-      [key]: [...(prev[key] as string[] || []), value],
+      [key]: [...((prev[key] as string[]) || []), value],
     }));
   };
 
-  const removePreferenceArrayItem = (key: keyof JobRecommendationPreferences, value: string) => {
+  const removePreferenceArrayItem = (
+    key: keyof JobRecommendationPreferences,
+    value: string
+  ) => {
     setPreferences((prev) => ({
       ...prev,
-      [key]: (prev[key] as string[] || []).filter((item) => item !== value),
+      [key]: ((prev[key] as string[]) || []).filter((item) => item !== value),
     }));
   };
 
@@ -560,7 +628,8 @@ export default function JobSearchPage() {
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               {isPreferenceMode ? (
                 <>
-                  <Sparkles className="text-primary" fill="currentColor" /> AI Recommendation
+                  <Sparkles className="text-primary" fill="currentColor" /> AI
+                  Recommendation
                 </>
               ) : (
                 "Search All Jobs"
@@ -627,7 +696,9 @@ export default function JobSearchPage() {
                     )}
                   >
                     <MapPin size={14} className="text-primary" />
-                    {searchFilters.location ? searchFilters.location : "Location"}
+                    {searchFilters.location
+                      ? searchFilters.location
+                      : "Location"}
                     <ChevronDown size={14} className="text-muted-foreground" />
                   </Button>
                 </PopoverTrigger>
@@ -834,78 +905,126 @@ export default function JobSearchPage() {
                   <SlidersHorizontal size={16} className="text-primary" />
                   <span>Customize Your Ideal Job (AI Match)</span>
                   {!isPreferencesExpanded && (
-                     <span className="text-xs font-normal text-muted-foreground ml-2">
-                       (Click to expand preferences)
-                     </span>
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      (Click to expand preferences)
+                    </span>
                   )}
                 </div>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg">
-                  {isPreferencesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 rounded-lg"
+                >
+                  {isPreferencesExpanded ? (
+                    <ChevronUp size={16} />
+                  ) : (
+                    <ChevronDown size={16} />
+                  )}
                 </Button>
               </div>
 
               {/* Expanded Content */}
               {isPreferencesExpanded && (
                 <div className="p-4 border-t border-border space-y-6 animate-in slide-in-from-top-2">
-                  
                   {/* Section 1: Role, Location & Company */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">Preferred Locations</Label>
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Preferred Locations
+                      </Label>
                       <TagInput
                         placeholder="e.g. Ho Chi Minh, Remote"
                         tags={preferences.preferredLocations}
-                        onAdd={(val) => addPreferenceArrayItem("preferredLocations", val)}
-                        onRemove={(val) => removePreferenceArrayItem("preferredLocations", val)}
+                        onAdd={(val) =>
+                          addPreferenceArrayItem("preferredLocations", val)
+                        }
+                        onRemove={(val) =>
+                          removePreferenceArrayItem("preferredLocations", val)
+                        }
                         icon={MapPin}
                         variant="default"
                       />
                     </div>
-                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">Job Types</Label>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Job Types
+                      </Label>
                       <Select
-                         value=""
-                         onValueChange={(val) => {
-                           if(val && !preferences.preferredRoleTypes?.includes(val)) {
-                             addPreferenceArrayItem("preferredRoleTypes", val);
-                           }
-                         }}
+                        value=""
+                        onValueChange={(val) => {
+                          if (
+                            val &&
+                            !preferences.preferredRoleTypes?.includes(val)
+                          ) {
+                            addPreferenceArrayItem("preferredRoleTypes", val);
+                          }
+                        }}
                       >
                         <SelectTrigger className="h-10 rounded-xl">
                           <SelectValue placeholder="Select (Multiple)" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
-                           {Object.values(JobType).map((t) => (
-                              <SelectItem key={t} value={t}>{JobTypeLabel[t]}</SelectItem>
-                           ))}
+                          {Object.values(JobType).map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {JobTypeLabel[t]}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {preferences.preferredRoleTypes?.map(type => (
-                           <Badge key={type} variant="secondary" className="px-2 py-1 rounded-md text-xs font-medium gap-1">
-                             {JobTypeLabel[type as JobType]}
-                             <XIcon size={12} className="cursor-pointer hover:text-destructive" onClick={() => removePreferenceArrayItem("preferredRoleTypes", type)} />
-                           </Badge>
+                        {preferences.preferredRoleTypes?.map((type) => (
+                          <Badge
+                            key={type}
+                            variant="secondary"
+                            className="px-2 py-1 rounded-md text-xs font-medium gap-1"
+                          >
+                            {JobTypeLabel[type as JobType]}
+                            <XIcon
+                              size={12}
+                              className="cursor-pointer hover:text-destructive"
+                              onClick={() =>
+                                removePreferenceArrayItem(
+                                  "preferredRoleTypes",
+                                  type
+                                )
+                              }
+                            />
+                          </Badge>
                         ))}
                       </div>
                     </div>
                     <div className="space-y-1">
-                        <Label className="text-xs font-bold uppercase text-muted-foreground">Company Size</Label>
-                        <Select
-                           value={preferences.preferredCompanySize || ""}
-                           onValueChange={(val) => setPreferences(prev => ({...prev, preferredCompanySize: val}))}
-                        >
-                           <SelectTrigger className="h-10 rounded-xl">
-                              <SelectValue placeholder="Any Size" />
-                           </SelectTrigger>
-                           <SelectContent className="rounded-xl">
-                              <SelectItem value="startup">Startup (1-50)</SelectItem>
-                              <SelectItem value="small">Small (51-200)</SelectItem>
-                              <SelectItem value="medium">Medium (201-1000)</SelectItem>
-                              <SelectItem value="large">Large (1001-5000)</SelectItem>
-                              <SelectItem value="enterprise">Enterprise (5000+)</SelectItem>
-                           </SelectContent>
-                        </Select>
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Company Size
+                      </Label>
+                      <Select
+                        value={preferences.preferredCompanySize || ""}
+                        onValueChange={(val) =>
+                          setPreferences((prev) => ({
+                            ...prev,
+                            preferredCompanySize: val,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-10 rounded-xl">
+                          <SelectValue placeholder="Any Size" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="startup">
+                            Startup (1-50)
+                          </SelectItem>
+                          <SelectItem value="small">Small (51-200)</SelectItem>
+                          <SelectItem value="medium">
+                            Medium (201-1000)
+                          </SelectItem>
+                          <SelectItem value="large">
+                            Large (1001-5000)
+                          </SelectItem>
+                          <SelectItem value="enterprise">
+                            Enterprise (5000+)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -913,60 +1032,36 @@ export default function JobSearchPage() {
 
                   {/* Section 2: Skills (Like vs Dislike) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="space-y-1">
+                    <div className="space-y-1">
                       <Label className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1">
                         <ThumbsUp size={12} /> Skills you Like
                       </Label>
                       <TagInput
                         placeholder="e.g. React, Python, Node.js"
                         tags={preferences.skillsLike}
-                        onAdd={(val) => addPreferenceArrayItem("skillsLike", val)}
-                        onRemove={(val) => removePreferenceArrayItem("skillsLike", val)}
+                        onAdd={(val) =>
+                          addPreferenceArrayItem("skillsLike", val)
+                        }
+                        onRemove={(val) =>
+                          removePreferenceArrayItem("skillsLike", val)
+                        }
                         icon={Zap}
                         variant="success"
                       />
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs font-bold uppercase text-red-500 flex items-center gap-1">
-                         <ThumbsDown size={12} /> Skills to Avoid
+                        <ThumbsDown size={12} /> Skills to Avoid
                       </Label>
                       <TagInput
                         placeholder="e.g. PHP, Cobol"
                         tags={preferences.skillsDislike}
-                        onAdd={(val) => addPreferenceArrayItem("skillsDislike", val)}
-                        onRemove={(val) => removePreferenceArrayItem("skillsDislike", val)}
-                        icon={XIcon}
-                        variant="destructive"
-                      />
-                    </div>
-                  </div>
-
-                   <div className="h-px bg-border/50" />
-
-                  {/* Section 3: Industry (Like vs Dislike) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1">
-                         <Building2 size={12} /> Industries you Like
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. Technology, AI"
-                        tags={preferences.industriesLike}
-                        onAdd={(val) => addPreferenceArrayItem("industriesLike", val)}
-                        onRemove={(val) => removePreferenceArrayItem("industriesLike", val)}
-                        icon={Building2}
-                         variant="success"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-red-500 flex items-center gap-1">
-                         <Building2 size={12} /> Industries to Avoid
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. Finance, Banking"
-                        tags={preferences.industriesDislike}
-                        onAdd={(val) => addPreferenceArrayItem("industriesDislike", val)}
-                        onRemove={(val) => removePreferenceArrayItem("industriesDislike", val)}
+                        onAdd={(val) =>
+                          addPreferenceArrayItem("skillsDislike", val)
+                        }
+                        onRemove={(val) =>
+                          removePreferenceArrayItem("skillsDislike", val)
+                        }
                         icon={XIcon}
                         variant="destructive"
                       />
@@ -975,59 +1070,130 @@ export default function JobSearchPage() {
 
                   <div className="h-px bg-border/50" />
 
-                   {/* Section 4: Other (Salary, Values, Clearance) */}
+                  {/* Section 3: Industry (Like vs Dislike) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1">
+                        <Building2 size={12} /> Industries you Like
+                      </Label>
+                      <TagInput
+                        placeholder="e.g. Technology, AI"
+                        tags={preferences.industriesLike}
+                        onAdd={(val) =>
+                          addPreferenceArrayItem("industriesLike", val)
+                        }
+                        onRemove={(val) =>
+                          removePreferenceArrayItem("industriesLike", val)
+                        }
+                        icon={Building2}
+                        variant="success"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase text-red-500 flex items-center gap-1">
+                        <Building2 size={12} /> Industries to Avoid
+                      </Label>
+                      <TagInput
+                        placeholder="e.g. Finance, Banking"
+                        tags={preferences.industriesDislike}
+                        onAdd={(val) =>
+                          addPreferenceArrayItem("industriesDislike", val)
+                        }
+                        onRemove={(val) =>
+                          removePreferenceArrayItem("industriesDislike", val)
+                        }
+                        icon={XIcon}
+                        variant="destructive"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border/50" />
+
+                  {/* Section 4: Other (Salary, Values, Clearance) */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                       <div className="space-y-1">
-                         <Label className="text-xs font-bold uppercase text-muted-foreground">Min Monthly Salary (USD)</Label>
-                         <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                            <Input
-                               type="number"
-                               className="pl-10 h-10 rounded-xl"
-                               placeholder="e.g. 1500"
-                               value={preferences.minSalary || ""}
-                               onChange={(e) => setPreferences(prev => ({...prev, minSalary: Number(e.target.value)}))}
-                            />
-                         </div>
-                       </div>
-                       <div className="space-y-1">
-                         <Label className="text-xs font-bold uppercase text-muted-foreground">Work Values</Label>
-                         <TagInput
-                           placeholder="e.g. work_life_balance"
-                           tags={preferences.values}
-                           onAdd={(val) => addPreferenceArrayItem("values", val)}
-                           onRemove={(val) => removePreferenceArrayItem("values", val)}
-                           icon={Heart}
-                         />
-                       </div>
-                       <div className="flex items-center gap-3 p-2 border border-border rounded-xl h-10">
-                          <Switch 
-                            checked={preferences.wantsClearanceRoles}
-                            onCheckedChange={(checked) => setPreferences(prev => ({...prev, wantsClearanceRoles: checked}))}
-                          />
-                          <Label className="text-sm font-bold flex items-center gap-2 cursor-pointer" onClick={() => setPreferences(prev => ({...prev, wantsClearanceRoles: !prev.wantsClearanceRoles}))}>
-                             <ShieldCheck size={16} className="text-primary" />
-                             Security Clearance Only
-                          </Label>
-                       </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Min Monthly Salary (USD)
+                      </Label>
+                      <div className="relative">
+                        <DollarSign
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                          size={16}
+                        />
+                        <Input
+                          type="number"
+                          className="pl-10 h-10 rounded-xl"
+                          placeholder="e.g. 1500"
+                          value={preferences.minSalary || ""}
+                          onChange={(e) =>
+                            setPreferences((prev) => ({
+                              ...prev,
+                              minSalary: Number(e.target.value),
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase text-muted-foreground">
+                        Work Values
+                      </Label>
+                      <TagInput
+                        placeholder="e.g. work_life_balance"
+                        tags={preferences.values}
+                        onAdd={(val) => addPreferenceArrayItem("values", val)}
+                        onRemove={(val) =>
+                          removePreferenceArrayItem("values", val)
+                        }
+                        icon={Heart}
+                      />
+                    </div>
+                    <div className="flex items-center gap-3 p-2 border border-border rounded-xl h-10">
+                      <Switch
+                        checked={preferences.wantsClearanceRoles}
+                        onCheckedChange={(checked) =>
+                          setPreferences((prev) => ({
+                            ...prev,
+                            wantsClearanceRoles: checked,
+                          }))
+                        }
+                      />
+                      <Label
+                        className="text-sm font-bold flex items-center gap-2 cursor-pointer"
+                        onClick={() =>
+                          setPreferences((prev) => ({
+                            ...prev,
+                            wantsClearanceRoles: !prev.wantsClearanceRoles,
+                          }))
+                        }
+                      >
+                        <ShieldCheck size={16} className="text-primary" />
+                        Security Clearance Only
+                      </Label>
+                    </div>
                   </div>
 
                   <div className="flex justify-end pt-2 gap-3">
-                     <Button 
-                        variant="outline" 
-                        className="rounded-xl px-4 font-bold h-11 border-border text-muted-foreground hover:text-foreground"
-                        onClick={handleClearPreferences}
-                     >
-                        <RotateCcw size={16} className="mr-2" /> Clear All
-                     </Button>
-                     <Button
-                       className="rounded-xl px-8 font-bold h-11"
-                       onClick={handlePreferenceSearch}
-                       disabled={recommendationIdsMutation.isPending}
-                     >
-                        {recommendationIdsMutation.isPending ? "Analyzing..." : "Find AI Matches"}
-                        {!recommendationIdsMutation.isPending && <Sparkles size={16} className="ml-2" />}
-                     </Button>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl px-4 font-bold h-11 border-border text-muted-foreground hover:text-foreground"
+                      onClick={handleClearPreferences}
+                    >
+                      <RotateCcw size={16} className="mr-2" /> Clear All
+                    </Button>
+                    <Button
+                      className="rounded-xl px-8 font-bold h-11"
+                      onClick={handlePreferenceSearch}
+                      disabled={recommendationIdsMutation.isPending}
+                    >
+                      {recommendationIdsMutation.isPending
+                        ? "Analyzing..."
+                        : "Find AI Matches"}
+                      {!recommendationIdsMutation.isPending && (
+                        <Sparkles size={16} className="ml-2" />
+                      )}
+                    </Button>
                   </div>
                 </div>
               )}
@@ -1045,8 +1211,8 @@ export default function JobSearchPage() {
               {isFetching
                 ? "Loading..."
                 : isPreferenceMode
-                  ? `Found ${displayedJobsData.total} Matches`
-                  : `Showing ${displayedJobsData.data.length} of ${displayedJobsData.total} Jobs`}
+                ? `Found ${displayedJobsData.total} Matches`
+                : `Showing ${displayedJobsData.data.length} of ${displayedJobsData.total} Jobs`}
             </span>
           </div>
 
@@ -1060,25 +1226,28 @@ export default function JobSearchPage() {
             ))}
             {displayedJobsData.data.length === 0 && !isFetching && (
               <div className="text-center py-10 text-muted-foreground text-sm flex flex-col items-center">
-                 <Search className="mb-2 opacity-20" size={40} />
-                 {isPreferenceMode ? (
-                    <p>No matches yet. Set your preferences and click "Find Matches".</p>
-                 ) : (
-                    <p>No jobs found matching your criteria.</p>
-                 )}
+                <Search className="mb-2 opacity-20" size={40} />
+                {isPreferenceMode ? (
+                  <p>
+                    No matches yet. Set your preferences and click "Find
+                    Matches".
+                  </p>
+                ) : (
+                  <p>No jobs found matching your criteria.</p>
+                )}
               </div>
             )}
 
             {!isPreferenceMode && (
-                <div className="pt-4 px-2 pb-2">
-                  <SmartPagination
-                    page={searchFilters.pageNumber || 1}
-                    totalPages={displayedJobsData.totalPages || 1}
-                    onPageChange={(p) =>
-                      setSearchFilters((prev) => ({ ...prev, pageNumber: p }))
-                    }
-                  />
-                </div>
+              <div className="pt-4 px-2 pb-2">
+                <SmartPagination
+                  page={searchFilters.pageNumber || 1}
+                  totalPages={displayedJobsData.totalPages || 1}
+                  onPageChange={(p) =>
+                    setSearchFilters((prev) => ({ ...prev, pageNumber: p }))
+                  }
+                />
+              </div>
             )}
           </div>
         </div>
@@ -1132,16 +1301,9 @@ export default function JobSearchPage() {
                     Save
                   </Button>
                   <ApplyJobDialog
-                    jobId={selectedJob.id}
-                    trigger={
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="h-9 rounded-xl font-bold flex items-center gap-1"
-                      >
-                        <Zap size={12} fill="currentColor" /> Apply
-                      </Button>
-                    }
+                    jobId={selectedJob?.id ?? ""}
+                    appliedByUserIds={selectedJob?.appliedByUserIds}
+                    status={selectedJob?.status ?? ""}
                   />
                 </div>
               </div>
@@ -1159,15 +1321,7 @@ export default function JobSearchPage() {
                               selectedJob.type}
                           </span>
                           <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              className="p-2 h-8 w-8 rounded-xl"
-                            >
-                              <Share2
-                                size={12}
-                                className="text-muted-foreground"
-                              />
-                            </Button>
+                            <ShareButton pathname={`jobs/${selectedJob.id}`} />
                             <ReportDialog
                               entityId={selectedJob.id}
                               entityType="job"
@@ -1363,19 +1517,9 @@ export default function JobSearchPage() {
                             )}
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-9 rounded-xl font-bold"
-                          onClick={() =>
-                            navigate(
-                              `/company/${selectedJob.organizationId}/profile`
-                            )
-                          }
-                        >
-                          View Full Profile{" "}
-                          <ArrowRight size={14} className="ml-1" />
-                        </Button>
+                        <ShareButton
+                          pathname={`company/${selectedJob.organizationId}/profile`}
+                        />
                       </div>
 
                       <div className="prose prose-sm text-muted-foreground mb-8">
@@ -1407,18 +1551,20 @@ export default function JobSearchPage() {
                               "N/A"}
                           </div>
                         </div>
-                        <div>
-                          <div className="text-xs font-bold uppercase text-muted-foreground mb-1">
-                            Founded
+                        {selectedJob.organization?.foundedDate && (
+                          <div>
+                            <div className="text-xs font-bold uppercase text-muted-foreground mb-1">
+                              Founded
+                            </div>
+                            <div className="text-sm font-medium text-foreground">
+                              {selectedJob.organization?.foundedDate
+                                ? new Date(
+                                    selectedJob.organization.foundedDate
+                                  ).getFullYear()
+                                : "N/A"}
+                            </div>
                           </div>
-                          <div className="text-sm font-medium text-foreground">
-                            {selectedJob.organization?.foundedDate
-                              ? new Date(
-                                  selectedJob.organization.foundedDate
-                                ).getFullYear()
-                              : "N/A"}
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
