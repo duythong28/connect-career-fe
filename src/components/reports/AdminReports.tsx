@@ -254,7 +254,7 @@ const AdminReports = () => {
                             : selectedReport.entityType === "user"
                             ? `admin/users/${selectedReport.entityId}`
                             : selectedReport.entityType === "refund"
-                            ? `admin/wallets/${selectedReport.entityId}`
+                            ? `admin/transactions/${selectedReport.entityId}`
                             : ""
                         }
                         minimal

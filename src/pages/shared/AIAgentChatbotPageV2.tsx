@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
 import { Edit2 } from "lucide-react"; // Import thêm icon
 import { RenameSessionModal } from "@/components/candidate/ai-mock-interview/RenameSessionModal";
+import { VoiceInput } from "@/components/ui/VoiceInput";
 
 interface Message {
   id: string;
@@ -245,7 +246,7 @@ export default function AIAgentChatPageV2() {
         timestamp: new Date(),
       };
 
-      setSessions([newSession, ...sessions]);
+      setSessions(updatedSessions);
       setMessages([]);
       setSearchParams({ session: newSessionId });
 
@@ -1097,7 +1098,11 @@ export default function AIAgentChatPageV2() {
                   className="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 px-2 text-sm text-gray-900 placeholder-gray-400 max-h-[200px] custom-scrollbar"
                   disabled={isLoading}
                 />
-
+{/* 2. Add the VoiceInput component */}
+  <VoiceInput 
+    onTranscript={(text) => setInput(text)} 
+    disabled={isLoading}
+  />
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={!input.trim() || isLoading}
