@@ -33,7 +33,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
-import { Wallet, History, ArrowRightLeft, RotateCcw, Check, Copy } from "lucide-react";
+import {
+  Wallet,
+  History,
+  ArrowRightLeft,
+  RotateCcw,
+  Check,
+  Copy,
+} from "lucide-react";
+import ShareButton from "@/components/shared/ShareButton";
 
 // --- Components ---
 
@@ -52,7 +60,10 @@ const CopyableId = ({ id }: { id: string | null | undefined }) => {
 
   return (
     <div className="flex items-center gap-1 bg-muted/50 px-2 py-1 rounded w-fit max-w-full border border-border">
-      <span className="font-mono text-xs truncate max-w-[120px] sm:max-w-[180px]" title={id}>
+      <span
+        className="font-mono text-xs truncate max-w-[120px] sm:max-w-[180px]"
+        title={id}
+      >
         {id}
       </span>
       <Button
@@ -61,7 +72,11 @@ const CopyableId = ({ id }: { id: string | null | undefined }) => {
         className="h-5 w-5 shrink-0 hover:bg-muted text-muted-foreground hover:text-foreground"
         onClick={handleCopy}
       >
-        {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+        {copied ? (
+          <Check className="h-3 w-3 text-green-500" />
+        ) : (
+          <Copy className="h-3 w-3" />
+        )}
       </Button>
     </div>
   );
@@ -86,14 +101,16 @@ const WalletManagementPage = () => {
 
   // Selection States
   const [selectedWallet, setSelectedWallet] = useState<any | null>(null);
-  
+
   // Dialog States
   const [showUsage, setShowUsage] = useState(false);
   const [showTransactions, setShowTransactions] = useState(false);
   const [showRefund, setShowRefund] = useState(false);
 
   // Refund State
-  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(
+    null
+  );
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [refundTransactionId, setRefundTransactionId] = useState("");
@@ -111,7 +128,11 @@ const WalletManagementPage = () => {
 
   // 2. Fetch usage history (with pagination)
   const { data: usageData, isLoading: usageLoading } = useQuery({
-    queryKey: ["wallet-usage", selectedWallet ? getUserId(selectedWallet) : "", usagePage],
+    queryKey: [
+      "wallet-usage",
+      selectedWallet ? getUserId(selectedWallet) : "",
+      usagePage,
+    ],
     queryFn: () => {
       const userId = getUserId(selectedWallet);
       if (!userId) return Promise.resolve(undefined);
@@ -124,8 +145,16 @@ const WalletManagementPage = () => {
   });
 
   // 3. Fetch transactions (with pagination)
-  const { data: transactionsData, isLoading: transactionsLoading, refetch: refetchTransactions } = useQuery({
-    queryKey: ["wallet-transactions", selectedWallet ? getUserId(selectedWallet) : "", transactionPage],
+  const {
+    data: transactionsData,
+    isLoading: transactionsLoading,
+    refetch: refetchTransactions,
+  } = useQuery({
+    queryKey: [
+      "wallet-transactions",
+      selectedWallet ? getUserId(selectedWallet) : "",
+      transactionPage,
+    ],
     queryFn: () => {
       const userId = getUserId(selectedWallet);
       if (!userId) return Promise.resolve(undefined);
@@ -164,25 +193,30 @@ const WalletManagementPage = () => {
       refetchTransactions();
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Refund failed", 
+      toast({
+        title: "Refund failed",
         description: error?.response?.data?.message || "Something went wrong",
-        variant: "destructive" 
+        variant: "destructive",
       });
     },
   });
 
   const handleInitiateRefund = (transaction: any) => {
-    const paymentId = transaction.relatedPaymentTransactionId || transaction.metadata?.paymentTransactionId;
-    
+    const paymentId =
+      transaction.relatedPaymentTransactionId ||
+      transaction.metadata?.paymentTransactionId;
+
     if (!paymentId) {
-      toast({ title: "Cannot refund: Missing Payment Transaction ID", variant: "destructive" });
+      toast({
+        title: "Cannot refund: Missing Payment Transaction ID",
+        variant: "destructive",
+      });
       return;
     }
 
     setSelectedTransaction(transaction);
-    setRefundTransactionId(paymentId); 
-    setRefundAmount((transaction.amount ?? 0).toString()); 
+    setRefundTransactionId(paymentId);
+    setRefundAmount((transaction.amount ?? 0).toString());
     setRefundReason("");
     setShowRefund(true);
   };
@@ -204,12 +238,12 @@ const WalletManagementPage = () => {
   const isRefundAmountValid = () => {
     const amount = Number(refundAmount);
     if (!amount || amount <= 0) return false;
-    
+
     // Check minimum 10000 VND constraint
-    if (selectedTransaction?.currency === 'VND' && amount < 10000) {
+    if (selectedTransaction?.currency === "VND" && amount < 10000) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -288,7 +322,9 @@ const WalletManagementPage = () => {
                           </TableCell>
                           <TableCell>
                             <span className="font-semibold text-foreground">
-                              {parseFloat(wallet.creditBalance || "0").toLocaleString()}
+                              {parseFloat(
+                                wallet.creditBalance || "0"
+                              ).toLocaleString()}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -312,7 +348,9 @@ const WalletManagementPage = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
-                            {wallet.updatedAt ? new Date(wallet.updatedAt).toLocaleDateString() : "N/A"}
+                            {wallet.updatedAt
+                              ? new Date(wallet.updatedAt).toLocaleDateString()
+                              : "N/A"}
                           </TableCell>
                           <TableCell className="text-right pr-6">
                             <div className="flex items-center justify-end gap-2">
@@ -364,8 +402,14 @@ const WalletManagementPage = () => {
                   <Button
                     variant="outline"
                     className="h-9"
-                    disabled={!walletData || walletPage === walletData.totalPages}
-                    onClick={() => setWalletPage((p) => Math.min(walletData?.totalPages || 1, p + 1))}
+                    disabled={
+                      !walletData || walletPage === walletData.totalPages
+                    }
+                    onClick={() =>
+                      setWalletPage((p) =>
+                        Math.min(walletData?.totalPages || 1, p + 1)
+                      )
+                    }
                   >
                     Next
                   </Button>
@@ -410,27 +454,45 @@ const WalletManagementPage = () => {
                     {((usageData as any)?.data ?? []).map((item: any) => (
                       <TableRow key={item.id} className="border-border">
                         <TableCell className="pl-6 font-medium text-foreground align-top">
-                          {item.action?.actionName || item.actionCode || "Unknown Action"}
+                          {item.action?.actionName ||
+                            item.actionCode ||
+                            "Unknown Action"}
                         </TableCell>
                         <TableCell className="align-top">
                           <span className="font-semibold text-red-600">
-                            -{parseFloat(item.amountDeducted || "0").toLocaleString()} {item.currency}
+                            -
+                            {parseFloat(
+                              item.amountDeducted || "0"
+                            ).toLocaleString()}{" "}
+                            {item.currency}
                           </span>
                         </TableCell>
                         <TableCell className="align-top">
                           <div className="flex flex-col text-xs text-muted-foreground">
-                            <span>Before: {parseFloat(item.balanceBefore).toLocaleString()}</span>
-                            <span className="font-medium text-foreground">After: {parseFloat(item.balanceAfter).toLocaleString()}</span>
+                            <span>
+                              Before:{" "}
+                              {parseFloat(item.balanceBefore).toLocaleString()}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              After:{" "}
+                              {parseFloat(item.balanceAfter).toLocaleString()}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm align-top pr-6">
-                          {item.timestamp ? new Date(item.timestamp).toLocaleString() : "N/A"}
+                          {item.timestamp
+                            ? new Date(item.timestamp).toLocaleString()
+                            : "N/A"}
                         </TableCell>
                       </TableRow>
                     ))}
-                    {(!(usageData as any)?.data || (usageData as any).data.length === 0) && (
+                    {(!(usageData as any)?.data ||
+                      (usageData as any).data.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                        <TableCell
+                          colSpan={4}
+                          className="text-center py-6 text-muted-foreground"
+                        >
                           No usage history found.
                         </TableCell>
                       </TableRow>
@@ -439,7 +501,7 @@ const WalletManagementPage = () => {
                 </Table>
               )}
             </div>
-            
+
             {/* Usage Pagination - ALWAYS SHOW */}
             <div className="flex items-center justify-end gap-2 p-4 border-t border-border bg-[#F8F9FB]">
               <Button
@@ -456,13 +518,19 @@ const WalletManagementPage = () => {
               <Button
                 variant="outline"
                 className="h-9"
-                disabled={!usageData || usagePage === (usageData as any).totalPages}
-                onClick={() => setUsagePage((p) => Math.min((usageData as any)?.totalPages || 1, p + 1))}
+                disabled={
+                  !usageData || usagePage === (usageData as any).totalPages
+                }
+                onClick={() =>
+                  setUsagePage((p) =>
+                    Math.min((usageData as any)?.totalPages || 1, p + 1)
+                  )
+                }
               >
                 Next
               </Button>
             </div>
-            
+
             <DialogFooter className="p-4 bg-[#F8F9FB] border-t border-border">
               <Button
                 variant="outline"
@@ -520,11 +588,14 @@ const WalletManagementPage = () => {
                   </TableHeader>
                   <TableBody>
                     {((transactionsData as any)?.data ?? []).map((tx: any) => {
-                      const isCredit = tx.type === 'credit';
-                      // Identify the correct ID for refunding. 
-                      const paymentId = tx.relatedPaymentTransactionId || tx.metadata?.paymentTransactionId;
+                      const isCredit = tx.type === "credit";
+                      // Identify the correct ID for refunding.
+                      const paymentId =
+                        tx.relatedPaymentTransactionId ||
+                        tx.metadata?.paymentTransactionId;
                       // Identify payment method
-                      const paymentMethod = tx.relatedPaymentTransaction?.paymentMethod;
+                      const paymentMethod =
+                        tx.relatedPaymentTransaction?.paymentMethod;
 
                       return (
                         <TableRow key={tx.id} className="border-border">
@@ -535,13 +606,17 @@ const WalletManagementPage = () => {
                               }`}
                             >
                               {isCredit ? "+" : "-"}
-                              {parseFloat(tx.amount || "0").toLocaleString()} {tx.currency}
+                              {parseFloat(
+                                tx.amount || "0"
+                              ).toLocaleString()}{" "}
+                              {tx.currency}
                             </span>
                           </TableCell>
                           <TableCell className="align-top">
                             <Badge
                               variant={
-                                tx.status === "completed" || tx.status === "success"
+                                tx.status === "completed" ||
+                                tx.status === "success"
                                   ? "default"
                                   : tx.status === "pending"
                                   ? "outline"
@@ -554,21 +629,34 @@ const WalletManagementPage = () => {
                           </TableCell>
                           <TableCell className="align-top">
                             {paymentMethod ? (
-                              <Badge variant="outline" className="uppercase font-medium">
+                              <Badge
+                                variant="outline"
+                                className="uppercase font-medium"
+                              >
                                 {paymentMethod}
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground text-xs">-</span>
+                              <span className="text-muted-foreground text-xs">
+                                -
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="align-top">
-                             <div className="flex flex-col text-xs text-muted-foreground gap-0.5">
-                                <span>Before: {parseFloat(tx.balanceBefore).toLocaleString()}</span>
-                                <span className="font-medium text-foreground">After: {parseFloat(tx.balanceAfter).toLocaleString()}</span>
-                             </div>
+                            <div className="flex flex-col text-xs text-muted-foreground gap-0.5">
+                              <span>
+                                Before:{" "}
+                                {parseFloat(tx.balanceBefore).toLocaleString()}
+                              </span>
+                              <span className="font-medium text-foreground">
+                                After:{" "}
+                                {parseFloat(tx.balanceAfter).toLocaleString()}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm align-top">
-                             {tx.createdAt ? new Date(tx.createdAt).toLocaleString() : "N/A"}
+                            {tx.createdAt
+                              ? new Date(tx.createdAt).toLocaleString()
+                              : "N/A"}
                           </TableCell>
                           <TableCell className="align-top">
                             <CopyableId id={paymentId} />
@@ -577,25 +665,36 @@ const WalletManagementPage = () => {
                             {tx.description || "-"}
                           </TableCell>
                           <TableCell className="text-right pr-6 align-top">
-                            {/* Only show refund if credit, valid ID, and payment method is momo */}
-                            {paymentId && isCredit && paymentMethod === 'momo' && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-8 px-2"
-                                onClick={() => handleInitiateRefund(tx)}
-                              >
-                                <RotateCcw className="h-3 w-3 mr-1" />
-                                Refund
-                              </Button>
-                            )}
+                            <div className="flex flex-row gap-3 items-start justify-end">
+                              {paymentId &&
+                                isCredit &&
+                                paymentMethod === "momo" && (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="h-8 px-2"
+                                    onClick={() => handleInitiateRefund(tx)}
+                                  >
+                                    <RotateCcw className="h-3 w-3 mr-1" />
+                                    Refund
+                                  </Button>
+                                )}
+                              <ShareButton
+                                pathname={`admin/transactions/${tx.id}`}
+                                minimal
+                              />
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
                     })}
-                    {(!(transactionsData as any)?.data || (transactionsData as any).data.length === 0) && (
+                    {(!(transactionsData as any)?.data ||
+                      (transactionsData as any).data.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        <TableCell
+                          colSpan={8}
+                          className="text-center py-6 text-muted-foreground"
+                        >
                           No transactions found.
                         </TableCell>
                       </TableRow>
@@ -616,13 +715,21 @@ const WalletManagementPage = () => {
                 Previous
               </Button>
               <span className="text-sm font-medium text-muted-foreground px-2">
-                Page {transactionPage} of {(transactionsData as any)?.totalPages || 1}
+                Page {transactionPage} of{" "}
+                {(transactionsData as any)?.totalPages || 1}
               </span>
               <Button
                 variant="outline"
                 className="h-9"
-                disabled={!transactionsData || transactionPage === (transactionsData as any).totalPages}
-                onClick={() => setTransactionPage((p) => Math.min((transactionsData as any)?.totalPages || 1, p + 1))}
+                disabled={
+                  !transactionsData ||
+                  transactionPage === (transactionsData as any).totalPages
+                }
+                onClick={() =>
+                  setTransactionPage((p) =>
+                    Math.min((transactionsData as any)?.totalPages || 1, p + 1)
+                  )
+                }
               >
                 Next
               </Button>
@@ -650,16 +757,21 @@ const WalletManagementPage = () => {
             </DialogHeader>
             <div className="p-6 space-y-4">
               <div className="p-3 bg-muted/30 rounded-xl border border-border text-sm">
-                <p className="text-muted-foreground font-semibold">Payment Transaction ID:</p>
+                <p className="text-muted-foreground font-semibold">
+                  Payment Transaction ID:
+                </p>
                 <div className="mt-1">
-                   <CopyableId id={refundTransactionId} />
+                  <CopyableId id={refundTransactionId} />
                 </div>
-                
-                <div className="h-px bg-border my-2"/>
-                
-                <p className="text-muted-foreground">Original Transaction Amount:</p>
+
+                <div className="h-px bg-border my-2" />
+
+                <p className="text-muted-foreground">
+                  Original Transaction Amount:
+                </p>
                 <p className="font-semibold text-foreground">
-                  {selectedTransaction?.amount ?? 0} {selectedTransaction?.currency}
+                  {selectedTransaction?.amount ?? 0}{" "}
+                  {selectedTransaction?.currency}
                 </p>
               </div>
 
@@ -673,7 +785,9 @@ const WalletManagementPage = () => {
                   value={refundAmount}
                   onChange={(e) => setRefundAmount(e.target.value)}
                   className={`rounded-xl border-border focus:ring-primary ${
-                    refundAmount && !isRefundAmountValid() ? "border-red-500 focus:ring-red-500" : ""
+                    refundAmount && !isRefundAmountValid()
+                      ? "border-red-500 focus:ring-red-500"
+                      : ""
                   }`}
                 />
                 {refundAmount && !isRefundAmountValid() && (
@@ -697,9 +811,9 @@ const WalletManagementPage = () => {
                 className="w-full h-10 rounded-xl mt-2"
                 onClick={handleSubmitRefund}
                 disabled={
-                  refundMutation.isPending || 
-                  !isRefundAmountValid() || 
-                  !refundReason || 
+                  refundMutation.isPending ||
+                  !isRefundAmountValid() ||
+                  !refundReason ||
                   !refundTransactionId
                 }
                 variant="destructive"

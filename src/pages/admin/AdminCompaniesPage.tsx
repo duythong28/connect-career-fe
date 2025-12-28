@@ -288,18 +288,11 @@ const AdminCompaniesPage = () => {
                         <TableCell className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <Avatar className="w-10 h-10 rounded-xl border border-border shrink-0">
-                              <AvatarImage
-                                src={
-                                  org.logoFileId
-                                    ? `/api/files/${org.logoFileId}`
-                                    : undefined
-                                }
-                              />
+                               <AvatarImage src={org.logoFile?.url || (org.logoFileId ? `/api/files/${org.logoFileId}` : undefined)} />
                               <AvatarFallback className="bg-muted text-xs font-bold text-muted-foreground">
                                 {org.name?.charAt(0) || "C"}
                               </AvatarFallback>
                             </Avatar>
-
                             <div>
                               <p className="font-bold text-foreground text-sm">
                                 {org.name}

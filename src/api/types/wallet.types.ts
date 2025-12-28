@@ -39,7 +39,8 @@ export interface TopUpRequest {
 }
 
 export interface TopUpResponse {
-  paymentUrl: string;
+  paymentUrl?: string;
+  redirectUrl?: string;
   expiresAt: string;
 }
 
@@ -137,6 +138,45 @@ export interface CreateBillableActionResponse {
   cost: number;
   currency: string;
   metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminWalletTransactionResponse {
+  id: string;
+  wallet: {
+    id: string;
+    userId: string;
+    creditBalance: string;
+    currency: string;
+    stripeCustomerId: string | null;
+    paymentMethodId: string | null;
+    autoTopUpEnabled: boolean;
+    autoTopUpThreshold: string | null;
+    autoTopUpAmount: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  walletId: string;
+  userId: string;
+  type: "credit" | "debit";
+  amount: string;
+  currency: string;
+  balanceBefore: string;
+  balanceAfter: string;
+  status: string;
+  description?: string;
+  relatedPaymentTransactionId?: string;
+  relatedUsageLedgerId?: string | null;
+  relatedRefundId?: string | null;
+  metadata?: {
+    exchangeRate?: number;
+    originalAmount?: string;
+    convertedAmount?: number;
+    originalCurrency?: string;
+    paymentTransactionId?: string;
+    [key: string]: any;
+  };
   createdAt: string;
   updatedAt: string;
 }
