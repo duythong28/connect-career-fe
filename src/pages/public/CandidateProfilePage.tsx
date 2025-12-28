@@ -163,11 +163,6 @@ export function CandidateProfilePage() {
                 {profileData.user.fullName ||
                   `${profileData.user.firstName} ${profileData.user.lastName}`}
               </h2>
-              <p className="text-sm text-muted-foreground mt-1 mb-3 flex items-center justify-center gap-1">
-                <MapPin size={14} />{" "}
-                {profileData.city || profileData.address || "Location not set"}
-              </p>
-
               {/* Status Badge */}
               <div
                 className={`text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit mb-6 uppercase tracking-wide border ${

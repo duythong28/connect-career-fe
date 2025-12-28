@@ -101,7 +101,11 @@ export default function ApplicationDetail() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCounterDialog, setShowCounterDialog] = useState(false);
 
-  const { data: applicationData, isLoading } = useQuery<Application>({
+  const {
+    data: applicationData,
+    isLoading,
+    refetch,
+  } = useQuery<Application>({
     queryKey: ["applications", applicationId],
     queryFn: async () => getApplicationById(applicationId!),
     enabled: !!applicationId,
@@ -243,76 +247,76 @@ export default function ApplicationDetail() {
     <div className="min-h-screen bg-[#F8F9FB]  text-slate-900 pb-12">
       <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8 animate-fadeIn">
         {/* --- HEADER (Compact) --- */}
-      <div className="bg-card rounded-3xl border border-border mb-6 overflow-hidden animate-fade-in">
-      <div className="p-6 pb-0">
-        <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-          {/* Left: Back + Title + Meta */}
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <button
-                onClick={() => navigate(-1)}
-                className="group flex items-center justify-center w-8 h-8 rounded-full hover:bg-accent transition-colors"
-                title="Back"
-              >
-                <ArrowLeft
-                  size={18}
-                  className="text-muted-foreground group-hover:text-foreground"
-                />
-              </button>
-              {/* PAGE HEADER: Strictly text-2xl font-bold text-foreground */}
-              <h1 className="text-2xl font-bold text-foreground leading-tight">
-                {applicationData.job?.title}
-              </h1>
-              <StatusBadge status={applicationData.status} />
-            </div>
+        <div className="bg-card rounded-3xl border border-border mb-6 overflow-hidden animate-fade-in">
+          <div className="p-6 pb-0">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              {/* Left: Back + Title + Meta */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="group flex items-center justify-center w-8 h-8 rounded-full hover:bg-accent transition-colors"
+                    title="Back"
+                  >
+                    <ArrowLeft
+                      size={18}
+                      className="text-muted-foreground group-hover:text-foreground"
+                    />
+                  </button>
+                  {/* PAGE HEADER: Strictly text-2xl font-bold text-foreground */}
+                  <h1 className="text-2xl font-bold text-foreground leading-tight">
+                    {applicationData.job?.title}
+                  </h1>
+                  <StatusBadge status={applicationData.status} />
+                </div>
 
-            {/* Metadata: text-xs and text-muted-foreground */}
-            <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground ml-11">
-              <span>
-                Application ID: {applicationData.id.slice(0, 8)}...
-              </span>
-              <span>
-                Applied:{" "}
-                {new Date(applicationData.appliedDate).toLocaleDateString()}
-              </span>
+                {/* Metadata: text-xs and text-muted-foreground */}
+                <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground ml-11">
+                  <span>
+                    Application ID: {applicationData.id.slice(0, 8)}...
+                  </span>
+                  <span>
+                    Applied:{" "}
+                    {new Date(applicationData.appliedDate).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right: Actions - Standard Secondary Action (Outline) */}
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/jobs/${applicationData.job?.id}`)}
+                className="h-9 rounded-xl font-bold text-xs shrink-0"
+              >
+                View Job <ExternalLink size={12} className="ml-2" />
+              </Button>
             </div>
           </div>
 
-          {/* Right: Actions - Standard Secondary Action (Outline) */}
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/jobs/${applicationData.job?.id}`)}
-            className="h-9 rounded-xl font-bold text-xs shrink-0"
-          >
-            View Job <ExternalLink size={12} className="ml-2" />
-          </Button>
+          {/* --- TABS NAVIGATION (Bottom of Header) --- */}
+          <div className="flex items-center gap-8 px-6 mt-6 border-t border-border bg-card">
+            <button
+              onClick={() => setActiveTab("application")}
+              className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                activeTab === "application"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FileText size={16} /> Application
+            </button>
+            <button
+              onClick={() => setActiveTab("hiring")}
+              className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+                activeTab === "hiring"
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CheckSquare size={16} /> Hiring Process
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* --- TABS NAVIGATION (Bottom of Header) --- */}
-      <div className="flex items-center gap-8 px-6 mt-6 border-t border-border bg-card">
-        <button
-          onClick={() => setActiveTab("application")}
-          className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === "application"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <FileText size={16} /> Application
-        </button>
-        <button
-          onClick={() => setActiveTab("hiring")}
-          className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === "hiring"
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <CheckSquare size={16} /> Hiring Process
-        </button>
-      </div>
-    </div>
 
         <div className="grid grid-cols-12 gap-6 lg:gap-8">
           {/* --- LEFT COLUMN (Main Content) --- */}
@@ -321,18 +325,9 @@ export default function ApplicationDetail() {
               <div className="space-y-6 animate-fadeIn">
                 <ApplicationInfoSection
                   application={applicationData}
-                  showCvPreview={false}
-                  setShowCvPreview={() => {}}
+                  refetchApplication={refetch}
                 />
-
-                <JobInfoSection
-                  job={applicationData.job}
-                  company={company}
-                  onViewJob={() => navigate(`/jobs/${applicationData.job?.id}`)}
-                  onViewCompany={() =>
-                    company?.id && navigate(`/company/${company.id}/profile`)
-                  }
-                />
+                <JobInfoSection job={applicationData.job} company={company} />
               </div>
             )}
 

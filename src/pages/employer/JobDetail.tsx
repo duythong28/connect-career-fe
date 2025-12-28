@@ -504,15 +504,16 @@ export default function JobDetail() {
                   {applications?.length || 0} applications
                 </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-muted rounded-xl">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+              {job.postedDate && (
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-muted rounded-xl">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="text-muted-foreground font-medium">
+                    Posted {new Date(job.postedDate).toLocaleDateString()}
+                  </span>
                 </div>
-                <span className="text-muted-foreground font-medium">
-                  Posted {new Date(job.createdAt).toLocaleDateString()}
-                </span>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -612,11 +613,6 @@ export default function JobDetail() {
                                               " " +
                                               application?.candidate?.lastName}
                                         </h4>
-                                        <p className="text-xs text-muted-foreground truncate font-medium">
-                                          {application?.candidateSnapshot
-                                            ?.currentTitle ||
-                                            "No title provided"}
-                                        </p>
 
                                         <div className="flex items-center justify-between pt-2 border-t border-border/50">
                                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -722,7 +718,7 @@ export default function JobDetail() {
                     key={candidate.id}
                     candidate={candidate}
                     currentUserId={user?.id || ""}
-                    onViewProfile={(id) =>  navigate(`/candidate/profile/${id}`)}
+                    onViewProfile={(id) => navigate(`/candidate/profile/${id}`)}
                   />
                 ))
               ) : (

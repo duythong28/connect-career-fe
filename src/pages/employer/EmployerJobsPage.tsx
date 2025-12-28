@@ -193,10 +193,14 @@ const JobCardActions = ({
               <DollarSign className="h-3.5 w-3.5 text-[hsl(var(--brand-success))]" />
               <span className="font-bold text-foreground">{job.salary}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground/60" />
-              <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
-            </div>
+            {job.postedDate && (
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span>
+                  Posted {new Date(job.postedDate).toLocaleDateString()}
+                </span>
+              </div>
+            )}
           </div>
           <Button
             onClick={() => navigate(`${job.id}`)}
@@ -236,7 +240,9 @@ const EmployerJobsPage = () => {
       <div className="container-custom max-w-[1400px] mx-auto py-8 px-4 md:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Jobs Management</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              Jobs Management
+            </h1>
             <p className="text-sm text-muted-foreground mt-1 font-medium">
               View and manage all your job postings (
               {organizationJobsData?.length || 0})
@@ -268,13 +274,16 @@ const EmployerJobsPage = () => {
           {isLoading ? (
             <div className="text-center py-20">
               <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-              <p className="mt-4 text-xs font-bold uppercase text-muted-foreground tracking-widest">Loading jobs...</p>
+              <p className="mt-4 text-xs font-bold uppercase text-muted-foreground tracking-widest">
+                Loading jobs...
+              </p>
             </div>
-          ) : filteredJobs.length === 0 && organizationJobsData?.length === 0 ? (
+          ) : filteredJobs.length === 0 &&
+            organizationJobsData?.length === 0 ? (
             <Card className="rounded-3xl border-border bg-card shadow-none py-16 text-center">
               <CardContent>
                 <div className="mx-auto w-16 h-16 bg-primary/10 rounded-3xl flex items-center justify-center mb-4">
-                    <Users className="h-8 w-8 text-primary" />
+                  <Users className="h-8 w-8 text-primary" />
                 </div>
                 <h3 className="text-xl font-bold text-foreground">
                   No Jobs Posted Yet

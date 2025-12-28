@@ -3,17 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { aiMockInterviewAPI } from "@/api/endpoints/ai-mock-interview.api";
-import { 
-  ArrowLeft, 
-  Trash2, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  ArrowLeft,
+  Trash2,
+  CheckCircle2,
+  XCircle,
   Clock,
   TrendingUp,
   Target,
   Lightbulb,
   AlertCircle,
-  FileText
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,12 +29,26 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GetCallResponse, InterviewAnalytics } from "@/api/types/ai-mock-interview.types";
+import {
+  GetCallResponse,
+  InterviewAnalytics,
+} from "@/api/types/ai-mock-interview.types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import QuestionAnswerCard from "./QuestionAnswerCard";
 import { Markdown } from "@/components/ui/markdown";
 import { cn } from "@/lib/utils";
+
+const COLORS = [
+  "text-blue-500",
+  "text-indigo-500",
+  "text-emerald-500",
+  "text-rose-500",
+  "text-amber-500",
+  "text-sky-500",
+  "text-fuchsia-500",
+  "text-violet-500",
+];
 
 type CallInfoProps = {
   callId: string;
@@ -51,7 +65,11 @@ export default function CallInfo({
   const [transcript, setTranscript] = useState("");
   const [, setCandidateStatus] = useState<string>("");
 
-  const { data: callResponse, isLoading, refetch } = useQuery<GetCallResponse>({
+  const {
+    data: callResponse,
+    isLoading,
+    refetch,
+  } = useQuery<GetCallResponse>({
     queryKey: ["call", callId],
     queryFn: () => aiMockInterviewAPI.getCall(callId),
     enabled: !!callId,
@@ -122,18 +140,22 @@ export default function CallInfo({
       <Card className="border-border rounded-2xl bg-card">
         <CardContent className="p-12 text-center">
           <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <p className="text-lg font-semibold text-foreground mb-2">Call data not found</p>
-          <p className="text-sm text-muted-foreground">The interview data could not be loaded.</p>
+          <p className="text-lg font-semibold text-foreground mb-2">
+            Call data not found
+          </p>
+          <p className="text-sm text-muted-foreground">
+            The interview data could not be loaded.
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const duration = response.duration 
-    ? response.duration 
-    : analytics?.duration 
-      ? analytics.duration 
-      : 0;
+  const duration = response.duration
+    ? response.duration
+    : analytics?.duration
+    ? analytics.duration
+    : 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -150,7 +172,9 @@ export default function CallInfo({
             Back
           </Button>
           <div className="h-6 w-px bg-border" />
-          <h1 className="text-2xl font-bold text-foreground">Interview Details</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Interview Details
+          </h1>
         </div>
 
         <div className="flex items-center gap-3">
@@ -188,11 +212,14 @@ export default function CallInfo({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Interview Response?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete this interview response and all associated data.
+                  This action cannot be undone. This will permanently delete
+                  this interview response and all associated data.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                <AlertDialogCancel className="rounded-xl">
+                  Cancel
+                </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => deleteResponse()}
                   className="bg-destructive hover:bg-destructive/90 rounded-xl"
@@ -211,17 +238,19 @@ export default function CallInfo({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Status</p>
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">
+                  Status
+                </p>
                 <p className="text-lg font-bold text-foreground">
                   {response.session?.status || "Unknown"}
                 </p>
               </div>
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
-                response.isEnded 
-                  ? "bg-green-100/50" 
-                  : "bg-yellow-100/50"
-              )}>
+              <div
+                className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  response.isEnded ? "bg-green-100/50" : "bg-yellow-100/50"
+                )}
+              >
                 {response.isEnded ? (
                   <CheckCircle2 className="w-6 h-6 text-brand-success" />
                 ) : (
@@ -236,10 +265,12 @@ export default function CallInfo({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Duration</p>
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">
+                  Duration
+                </p>
                 <p className="text-lg font-bold text-foreground">
-                  {duration 
-                    ? `${Math.floor(duration / 60)}m ${duration % 60}s` 
+                  {duration
+                    ? `${Math.floor(duration / 60)}m ${duration % 60}s`
                     : "N/A"}
                 </p>
               </div>
@@ -254,17 +285,19 @@ export default function CallInfo({
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Analysis</p>
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-1">
+                  Analysis
+                </p>
                 <p className="text-lg font-bold text-foreground">
                   {response.isAnalysed ? "Complete" : "Pending"}
                 </p>
               </div>
-              <div className={cn(
-                "w-12 h-12 rounded-xl flex items-center justify-center",
-                response.isAnalysed 
-                  ? "bg-green-100/50" 
-                  : "bg-muted"
-              )}>
+              <div
+                className={cn(
+                  "w-12 h-12 rounded-xl flex items-center justify-center",
+                  response.isAnalysed ? "bg-green-100/50" : "bg-muted"
+                )}
+              >
                 {response.isAnalysed ? (
                   <CheckCircle2 className="w-6 h-6 text-brand-success" />
                 ) : (
@@ -280,9 +313,11 @@ export default function CallInfo({
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase text-muted-foreground mb-1">Overall Score</p>
+                  <p className="text-xs font-bold uppercase text-muted-foreground mb-1">
+                    Overall Score
+                  </p>
                   <p className="text-lg font-bold text-foreground">
-                    {analytics.overallScore}%
+                    {analytics.overallScore}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -298,15 +333,20 @@ export default function CallInfo({
       {analytics?.overallScore !== undefined && (
         <Card className="border-border rounded-2xl bg-card shadow-sm">
           <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-bold text-foreground">Overall Performance</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">
+              Overall Performance
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="flex flex-col items-center justify-center py-8">
-              <CircularProgress value={analytics.overallScore} size="lg" />
+              <CircularProgress
+                value={analytics.overallScore}
+                className="w-full"
+                size={200}
+                strokeWidth={8}
+                colorClassName={COLORS[0]}
+              />
               <div className="mt-6 text-center">
-                <p className="text-4xl font-bold text-foreground mb-2">
-                  {analytics.overallScore}%
-                </p>
                 <p className="text-sm text-muted-foreground">Overall Score</p>
               </div>
             </div>
@@ -315,37 +355,48 @@ export default function CallInfo({
       )}
 
       {/* Dimension Scores */}
-      {analytics?.dimensionScores && Object.keys(analytics.dimensionScores).length > 0 && (
-        <Card className="border-border rounded-2xl bg-card shadow-sm">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-bold text-foreground">Dimension Scores</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(analytics.dimensionScores).map(([key, value]) => (
-                <div
-                  key={key}
-                  className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold uppercase text-muted-foreground">
-                      {key.replace(/_/g, ' ')}
-                    </span>
-                    <span className="text-lg font-bold text-primary">{value}%</span>
-                  </div>
-                  <CircularProgress value={value as number} size="sm" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {analytics?.dimensionScores &&
+        Object.keys(analytics.dimensionScores).length > 0 && (
+          <Card className="border-border rounded-2xl bg-card shadow-sm">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="text-xl font-bold text-foreground">
+                Dimension Scores
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(analytics.dimensionScores).map(
+                  ([key, value], index) => (
+                    <div
+                      key={key}
+                      className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-bold uppercase text-muted-foreground">
+                          {key.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                      <CircularProgress
+                        value={value as number}
+                        className="w-full"
+                        strokeWidth={6}
+                        colorClassName={COLORS[index % COLORS.length]}
+                      />
+                    </div>
+                  )
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Overall Feedback */}
       {analytics?.overallFeedback && (
         <Card className="border-border rounded-2xl bg-card shadow-sm">
           <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-bold text-foreground">Overall Feedback</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">
+              Overall Feedback
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="prose prose-sm max-w-none text-foreground">
@@ -356,7 +407,8 @@ export default function CallInfo({
       )}
 
       {/* Strengths & Weaknesses */}
-      {(analytics?.strengths?.length > 0 || analytics?.weaknesses?.length > 0) && (
+      {(analytics?.strengths?.length > 0 ||
+        analytics?.weaknesses?.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {analytics?.strengths && analytics.strengths.length > 0 && (
             <Card className="border-green-200 rounded-2xl bg-green-50/20 shadow-sm">
@@ -369,7 +421,10 @@ export default function CallInfo({
               <CardContent className="p-6">
                 <ul className="space-y-2">
                   {analytics.strengths.map((strength, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                    <li
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-foreground"
+                    >
                       <CheckCircle2 className="w-4 h-4 text-brand-success mt-0.5 flex-shrink-0" />
                       <span>{strength}</span>
                     </li>
@@ -390,7 +445,10 @@ export default function CallInfo({
               <CardContent className="p-6">
                 <ul className="space-y-2">
                   {analytics.weaknesses.map((weakness, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                    <li
+                      key={index}
+                      className="flex items-start gap-2 text-sm text-foreground"
+                    >
                       <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                       <span>{weakness}</span>
                     </li>
@@ -414,7 +472,10 @@ export default function CallInfo({
           <CardContent className="p-6">
             <ul className="space-y-2">
               {analytics.recommendations.map((rec, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-foreground">
+                <li
+                  key={index}
+                  className="flex items-start gap-2 text-sm text-foreground"
+                >
                   <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                   <span>{rec}</span>
                 </li>
@@ -425,84 +486,107 @@ export default function CallInfo({
       )}
 
       {/* Detailed Feedback */}
-      {analytics?.feedback && Array.isArray(analytics.feedback) && analytics.feedback.length > 0 && (
-        <Card className="border-border rounded-2xl bg-card shadow-sm">
-          <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-bold text-foreground">Detailed Feedback</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              {analytics.feedback.map((fb: any, index: number) => (
-                <div
-                  key={index}
-                  className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge
-                      className={cn(
-                        "text-[10px] font-bold uppercase",
-                        fb.priority === 'high' 
-                          ? 'bg-destructive/10 text-destructive border-destructive/20' 
-                          : fb.priority === 'medium' 
-                            ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
-                            : 'bg-green-100 text-green-700 border-green-200'
-                      )}
-                    >
-                      {fb.priority || fb.type || 'Feedback'}
-                    </Badge>
-                    {fb.dimension && (
-                      <Badge variant="outline" className="text-[10px] font-bold uppercase">
-                        {fb.dimension}
+      {analytics?.feedback &&
+        Array.isArray(analytics.feedback) &&
+        analytics.feedback.length > 0 && (
+          <Card className="border-border rounded-2xl bg-card shadow-sm">
+            <CardHeader className="border-b border-border">
+              <CardTitle className="text-xl font-bold text-foreground">
+                Detailed Feedback
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-3">
+                {analytics.feedback.map((fb: any, index: number) => (
+                  <div
+                    key={index}
+                    className="p-4 border border-border rounded-xl bg-background/50 hover:bg-background transition-colors"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge
+                        className={cn(
+                          "text-[10px] font-bold uppercase",
+                          fb.priority === "high"
+                            ? "bg-destructive/10 text-destructive border-destructive/20"
+                            : fb.priority === "medium"
+                            ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                            : "bg-green-100 text-green-700 border-green-200"
+                        )}
+                      >
+                        {fb.priority || fb.type || "Feedback"}
                       </Badge>
-                    )}
+                      {fb.dimension && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-bold uppercase"
+                        >
+                          {fb.dimension}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground">{fb.content}</p>
                   </div>
-                  <p className="text-sm text-foreground">{fb.content}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Evaluation Criteria */}
       {analytics?.criteria && (
         <Card className="border-border rounded-2xl bg-card shadow-sm">
           <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-bold text-foreground">Evaluation Criteria</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">
+              Evaluation Criteria
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">
-              {Object.entries(analytics.criteria).map(([dimension, criteriaList]: [string, any]) => (
-                <div
-                  key={dimension}
-                  className="p-4 border border-border rounded-xl bg-background/50"
-                >
-                  <h4 className="text-sm font-bold uppercase text-foreground mb-3">
-                    {dimension.replace(/_/g, ' ')}
-                  </h4>
-                  <ul className="space-y-2 mb-3">
-                    {Array.isArray(criteriaList) && criteriaList.map((criterion: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                        <span>{criterion}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {analytics.evidence && analytics.evidence[dimension] && (
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">Evidence:</p>
-                      <ul className="space-y-1">
-                        {Array.isArray(analytics.evidence[dimension]) && analytics.evidence[dimension].map((evidence: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2 text-xs text-muted-foreground/80">
-                            <div className="w-1 h-1 rounded-full bg-muted-foreground/40 mt-1.5 flex-shrink-0" />
-                            <span>{evidence}</span>
+              {Object.entries(analytics.criteria).map(
+                ([dimension, criteriaList]: [string, any]) => (
+                  <div
+                    key={dimension}
+                    className="p-4 border border-border rounded-xl bg-background/50"
+                  >
+                    <h4 className="text-sm font-bold uppercase text-foreground mb-3">
+                      {dimension.replace(/_/g, " ")}
+                    </h4>
+                    <ul className="space-y-2 mb-3">
+                      {Array.isArray(criteriaList) &&
+                        criteriaList.map((criterion: string, idx: number) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-2 text-sm text-muted-foreground"
+                          >
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                            <span>{criterion}</span>
                           </li>
                         ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    </ul>
+                    {analytics.evidence && analytics.evidence[dimension] && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
+                          Evidence:
+                        </p>
+                        <ul className="space-y-1">
+                          {Array.isArray(analytics.evidence[dimension]) &&
+                            analytics.evidence[dimension].map(
+                              (evidence: string, idx: number) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-xs text-muted-foreground/80"
+                                >
+                                  <div className="w-1 h-1 rounded-full bg-muted-foreground/40 mt-1.5 flex-shrink-0" />
+                                  <span>{evidence}</span>
+                                </li>
+                              )
+                            )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )
+              )}
             </div>
           </CardContent>
         </Card>
@@ -531,12 +615,19 @@ export default function CallInfo({
       {analytics?.questionAnswers && analytics.questionAnswers.length > 0 && (
         <Card className="border-border rounded-2xl bg-card shadow-sm">
           <CardHeader className="border-b border-border">
-            <CardTitle className="text-xl font-bold text-foreground">Questions & Answers</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">
+              Questions & Answers
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="space-y-4">
               {analytics.questionAnswers.map((qa: any, index: number) => (
-                <QuestionAnswerCard key={index} question={qa.question} answer={qa.answer} questionNumber={index + 1} />
+                <QuestionAnswerCard
+                  key={index}
+                  question={qa.question}
+                  answer={qa.answer}
+                  questionNumber={index + 1}
+                />
               ))}
             </div>
           </CardContent>

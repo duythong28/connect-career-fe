@@ -130,8 +130,8 @@ const AdminJobsPage = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {job.createdAt
-                          ? new Date(job.createdAt).toLocaleDateString()
+                        {job.postedDate
+                          ? new Date(job.postedDate).toLocaleDateString()
                           : ""}
                       </TableCell>
                       <TableCell>
