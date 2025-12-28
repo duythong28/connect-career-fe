@@ -64,8 +64,9 @@ const OrganizationReviewDialog = ({
       setOpen(false);
       resetForm();
     },
-    onError: () => {
-      toast({ title: "Failed to submit review", variant: "destructive" });
+    onError: (error: any) => {
+      const errorMsg = error?.response?.data?.message || "Failed to submit review";
+      toast({ title: "Error", description: Array.isArray(errorMsg) ? errorMsg[0] : errorMsg, variant: "destructive" });
     },
   });
 
@@ -86,19 +87,40 @@ const OrganizationReviewDialog = ({
     });
   };
 
-  const handleSubmit = () => {
-    if (
-      !summary ||
-      !overtimePolicySatisfaction ||
-      !whatMakesYouLoveWorkingHere
-    ) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields marked with *",
-        variant: "destructive",
-      });
-      return;
+  const validateForm = () => {
+    // 1. Required fields check
+    if (!summary.trim() || !overtimePolicySatisfaction || !whatMakesYouLoveWorkingHere.trim()) {
+      toast({ title: "Validation Error", description: "Please fill in all required fields (*)", variant: "destructive" });
+      return false;
     }
+
+    // 2. Length validations
+    if (summary.length > 140) {
+      toast({ title: "Validation Error", description: "Summary must be shorter than or equal to 140 characters", variant: "destructive" });
+      return false;
+    }
+
+    if (whatMakesYouLoveWorkingHere.length < 50) {
+      toast({ title: "Validation Error", description: "What makes you love working here must be longer than or equal to 50 characters", variant: "destructive" });
+      return false;
+    }
+
+    // 3. Optional fields but have length requirements if provided
+    if (overtimePolicyReason && overtimePolicyReason.length < 50) {
+      toast({ title: "Validation Error", description: "Overtime policy reason must be longer than or equal to 50 characters", variant: "destructive" });
+      return false;
+    }
+
+    if (suggestionForImprovement && suggestionForImprovement.length < 50) {
+      toast({ title: "Validation Error", description: "Suggestion for improvement must be longer than or equal to 50 characters", variant: "destructive" });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = () => {
+    if (!validateForm()) return;
 
     createReviewMutation.mutate({
       organizationId,
@@ -113,19 +135,14 @@ const OrganizationReviewDialog = ({
     });
   };
 
-  const updateRatingDetail = (
-    key: keyof typeof ratingDetails,
-    value: number
-  ) => {
+  const updateRatingDetail = (key: keyof typeof ratingDetails, value: number) => {
     setRatingDetails((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Helper to format camelCase keys to Title Case
   const formatLabel = (key: string) => {
     return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
   };
 
-  // Helper to render interactive stars
   const renderInteractiveStars = (currentValue: number, onChange: (val: number) => void, size: number = 20) => {
     return (
       <div className="flex gap-1">
@@ -138,10 +155,6 @@ const OrganizationReviewDialog = ({
               currentValue >= star ? "text-yellow-400" : "text-gray-300"
             }`}
           >
-            {/* Sử dụng thuộc tính `fill` để làm cho ngôi sao đặc.
-              - Nếu được chọn (>= star): fill bằng màu hiện tại (currentColor - tức là vàng).
-              - Nếu không được chọn: fill bằng 'none' (chỉ có viền xám).
-            */}
             <Star size={size} fill={currentValue >= star ? "currentColor" : "none"} />
           </button>
         ))}
@@ -152,9 +165,7 @@ const OrganizationReviewDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger ? (
-          trigger
-        ) : (
+        {trigger ? trigger : (
           <Button variant="outline" size="sm" className="flex items-center gap-2">
             <MessageSquare size={16}/> Review Organization
           </Button>
@@ -162,7 +173,6 @@ const OrganizationReviewDialog = ({
       </DialogTrigger>
       
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white rounded-xl shadow-2xl">
-        {/* Header */}
         <DialogHeader className="p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
             <div className="p-2 bg-blue-50 text-[#0EA5E9] rounded-lg">
@@ -172,13 +182,11 @@ const OrganizationReviewDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Body */}
         <div className="p-6 space-y-8">
-          
-          {/* Overall Rating Section */}
+          {/* Overall Rating */}
           <div className="bg-gray-50 border border-gray-100 rounded-xl p-5 text-center">
             <Label className="text-sm font-bold text-gray-700 uppercase mb-3 block">Overall Rating</Label>
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-2">
                 {renderInteractiveStars(overallRating, setOverallRating, 32)}
             </div>
             <div className="text-sm font-medium text-gray-600">
@@ -188,17 +196,20 @@ const OrganizationReviewDialog = ({
 
           {/* Summary */}
           <div>
-            <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Review Summary <span className="text-red-500">*</span></Label>
+            <div className="flex justify-between items-center mb-1.5">
+              <Label className="text-xs font-bold text-gray-700 uppercase">Review Summary <span className="text-red-500">*</span></Label>
+              <span className={`text-[10px] ${summary.length > 140 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>{summary.length}/140</span>
+            </div>
             <Textarea
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Give a title to your review (e.g., Great place to start a career)"
+              placeholder="Give a title to your review..."
               rows={2}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              className={`w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 outline-none resize-none ${summary.length > 140 ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500'}`}
             />
           </div>
 
-          {/* Detailed Ratings Grid */}
+          {/* Detailed Ratings */}
           <div>
             <Label className="text-xs font-bold text-gray-700 uppercase mb-4 block">Detailed Ratings</Label>
             <div className="grid gap-4 p-5 border border-gray-200 rounded-xl bg-white">
@@ -216,7 +227,10 @@ const OrganizationReviewDialog = ({
 
           {/* What Makes You Love Working Here */}
           <div>
-            <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">What do you love about working here? <span className="text-red-500">*</span></Label>
+            <div className="flex justify-between items-center mb-1.5">
+              <Label className="text-xs font-bold text-gray-700 uppercase">What do you love about working here? <span className="text-red-500">*</span></Label>
+              <span className={`text-[10px] ${whatMakesYouLoveWorkingHere.length < 50 && whatMakesYouLoveWorkingHere.length > 0 ? 'text-orange-500' : 'text-gray-400'}`}>{whatMakesYouLoveWorkingHere.length}/min 50</span>
+            </div>
             <Textarea
               value={whatMakesYouLoveWorkingHere}
               onChange={(e) => setWhatMakesYouLoveWorkingHere(e.target.value)}
@@ -228,7 +242,12 @@ const OrganizationReviewDialog = ({
 
           {/* Suggestions */}
           <div>
-            <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Suggestions for Improvement</Label>
+            <div className="flex justify-between items-center mb-1.5">
+               <Label className="text-xs font-bold text-gray-700 uppercase">Suggestions for Improvement</Label>
+               {suggestionForImprovement.length > 0 && (
+                 <span className={`text-[10px] ${suggestionForImprovement.length < 50 ? 'text-orange-500' : 'text-gray-400'}`}>{suggestionForImprovement.length}/min 50</span>
+               )}
+            </div>
             <Textarea
               value={suggestionForImprovement}
               onChange={(e) => setSuggestionForImprovement(e.target.value)}
@@ -238,7 +257,7 @@ const OrganizationReviewDialog = ({
             />
           </div>
 
-          {/* Overtime Policy Section */}
+          {/* Overtime Policy */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Overtime Policy Satisfaction <span className="text-red-500">*</span></Label>
@@ -256,7 +275,12 @@ const OrganizationReviewDialog = ({
                 </Select>
             </div>
             <div>
-                <Label className="text-xs font-bold text-gray-700 uppercase mb-1.5 block">Reason (Optional)</Label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <Label className="text-xs font-bold text-gray-700 uppercase">Reason (Optional)</Label>
+                  {overtimePolicyReason.length > 0 && (
+                    <span className={`text-[10px] ${overtimePolicyReason.length < 50 ? 'text-orange-500' : 'text-gray-400'}`}>{overtimePolicyReason.length}/min 50</span>
+                  )}
+                </div>
                 <Textarea
                     value={overtimePolicyReason}
                     onChange={(e) => setOvertimePolicyReason(e.target.value)}
@@ -267,7 +291,7 @@ const OrganizationReviewDialog = ({
             </div>
           </div>
 
-          {/* Recommendation */}
+          {/* Recommendation Switch */}
           <div className="flex items-center justify-between bg-blue-50 border border-blue-100 p-4 rounded-xl">
             <div className="flex items-center gap-3">
                 {wouldRecommend ? (
@@ -287,10 +311,8 @@ const OrganizationReviewDialog = ({
               className="data-[state=checked]:bg-[#0EA5E9]"
             />
           </div>
-
         </div>
 
-        {/* Footer */}
         <DialogFooter className="p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-xl sticky bottom-0 z-10">
           <div className="flex gap-3 w-full justify-end">
             <Button 

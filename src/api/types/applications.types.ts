@@ -59,12 +59,25 @@ export interface CandidateSummary {
 }
 
 export interface MatchingDetails {
-  skillsMatch?: number;
-  overallScore?: number;
-  locationMatch?: number;
-  educationMatch?: number;
-  experienceMatch?: number;
-  [key: string]: number | undefined;
+  details: {
+    matchedSkills: string[];
+    missingSkills: string[];
+    educationLevel: string;
+    yearsExperience: number;
+    requiredEducation: string;
+    requiredExperience: number;
+  };
+  explanation: {
+    summary: string;
+    strengths: string[];
+    weaknesses: string[];
+    recommendations: string[];
+  };
+  skillsMatch: number;
+  overallScore: number;
+  locationMatch: number;
+  educationMatch: number;
+  experienceMatch: number;
 }
 
 export interface Application {

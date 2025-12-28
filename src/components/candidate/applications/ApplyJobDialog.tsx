@@ -18,7 +18,14 @@ import { getMyCvs } from "@/api/endpoints/cvs.api";
 import { applyJob } from "@/api/endpoints/applications.api";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Eye, Download, CheckCircle2 as CheckCircle, Send, FileText, UploadCloud } from "lucide-react";
+import {
+  Eye,
+  Download,
+  CheckCircle2 as CheckCircle,
+  Send,
+  FileText,
+  UploadCloud,
+} from "lucide-react";
 import { increaseApplyCount } from "@/api/endpoints/jobs.api";
 import type { CV } from "@/api/types/cvs.types";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +33,8 @@ import { Button } from "@/components/ui/button";
 
 type Props = {
   jobId: string;
+  status: string;
+  appliedByUserIds: string[] | null;
 };
 
 const schema = z.object({
@@ -35,12 +44,15 @@ const schema = z.object({
 
 type FormSchema = z.infer<typeof schema>;
 
-export default function ApplyJobDialog({ jobId }: Props) {
+export default function ApplyJobDialog({
+  jobId,
+  status,
+  appliedByUserIds,
+}: Props) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const isApplied = false;
 
   const { data: cvsData, isLoading: cvsLoading } = useQuery<{ data: CV[] }>({
     queryKey: ["candidateCvs"],
@@ -124,11 +136,19 @@ export default function ApplyJobDialog({ jobId }: Props) {
     }
   };
 
+  if (status != "active") {
+    return (
+      <Button variant="default" className="w-full h-9" disabled>
+        Not Open
+      </Button>
+    );
+  }
+
   if (!user) {
     return (
-      <Button 
+      <Button
         variant="default"
-        className="w-full h-9" // Added h-9
+        className="w-full h-9"
         onClick={() => navigate("/login")}
       >
         Login to Apply
@@ -136,22 +156,18 @@ export default function ApplyJobDialog({ jobId }: Props) {
     );
   }
 
-  if (isApplied) {
+  if (appliedByUserIds && appliedByUserIds?.includes(user.id)) {
     return (
-      <Button 
-        disabled 
-        variant="secondary"
-        className="w-full text-green-600 font-bold opacity-100 h-9" // Added h-9
-      >
+      <Button disabled variant="default" className="w-full h-9">
         <CheckCircle className="h-4 w-4 mr-2" />
-        Application Submitted
+        Applied
       </Button>
     );
   }
 
   return (
     <>
-      <Button 
+      <Button
         variant="default"
         className="w-full h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-sm" // Added h-9
         onClick={() => setOpen(true)}
@@ -172,14 +188,22 @@ export default function ApplyJobDialog({ jobId }: Props) {
             </DialogDescription>
           </DialogHeader>
 
-          <form id="apply-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-8 overflow-y-auto custom-scrollbar flex-1 bg-card">
+          <form
+            id="apply-form"
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-6 p-8 overflow-y-auto custom-scrollbar flex-1 bg-card"
+          >
             <div>
               <Label className="text-xs font-bold text-muted-foreground uppercase mb-3 block">
                 Select CV
               </Label>
 
               <div className="space-y-3 max-h-64 overflow-y-auto border border-border rounded-2xl p-4 bg-background shadow-inner custom-scrollbar">
-                {cvsLoading && <p className="text-sm text-muted-foreground p-4">Loading CVs...</p>}
+                {cvsLoading && (
+                  <p className="text-sm text-muted-foreground p-4">
+                    Loading CVs...
+                  </p>
+                )}
 
                 {!cvsLoading &&
                   (cvsData?.data ?? []).map((cv) => (
@@ -194,11 +218,24 @@ export default function ApplyJobDialog({ jobId }: Props) {
                       >
                         <div className="flex items-center w-full justify-between">
                           <div className="flex items-center space-x-3">
-                            <RadioGroupItem value={cv.id} id={cv.id} className="text-primary border-border" />
-                            <div onClick={() => setValue("cvId", cv.id)} className="cursor-pointer">
-                              <p className="font-bold text-sm text-foreground">{cv.title}</p>
+                            <RadioGroupItem
+                              value={cv.id}
+                              id={cv.id}
+                              className="text-primary border-border"
+                            />
+                            <div
+                              onClick={() => setValue("cvId", cv.id)}
+                              className="cursor-pointer"
+                            >
+                              <p className="font-bold text-sm text-foreground">
+                                {cv.title}
+                              </p>
                               <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                                <FileText size={10} className="inline mr-1 text-muted-foreground"/> Uploaded {cv.createdAt}
+                                <FileText
+                                  size={10}
+                                  className="inline mr-1 text-muted-foreground"
+                                />{" "}
+                                Uploaded {cv.createdAt}
                               </p>
                             </div>
                           </div>
@@ -230,7 +267,10 @@ export default function ApplyJobDialog({ jobId }: Props) {
 
                 {!cvsLoading && (cvsData?.data ?? []).length === 0 && (
                   <div className="text-center p-6 text-sm text-muted-foreground border-2 border-dashed border-border rounded-xl">
-                    <UploadCloud size={24} className="mx-auto mb-2 text-muted-foreground/50"/>
+                    <UploadCloud
+                      size={24}
+                      className="mx-auto mb-2 text-muted-foreground/50"
+                    />
                     <p>No CVs found. Upload one in your profile.</p>
                   </div>
                 )}
@@ -252,27 +292,26 @@ export default function ApplyJobDialog({ jobId }: Props) {
                 placeholder="Write your cover letter here..."
               />
             </div>
-
           </form>
-          
+
           <DialogFooter className="p-6 border-t border-border bg-secondary/10 rounded-b-3xl sm:justify-end gap-3">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setOpen(false)}
-                className="text-sm font-bold border-border rounded-xl h-11 px-6 text-muted-foreground hover:text-foreground bg-background"
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                variant="default"
-                disabled={applyMutation.isPending || !watch('cvId')} 
-                className="text-sm font-bold rounded-xl h-11 px-8 shadow-sm" 
-                form="apply-form"
-              >
-                {applyMutation.isPending ? "Applying..." : "Submit Application"}
-              </Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-sm font-bold border-border rounded-xl h-11 px-6 text-muted-foreground hover:text-foreground bg-background"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={applyMutation.isPending || !watch("cvId")}
+              className="text-sm font-bold rounded-xl h-11 px-8 shadow-sm"
+              form="apply-form"
+            >
+              {applyMutation.isPending ? "Applying..." : "Submit Application"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

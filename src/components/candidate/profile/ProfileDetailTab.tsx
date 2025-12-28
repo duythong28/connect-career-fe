@@ -198,7 +198,7 @@ const InputGroup = ({ label, error, children, required }: any) => (
 
 // 1. Profile Editor
 const profileSchema = z.object({
-  user: z.object({ fullName: z.string().min(1, "Name required") }),
+  user: z.object({ firstName: z.string().min(1, "Name required") , lastName: z.string().min(1, "Name required")}),
   email: z.string().email().optional().nullable(),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
@@ -226,18 +226,32 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
       onSave={handleSubmit(onSave)}
       isSubmitting={isSubmitting}
     >
-      <InputGroup label="Full Name" required error={errors.user?.fullName}>
-        <Controller
-          control={control}
-          name="user.fullName"
-          render={({ field }) => (
-            <Input
-              {...field}
-              className="w-full border-border rounded-xl focus:ring-primary h-auto py-3"
-            />
-          )}
-        />
-      </InputGroup>
+      <div className="grid grid-cols-2 gap-6">
+        <InputGroup label="First Name" required error={errors.user?.firstName}>
+          <Controller
+            control={control}
+            name="user.firstName"
+            render={({ field }) => (
+              <Input
+                {...field}
+                className="w-full border-border rounded-xl focus:ring-primary h-auto py-3"
+              />
+            )}
+          />
+        </InputGroup>
+          <InputGroup label="Last Name" required error={errors.user?.lastName}>
+          <Controller
+            control={control}
+            name="user.lastName"
+            render={({ field }) => (
+              <Input
+                {...field}
+                className="w-full border-border rounded-xl focus:ring-primary h-auto py-3"
+              />
+            )}
+          />
+        </InputGroup>
+      </div>
       <div className="grid grid-cols-2 gap-6">
         <InputGroup label="Email" error={errors.email}>
           <Controller
