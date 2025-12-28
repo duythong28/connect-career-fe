@@ -101,17 +101,11 @@ export default function ApplicationDetail() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCounterDialog, setShowCounterDialog] = useState(false);
 
-  const {
-    data: applicationData,
-    isLoading,
-    refetch,
-  } = useQuery<Application>({
+  const { data: applicationData, isLoading } = useQuery<Application>({
     queryKey: ["applications", applicationId],
     queryFn: async () => getApplicationById(applicationId!),
     enabled: !!applicationId,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 0
   });
 
   const { data: pipeline } = useQuery({
@@ -325,7 +319,11 @@ export default function ApplicationDetail() {
               <div className="space-y-6 animate-fadeIn">
                 <ApplicationInfoSection
                   application={applicationData}
-                  refetchApplication={refetch}
+                  refetchApplication={() =>
+                    queryClient.invalidateQueries({
+                      queryKey: ["applications", applicationId],
+                    })
+                  }
                 />
                 <JobInfoSection job={applicationData.job} company={company} />
               </div>
