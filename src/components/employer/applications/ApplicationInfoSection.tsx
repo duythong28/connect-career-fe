@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import ShareButton from "@/components/shared/ShareButton";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { recalculateMatchingScoreForApplication } from "@/api/endpoints/applications.api";
 
 export default function ApplicationInfoSection({
@@ -25,11 +25,10 @@ export default function ApplicationInfoSection({
   refetchApplication,
 }: {
   application: Application;
-  refetchApplication: () => void;
+  refetchApplication: () => Promise<void>;
 }) {
   const [showCvPreview, setShowCvPreview] = useState(false);
   const [showFullCoverLetter, setShowFullCoverLetter] = useState(false);
-  const queryClient = useQueryClient();
   const candidate = application.candidate;
   const candidateProfile = application?.candidateProfile;
   const cv = application.cv;
@@ -72,9 +71,9 @@ export default function ApplicationInfoSection({
   };
   const recalculateMatchingScore = useMutation({
     mutationFn: () => recalculateMatchingScoreForApplication(application.id),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success("Matching score recalculated successfully.");
-      refetchApplication();
+      await refetchApplication();
     },
     onError: () => {
       toast.error("Failed to recalculate matching score.");

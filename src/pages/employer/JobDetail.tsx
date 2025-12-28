@@ -60,6 +60,7 @@ import {
 } from "@/api/endpoints/recommendations.api";
 import { useAuth } from "@/hooks/useAuth";
 import MessageButton from "@/components/chat/MessageButton";
+import ShareButton from "@/components/shared/ShareButton";
 
 // --- Sub-Component: Candidate Card for Recommendations ---
 const RecommendedCandidateCard = ({
@@ -102,7 +103,7 @@ const RecommendedCandidateCard = ({
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <div className="flex flex-row items-center gap-2 mb-1">
                 <h3 className="text-base font-bold text-foreground truncate cursor-pointer transition-colors">
                   {displayName}
                 </h3>
@@ -115,36 +116,15 @@ const RecommendedCandidateCard = ({
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground truncate mb-1">
-                {candidate.email}
-              </p>
-              {candidate.phoneNumber && (
-                <p className="text-xs text-muted-foreground/80">
-                  {candidate.phoneNumber}
-                </p>
-              )}
             </div>
           </div>
 
           <div className="flex flex-col gap-2 shrink-0">
             {candidate?.candidateProfile?.id && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewProfile(candidate?.candidateProfile?.id)}
-                className="h-8 text-xs font-bold border-border"
-              >
-                <UserIcon className="h-3 w-3 mr-1 text-primary" />
-                View
-              </Button>
-            )}
-            {currentUserId !== candidate.id && (
-              <div className="h-8">
-                <MessageButton
-                  senderId={currentUserId}
-                  recieverId={candidate.id}
-                />
-              </div>
+              <ShareButton
+                pathname={`candidate/profile/${candidate.candidateProfile.id}`}
+                text="View"
+              />
             )}
           </div>
         </div>
