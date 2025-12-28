@@ -109,7 +109,7 @@ const UserWalletPage = () => {
       paymentMethod: string;
     }) => topUpWallet(data),
     onSuccess: (res) => {
-      setRedirectUrl(res.paymentUrl || null);
+      setRedirectUrl(res.paymentUrl || res.redirectUrl || null);
       setExpiresAt(res.expiresAt || null);
 
       toast({ title: "Top up request created. Please complete payment." });

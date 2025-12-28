@@ -12,6 +12,7 @@ import {
   CreateBillableActionResponse,
   UpdateBillableActionPriceRequest,
   UpdateBillableActionPriceResponse,
+  AdminWalletTransactionResponse,
 } from "../types/wallet.types";
 
 // Get wallet balance
@@ -110,6 +111,17 @@ export const updateBillableActionPrice = async (
   const response = await axios.patch(
     `/backoffice/billable-actions/${actionId}/price`,
     data
+  );
+  return response.data;
+};
+
+export const getAdminWalletTransactions = async (
+  userId: string,
+  params?: { page?: number; limit?: number }
+): Promise<AdminWalletTransactionResponse> => {
+  const response = await axios.get(
+    `/backoffice/wallets/transactions/${userId}`,
+    { params }
   );
   return response.data;
 };
