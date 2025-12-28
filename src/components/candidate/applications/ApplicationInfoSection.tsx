@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileText, Download, Eye, FileCheck } from "lucide-react";
+import { FileText, Download, Eye } from "lucide-react";
 import { Application } from "@/api/types/applications.types";
 import { useNavigate } from "react-router-dom";
 

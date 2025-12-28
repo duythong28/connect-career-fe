@@ -12,8 +12,10 @@ import {
   Wallet,
   CreditCard,
   X,
+  Flag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ReportDialog from "@/components/reports/ReportDialog";
 
 const paymentProviders = [
   { label: "MoMo", value: "momo", currency: "VND", paymentMethod: "momo" },
@@ -236,22 +238,24 @@ const UserWalletPage = () => {
               {walletData.recentTransactions.map((transaction: any) => (
                 <div
                   key={transaction.id}
-                  className="px-6 py-4 hover:bg-secondary/20 transition-colors flex items-center justify-between group"
+                  className="px-6 py-4 bg-card hover:bg-secondary/50 transition-colors flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-4 flex-1">
+                    {/* Icon Container - Sử dụng brand-success và destructive từ index.css */}
                     <div
                       className={`p-2.5 rounded-xl flex-shrink-0 ${
                         transaction.type === "credit"
-                          ? "bg-green-100"
-                          : "bg-red-100"
+                          ? "bg-[hsl(var(--brand-success)/0.1)]"
+                          : "bg-destructive/10"
                       }`}
                     >
                       {transaction.type === "credit" ? (
-                        <ArrowUp className="w-4 h-4 text-green-600" />
+                        <ArrowUp className="w-4 h-4 text-[hsl(var(--brand-success))]" />
                       ) : (
-                        <ArrowDown className="w-4 h-4 text-red-600" />
+                        <ArrowDown className="w-4 h-4 text-destructive" />
                       )}
                     </div>
+
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-foreground text-sm mb-1 truncate">
                         {transaction.description ||
@@ -260,39 +264,61 @@ const UserWalletPage = () => {
                       <p className="text-xs text-muted-foreground mb-1.5 font-medium">
                         {formatDateTime(transaction.createdAt)}
                       </p>
+
+                      {/* Metadata badges - Sử dụng rounded-xl và text-xs */}
                       <div className="flex gap-2 flex-wrap">
-                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-lg text-muted-foreground font-bold uppercase tracking-wide border border-border">
+                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-xl text-muted-foreground font-bold uppercase tracking-wide border border-border">
                           Before:{" "}
                           {formatCurrency(transaction.balanceBefore ?? 0)}{" "}
                           {walletData.currency}
                         </span>
-                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-lg text-muted-foreground font-bold uppercase tracking-wide border border-border">
+                        <span className="text-[10px] bg-secondary px-2 py-0.5 rounded-xl text-muted-foreground font-bold uppercase tracking-wide border border-border">
                           After: {formatCurrency(transaction.balanceAfter ?? 0)}{" "}
                           {walletData.currency}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-4">
-                    <p
-                      className={`font-bold text-base ${
-                        transaction.type === "credit"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {transaction.type === "credit" ? "+" : "-"}
-                      {formatCurrency(transaction.amount ?? 0)}
-                    </p>
-                    <span
-                      className={`text-[10px] font-bold uppercase tracking-wider mt-1 inline-block px-2 py-0.5 rounded-full ${
-                        transaction.status === "completed"
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                      }`}
-                    >
-                      {transaction.status}
-                    </span>
+
+                  {/* Right Side: Amount, Status, and Action */}
+                  <div className="text-right flex-shrink-0 ml-4 flex items-center gap-4">
+                    {transaction.type === "credit" && (
+                      <ReportDialog
+                        entityId={transaction.id}
+                        entityType="refund"
+                        trigger={
+                          <Button
+                            variant="outline"
+                            className="h-9 w-9 p-0 rounded-xl hover:border-destructive hover:text-destructive transition-all"
+                          >
+                            <Flag size={14} />
+                          </Button>
+                        }
+                      />
+                    )}
+                    <div className="flex flex-col items-end">
+                      <p
+                        className={`font-bold text-sm ${
+                          transaction.type === "credit"
+                            ? "text-[hsl(var(--brand-success))]"
+                            : "text-destructive"
+                        }`}
+                      >
+                        {transaction.type === "credit" ? "+" : "-"}
+                        {formatCurrency(transaction.amount ?? 0)}
+                      </p>
+
+                      {/* Status Badge - Đổi rounded-full sang rounded-xl theo chuẩn inner item */}
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider mt-1 inline-block px-2 py-0.5 rounded-xl border ${
+                          transaction.status === "completed"
+                            ? "bg-[hsl(var(--brand-success)/0.1)] text-[hsl(var(--brand-success))] border-[hsl(var(--brand-success)/0.2)]"
+                            : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                        }`}
+                      >
+                        {transaction.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}

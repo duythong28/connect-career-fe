@@ -185,10 +185,13 @@ const JobDetailPage = () => {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm text-muted-foreground mt-6 border-t border-border pt-5">
-                  <span className="flex items-center min-w-0 text-xs font-bold">
-                    <Clock className="h-3.5 w-3.5 mr-1.5 text-primary" />
-                    Posted {new Date(jobData.createdAt).toLocaleDateString()}
-                  </span>
+                  {jobData.postedDate && (
+                    <span className="flex items-center min-w-0 text-xs font-bold">
+                      <Clock className="h-3.5 w-3.5 mr-1.5 text-primary" />
+                      Posted {new Date(jobData.postedDate).toLocaleDateString()}
+                    </span>
+                  )}
+
                   <span className="flex items-center min-w-0 text-xs font-bold">
                     <Users className="h-3.5 w-3.5 mr-1.5 text-primary" />
                     {jobData.applications} applicants
@@ -226,7 +229,11 @@ const JobDetailPage = () => {
                   </div>
                 </div>
                 <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border p-4 shadow-lg">
-                  <ApplyJobDialog jobId={id ?? ""} />
+                  <ApplyJobDialog
+                    jobId={id ?? ""}
+                    appliedByUserIds={jobData?.appliedByUserIds}
+                    status={jobData?.status ?? ""}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -378,14 +385,16 @@ const JobDetailPage = () => {
                       {JobTypeLabel[jobData.type as JobType] || jobData.type}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground text-xs font-bold uppercase">
-                      Posted
-                    </span>
-                    <span className="font-bold text-foreground text-sm">
-                      {new Date(jobData.postedDate).toLocaleDateString()}
-                    </span>
-                  </div>
+                  {jobData.postedDate && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground text-xs font-bold uppercase">
+                        Posted
+                      </span>
+                      <span className="font-bold text-foreground text-sm">
+                        {new Date(jobData.postedDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

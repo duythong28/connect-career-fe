@@ -113,8 +113,8 @@ const PostJobPage = () => {
     mutationFn: (data: any) => createRecruiterJob(data),
     onSuccess: (response) => {
       toast({
-        title: "Job posted successfully!",
-        description: "Your job is now live.",
+        title: "Job created successfully!",
+        description: "Your job is now created.",
       });
       navigate(`/jobs/${response.id}`);
     },

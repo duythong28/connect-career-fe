@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getReports, updateReportStatus } from "@/api/endpoints/reports.api";
-import { Report, ReportStatus } from "@/api/types/reports.types";
+import {
+  entityTypeDisplay,
+  Report,
+  ReportStatus,
+} from "@/api/types/reports.types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -233,23 +237,30 @@ const AdminReports = () => {
                   <h4 className="text-xs font-bold uppercase text-muted-foreground">
                     Entity Type
                   </h4>
-                  <Badge variant="outline" className="rounded-md">
-                    {selectedReport.entityType}
-                  </Badge>
-                  {["job", "organization", "user"].includes(
-                    selectedReport.entityType
-                  )}
-                  <ShareButton
-                    pathname={
-                      selectedReport.entityType === "job"
-                        ? `admin/jobs/${selectedReport.entityId}`
-                        : selectedReport.entityType === "organization"
-                        ? `admin/companies/${selectedReport.entityId}`
-                        : selectedReport.entityType === "user"
-                        ? `admin/users/${selectedReport.entityId}`
-                        : ""
-                    }
-                  />
+                  <span className="text-sm text-foreground font-medium flex flex-row items-center gap-2">
+                    <span>
+                      {entityTypeDisplay[selectedReport.entityType] ||
+                        selectedReport.entityType}
+                    </span>
+                    {["job", "organization", "user","refund"].includes(
+                      selectedReport.entityType
+                    ) && (
+                      <ShareButton
+                        pathname={
+                          selectedReport.entityType === "job"
+                            ? `admin/jobs/${selectedReport.entityId}`
+                            : selectedReport.entityType === "organization"
+                            ? `admin/companies/${selectedReport.entityId}`
+                            : selectedReport.entityType === "user"
+                            ? `admin/users/${selectedReport.entityId}`
+                            : selectedReport.entityType === "refund"
+                            ? `admin/wallets/${selectedReport.entityId}`
+                            : ""
+                        }
+                        minimal
+                      />
+                    )}
+                  </span>
                 </div>
                 <div className="space-y-1.5">
                   <h4 className="text-xs font-bold uppercase text-muted-foreground">

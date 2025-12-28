@@ -257,24 +257,29 @@ const MyReportsPage = () => {
                               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                                 Entity Type
                               </span>
-                              <span className="text-sm text-foreground font-medium">
-                                {entityTypeDisplay[selectedReport.entityType] ||
-                                  selectedReport.entityType}
+                              <span className="text-sm text-foreground font-medium flex flex-row items-center gap-2">
+                                <span>
+                                  {entityTypeDisplay[
+                                    selectedReport.entityType
+                                  ] || selectedReport.entityType}
+                                </span>
                                 {["job", "organization", "user"].includes(
                                   selectedReport.entityType
+                                ) && (
+                                  <ShareButton
+                                    pathname={
+                                      selectedReport.entityType === "job"
+                                        ? `jobs/${selectedReport.entityId}`
+                                        : selectedReport.entityType ===
+                                          "organization"
+                                        ? `company/${selectedReport.entityId}/profile`
+                                        : selectedReport.entityType === "user"
+                                        ? `candidate/profile/${selectedReport.entityId}`
+                                        : ""
+                                    }
+                                    minimal
+                                  />
                                 )}
-                                <ShareButton
-                                  pathname={
-                                    selectedReport.entityType === "job"
-                                      ? `jobs/${selectedReport.entityId}`
-                                      : selectedReport.entityType ===
-                                        "organization"
-                                      ? `companies/${selectedReport.entityId}`
-                                      : selectedReport.entityType === "user"
-                                      ? `candidate/profile/${selectedReport.entityId}`
-                                      : ""
-                                  }
-                                />
                               </span>
                             </div>
                             <div className="flex flex-col gap-1">

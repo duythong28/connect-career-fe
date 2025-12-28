@@ -109,6 +109,15 @@ const bulkUpdateApplicationStatusForRecruiter = async (
   return response.data;
 };
 
+const recalculateMatchingScoreForApplication = async (
+  applicationId: string
+): Promise<Application> => {
+  const response = await axios.post(
+    `/recruiters/applications/${applicationId}/recalculate-matching-score`
+  );
+  return response.data;
+};
+
 export {
   applyJob,
   getApplicationsNeedingAttention,
@@ -123,4 +132,5 @@ export {
   updateApplicationByIdForRecruiter,
   getMyApplications,
   bulkUpdateApplicationStatusForRecruiter,
+  recalculateMatchingScoreForApplication,
 };
