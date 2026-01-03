@@ -5,15 +5,31 @@ import { useMutation } from "@tanstack/react-query";
 import { RegisterCredentials } from "@/api/types/auth.types";
 import { register } from "@/api/endpoints/auth.api";
 
+const GOOGLE_OAUTH_URL = `${
+  import.meta.env.VITE_API_BASE_URL
+}/auth/oauth/google`;
+
 // --- AuthLayout ---
 const CompanyLogos = () => (
   <div className="grid grid-cols-3 gap-6 mt-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-    <div className="flex items-center justify-center font-bold text-blue-600">Google</div>
-    <div className="flex items-center justify-center font-bold text-gray-800">Microsoft</div>
-    <div className="flex items-center justify-center font-bold text-orange-500">Amazon</div>
-    <div className="flex items-center justify-center font-bold text-blue-700">Meta</div>
-    <div className="flex items-center justify-center font-bold text-red-600">Netflix</div>
-    <div className="flex items-center justify-center font-bold text-green-500">Spotify</div>
+    <div className="flex items-center justify-center font-bold text-blue-600">
+      Google
+    </div>
+    <div className="flex items-center justify-center font-bold text-gray-800">
+      Microsoft
+    </div>
+    <div className="flex items-center justify-center font-bold text-orange-500">
+      Amazon
+    </div>
+    <div className="flex items-center justify-center font-bold text-blue-700">
+      Meta
+    </div>
+    <div className="flex items-center justify-center font-bold text-red-600">
+      Netflix
+    </div>
+    <div className="flex items-center justify-center font-bold text-green-500">
+      Spotify
+    </div>
   </div>
 );
 
@@ -30,24 +46,37 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => (
           />
           CareerHub
         </div>
-        
+
         <h1 className="text-4xl font-bold text-foreground mb-6 leading-tight">
           Start your journey <br />
           in the unified ecosystem.
         </h1>
-        
+
         <div className="text-muted-foreground mb-8 font-medium text-lg">
-          Join a platform where intelligent connections empower your career growth from day one.
+          Join a platform where intelligent connections empower your career
+          growth from day one.
           <div className="flex items-center gap-3 mt-6">
-             <div className="flex -space-x-3">
+            <div className="flex -space-x-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-${i * 200} bg-cover`} style={{backgroundImage: `url(https://i.pravatar.cc/100?img=${i + 15})`}}></div>
+                <div
+                  key={i}
+                  className={`w-8 h-8 rounded-full border-2 border-white bg-gray-${
+                    i * 200
+                  } bg-cover`}
+                  style={{
+                    backgroundImage: `url(https://i.pravatar.cc/100?img=${
+                      i + 15
+                    })`,
+                  }}
+                ></div>
               ))}
             </div>
-            <span className="text-sm font-semibold">Join 90M+ professionals</span>
+            <span className="text-sm font-semibold">
+              Join 90M+ professionals
+            </span>
           </div>
         </div>
-        
+
         <CompanyLogos />
       </div>
 
@@ -57,9 +86,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => (
 
     {/* Right Panel */}
     <div className="w-full lg:w-1/2 bg-background flex flex-col justify-center items-center p-8 animate-fade-in">
-      <div className="w-full max-w-md">
-        {children}
-      </div>
+      <div className="w-full max-w-md">{children}</div>
     </div>
   </div>
 );
@@ -93,6 +120,10 @@ const SignupPage = () => {
       description: "Please check your inbox to verify your account.",
     });
     navigate("/login");
+  };
+
+  const handleGoogleRegister = () => {
+    window.location.href = GOOGLE_OAUTH_URL;
   };
 
   return (
@@ -184,7 +215,7 @@ const SignupPage = () => {
             required
           />
         </div>
-        
+
         <p className="text-xs text-muted-foreground ml-1">
           By signing up you agree to our{" "}
           <span className="text-primary cursor-pointer hover:underline font-medium">
@@ -217,6 +248,7 @@ const SignupPage = () => {
 
         <button
           type="button"
+          onClick={handleGoogleRegister}
           className="w-full border border-border bg-card hover:bg-secondary/50 text-foreground font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all duration-200"
         >
           <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
