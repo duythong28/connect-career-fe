@@ -21,13 +21,14 @@ const HomePage = () => {
 
   const [companies, setCompanies] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
-  const [candidatesCount, setCandidatesCount] = useState<number>(0);
 
   useEffect(() => {
-    searchOrganizations()
+    searchOrganizations({
+      pageNumber: 1,
+      limit: 8,
+    })
       .then((res) => {
         setCompanies(res.data || []);
-        setCandidatesCount(res.total);
       })
       .catch(() => setCompanies([]));
   }, []);
@@ -42,7 +43,7 @@ const HomePage = () => {
           ? searchFilters.type
           : undefined,
       pageNumber: 1,
-      pageSize: 100,
+      pageSize: 6,
     })
       .then((res) => setJobs(res.data || []))
       .catch(() => setJobs([]));

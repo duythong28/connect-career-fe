@@ -26,14 +26,22 @@ const getOrganizationById = async (id: string): Promise<Organization> => {
   return response.data;
 };
 
-const searchOrganizations = async (): Promise<{
+const searchOrganizations = async ({
+  pageNumber = 1,
+  limit = 20,
+}: {
+  pageNumber?: number;
+  limit?: number;
+}): Promise<{
   data: Organization[];
   limit: number;
   page: number;
   total: number;
   totalPages: number;
 }> => {
-  const response = await axios.get(`${API_URL}/search`);
+  const response = await axios.get(`${API_URL}/search`, {
+    params: { pageNumber, limit },
+  });
   return response.data;
 };
 
