@@ -11,9 +11,7 @@ import type {
   CreateFileEntityDto,
   SignedUploadResponse,
 } from "@/api/types/files.types";
-import { useMutation } from "@tanstack/react-query";
 import { parseCvFromPdf, uploadCv } from "@/api/endpoints/cvs.api";
-import { queryClient } from "@/lib/queryClient";
 import { ExtractedCvData } from "@/api/types/cv.types";
 
 interface Props {
@@ -105,7 +103,7 @@ export function UploadFilButton({ disabled, onUploadSuccess }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.doc,.docx"
+        // accept=".pdf,.doc,.docx"
         className="hidden"
         onChange={handleFile}
       />

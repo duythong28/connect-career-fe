@@ -10,6 +10,10 @@ import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
 
+const GOOGLE_OAUTH_URL = `${
+  import.meta.env.VITE_API_BASE_URL
+}/auth/oauth/google`;
+
 // --- AuthLayout ---
 const CompanyLogos = () => (
   // Sửa lại grid-cols-3 vì chỉ còn 6 công ty (khớp với Hero.tsx)
@@ -152,6 +156,10 @@ const LoginPage = () => {
     });
   };
 
+  const handleLoginWithGoogle = () => {
+    window.location.href = GOOGLE_OAUTH_URL;
+  };
+
   return (
     <AuthLayout>
       <div className="mb-8 text-center">
@@ -229,6 +237,7 @@ const LoginPage = () => {
 
         <button
           type="button"
+          onClick={handleLoginWithGoogle}
           className="w-full border border-border bg-card hover:bg-secondary/50 text-foreground font-semibold rounded-xl py-3 flex items-center justify-center gap-2 transition-all duration-200"
         >
           <svg width="20" height="20" viewBox="0 0 18 18" fill="none">

@@ -8,6 +8,7 @@ import VerifyEmail from "@/pages/public/VerifyEmail";
 import WalletTopUpReturnPage from "@/pages/shared/WalletTopUpReturnPage";
 import ForgotPasswordPage from "@/pages/public/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/public/ResetPasswordPage";
+import AuthCallBackPage from "@/pages/public/AuthCallBackPage";
 
 export const PublicRoutes = () => {
   return (
@@ -21,6 +22,7 @@ export const PublicRoutes = () => {
       <Route path="jobs" element={<JobSearchPage />} />
       <Route path="jobs/:id" element={<JobDetailPage />} />
       <Route path="wallet/top-up/return" element={<WalletTopUpReturnPage />} />
+      <Route path="auth/callback" element={<AuthCallBackPage />} />
     </Routes>
   );
 };
