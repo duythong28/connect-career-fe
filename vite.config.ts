@@ -10,12 +10,17 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 3000,
   },
+  build: {
+    // Suppress the warning about 500kb chunks since you have a large bundle
+    chunkSizeWarningLimit: 6000, 
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // ERROR FIX: Increased from 4MB to 6MB to handle your 4.61MB bundle
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
       },
       manifest: {
         name: "CareerHub - Modern Recruitment Platform",
