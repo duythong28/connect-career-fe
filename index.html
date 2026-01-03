@@ -1,21 +1,66 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      CareerHub - Modern Recruitment Platform | Find Your Dream Job
-    </title>
+    <link rel="icon" type="image/png" href="/career48.png" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <title>CareerHub - Modern Recruitment Platform | Find Your Dream Job</title>
     <meta
       name="description"
       content="Career Hub is a modern recruitment platform connecting top candidates with leading employers. Find your dream job or hire the best talent with AI-powered matching."
     />
-    <meta
-      name="keywords"
-      content="recruitment, jobs, careers, hiring, talent, AI matching, job search, employers, candidates"
-    />
-    <meta name="author" content="Career Hub" />
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
 
+    <!-- PWA Theme Color -->
+    <meta name="theme-color" content="#0077F0" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#0077F0"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#1a1a1a"
+    />
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="/career192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/career192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/career512.png" />
+
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="CareerHub" />
+
+    <!-- iOS Splash Screens -->
+    <link rel="apple-touch-startup-image" href="/career512.png" />
+
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#0077F0" />
+    <meta name="msapplication-TileImage" content="/career192.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <!-- Android PWA -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/career48.png" />
+    <link rel="icon" type="image/png" sizes="128x128" href="/career128.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/career192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/career512.png" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
     <meta
       property="og:title"
       content="Career Hub - Modern Recruitment Platform"
@@ -24,15 +69,35 @@
       property="og:description"
       content="Connect with top talent and find your dream job with AI-powered recruitment platform."
     />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" />
-    <link rel="icon" type="image/png" href="career48.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" />
-  </head>
+    <meta property="og:image" content="/career512.png" />
 
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://careerhub.com/" />
+    <meta
+      property="twitter:title"
+      content="CareerHub - Nền tảng tuyển dụng hiện đại"
+    />
+    <meta
+      property="twitter:description"
+      content="Kết nối ứng viên tài năng với nhà tuyển dụng hàng đầu"
+    />
+    <meta property="twitter:image" content="/career512.png" />
+
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- PWA Install Prompt (optional) -->
+    <noscript>
+      <div style="padding: 20px; text-align: center; background: #f0f0f0">
+        This application works best with JavaScript enabled. Please enable
+        JavaScript in your browser settings.
+      </div>
+    </noscript>
   </body>
 </html>

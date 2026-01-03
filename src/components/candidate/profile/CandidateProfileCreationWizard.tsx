@@ -1,6 +1,6 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1348,6 +1348,8 @@ const CandidateProfileCreationWizard: React.FC = () => {
   const [profileData, setProfileData] = useState<Partial<CandidateProfile>>({});
   const [cvFile, setCvFile] = useState<any>(null);
   const { user } = useAuth();
+const location = useLocation();
+const voiceData = location.state?.initialData;
 
   const { mutate: createProfileMutate, isPending } = useMutation({
     mutationFn: createMyProfile,
@@ -1602,6 +1604,13 @@ const CandidateProfileCreationWizard: React.FC = () => {
   ];
 
   const CurrentStepComponent = steps.find((s) => s.id === step)?.component;
+
+  useEffect(() => {
+  if (voiceData) {
+    setProfileData(voiceData);
+    setStep(1); // Skip to step 1
+  }
+}, [voiceData]);
 
   return (
     // Reverted to standard background as requested (removed brand-blue-light)
