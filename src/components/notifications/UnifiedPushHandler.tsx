@@ -23,7 +23,7 @@ const UnifiedPushHandler = () => {
     let unsubscribe: (() => void) | null = null;
 
     const initializePushNotifications = async () => {
-      if (isInitialized.current) return;
+    //   if (isInitialized.current) return;
       isInitialized.current = true;
 
       try {
