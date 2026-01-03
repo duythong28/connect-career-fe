@@ -1,5 +1,10 @@
 import axios from "../client/axios";
-import { updateUserInfoDto, UserResponse, UsersListResponse } from "../types/users.types";
+import {
+  UpdatePushTokenDto,
+  updateUserInfoDto,
+  UserResponse,
+  UsersListResponse,
+} from "../types/users.types";
 const API_URL = "/users";
 const SEARCH_API_URL = "/search";
 
@@ -16,9 +21,14 @@ const searchUsers = async (query: {
   limit?: number;
 }): Promise<UsersListResponse> => {
   const response = await axios.get(`${SEARCH_API_URL}/people`, {
-    params: query ,
+    params: query,
   });
   return response.data;
 };
 
-export { updateUserInfo, searchUsers };
+const updatePushToken = async (data: UpdatePushTokenDto): Promise<void> => {
+  const response = await axios.post(`/notifications/push-token`, data);
+  return response.data;
+};
+
+export { updateUserInfo, searchUsers, updatePushToken };

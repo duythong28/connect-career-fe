@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => ({
     port: 3000,
   },
   build: {
-    // Suppress the warning about 500kb chunks since you have a large bundle
     chunkSizeWarningLimit: 6000, 
   },
   plugins: [
@@ -19,8 +18,8 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
-        // ERROR FIX: Increased from 4MB to 6MB to handle your 4.61MB bundle
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
       },
       manifest: {
         name: "CareerHub - Modern Recruitment Platform",
@@ -31,28 +30,30 @@ export default defineConfig(({ mode }) => ({
         background_color: "#F8F9FB",
         display: "standalone",
         orientation: "portrait",
+        scope: "/",
+        start_url: "/",
         icons: [
           {
-            src: "career48.png",
+            src: "/career48.png",
             sizes: "48x48",
             type: "image/png",
           },
           {
-            src: "career128.png",
+            src: "/career128.png",
             sizes: "128x128",
             type: "image/png",
           },
           {
-            src: "career192.png",
+            src: "/career192.png",
             sizes: "192x192",
             type: "image/png",
-            purpose: "maskable",
+            purpose: "any maskable",
           },
           {
-            src: "career512.png",
+            src: "/career512.png",
             sizes: "512x512",
             type: "image/png",
-            purpose: "maskable",
+            purpose: "any maskable",
           },
         ],
       },

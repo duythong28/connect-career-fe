@@ -93,3 +93,14 @@ export interface UsersListResponse {
     limit: number;
   };
 }
+
+export interface updateUserInfoDto {
+  avatarUrl?: string;
+}
+
+export interface UpdatePushTokenDto {
+  token: string;
+  platform: string;
+  deviceId: string;
+  deviceName: string;
+}
