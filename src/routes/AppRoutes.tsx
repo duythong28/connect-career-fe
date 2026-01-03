@@ -7,6 +7,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import { CandidateProfilePage } from "@/pages/public/CandidateProfilePage";
 import CompanyProfilePage from "@/pages/public/CompanyProfilePage";
 import CandidateProfileCreationWizard from "@/components/candidate/profile/CandidateProfileCreationWizard";
+import VoiceProfileWizard from "@/components/candidate/profile/VoiceProfileWizard";
 
 export const AppRoutes = () => {
   return (
@@ -17,6 +18,14 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={["user"]}>
             <CandidateProfileCreationWizard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/candidate/voice-setup"
+        element={
+          <ProtectedRoute allowedRoles={["user"]}>
+            <VoiceProfileWizard />
           </ProtectedRoute>
         }
       />

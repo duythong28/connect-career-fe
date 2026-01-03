@@ -13,6 +13,10 @@ import { ChatBoxManager } from "./components/chat/ChatBoxManager";
 import { CallManager } from "./components/chat/CallManager";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 
+import PwaInstallPrompt from "./components/pwa/PwaInstallPrompt";
+import PwaUpdateNotification from "./components/pwa/PwaUpdateNotification";
+import UnifiedPushHandler from "./components/notifications/UnifiedPushHandler";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -27,6 +31,12 @@ function App() {
               <ChatSearchModal />
               <ChatBoxManager />
               <CallManager />
+              
+              {/* PWA & Notifications */}
+              <UnifiedPushHandler />
+              <PwaInstallPrompt />
+              <PwaUpdateNotification />
+              
               <Toaster />
             </ChatProvider>
           </OrganizationProvider>

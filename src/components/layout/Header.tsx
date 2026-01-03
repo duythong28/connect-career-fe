@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
-
 interface HeaderProps {
   onSidebarToggle: () => void;
   sidebarOpen: boolean;
@@ -34,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const { mutate: logoutMutate, isPending: isLoggingOut } = useMutation({
     mutationFn: logout,
-    onSuccess: () => {
+    onSuccess: async () => {
       deleteCookie("accessToken");
       deleteCookie("refreshToken");
       queryClient.clear();
