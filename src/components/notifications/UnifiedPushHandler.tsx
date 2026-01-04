@@ -1,101 +1,75 @@
-import { useEffect, useRef } from "react";
-import { getToken, onMessage } from "firebase/messaging";
+// UnifiedPushHandler.tsx - CHỈ đăng ký token, KHÔNG show notification
+import { useEffect } from "react";
+import { getToken, deleteToken } from "firebase/messaging"; // ❌ BỎ onMessage
 import { firebaseConfig, messaging } from "@/lib/firebase";
-import { useToast } from "@/components/ui/use-toast";
 import { updatePushToken } from "@/api/endpoints/users.api";
+import { useAuth } from "@/hooks/useAuth";
 
-// Helper: Get device info
 let cachedDeviceId: string | null = null;
 function getDeviceId(): string {
   if (!cachedDeviceId) {
-    cachedDeviceId = `web-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(7)}`;
+    const storageKey = "device_unique_id";
+    const storedId = localStorage.getItem(storageKey);
+
+    if (storedId) {
+      cachedDeviceId = storedId;
+    } else {
+      cachedDeviceId = `web-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(7)}`;
+      localStorage.setItem(storageKey, cachedDeviceId);
+    }
   }
   return cachedDeviceId;
 }
 
 const UnifiedPushHandler = () => {
-  const { toast } = useToast();
-  const isInitialized = useRef(false);
+  const { user } = useAuth();
 
   useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-
-    const initializePushNotifications = async () => {
-    //   if (isInitialized.current) return;
-      isInitialized.current = true;
+    const handlePushNotifications = async () => {
+      if (!messaging || !("serviceWorker" in navigator)) return;
 
       try {
-        if (!("serviceWorker" in navigator)) return;
+        if (user) {
+          console.log("🔔 Initializing Push for User:", user.id);
 
-        if (!messaging) {
-          console.log("Messaging instance not found");
-          return;
-        }
+          const configStr = encodeURIComponent(JSON.stringify(firebaseConfig));
+          const registration = await navigator.serviceWorker.register(
+            `/firebase-messaging-sw.js?config=${configStr}&t=${Date.now()}`,
+            { updateViaCache: 'none' }
+          );
 
-        const configStr = encodeURIComponent(JSON.stringify(firebaseConfig));
+          await registration.update();
 
-        const registration = await navigator.serviceWorker.register(
-          `/firebase-messaging-sw.js?config=${configStr}`
-        );
+          const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
-        console.log(
-          "✅ Service Worker registered with scope:",
-          registration.scope
-        );
-
-        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-
-        const fcmToken = await getToken(messaging, {
-          vapidKey: vapidKey,
-          serviceWorkerRegistration: registration,
-        });
-          console.log("🔥 FCM Token:", fcmToken);
-
-
-        if (fcmToken) {
-          console.log("🔥 FCM Token:", fcmToken);
-
-          await updatePushToken({
-            token: fcmToken,
-            platform: "fcm",
-            deviceId: getDeviceId(),
-            deviceName: navigator.userAgent,
+          const fcmToken = await getToken(messaging, {
+            vapidKey: vapidKey,
+            serviceWorkerRegistration: registration,
           });
+
+          if (fcmToken) {
+            await updatePushToken({
+              token: fcmToken,
+              platform: "fcm",
+              deviceId: getDeviceId(),
+              deviceName: navigator.userAgent,
+            });
+            console.log("✅ Push token updated:", fcmToken);
+          }
+
+        } else {
+          console.log("🚫 No user found, cleaning up push token...");
+          await deleteToken(messaging);
         }
       } catch (error) {
-        console.log("❌ Push init failed:", error);
+        console.error("❌ Push notification error:", error);
       }
     };
 
-    if (messaging) {
-      unsubscribe = onMessage(messaging, (payload) => {
-        console.log("📬 Foreground Message:", payload);
-
-        const { title, body, icon } = payload.notification || {};
-
-        toast({
-          title: title || "Thông báo mới",
-          description: body,
-        });
-
-        if (Notification.permission === "granted") {
-          new Notification(title || "CareerHub", {
-            body: body,
-            icon: icon || "/career192.png",
-          });
-        }
-      });
-    }
-
-    initializePushNotifications();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-      isInitialized.current = false;
-    };
-  }, [toast, messaging]);
+    handlePushNotifications();
+  }, [user]);
 
   return <></>;
 };

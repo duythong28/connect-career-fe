@@ -122,7 +122,6 @@ export function UploadCVButton({ disabled }: Props) {
         onChange={handleFile}
       />
       <Button
-        // Using "default" variant (Solid Blue) for primary action as per hierarchy
         variant="default" 
         size="sm"
         onClick={handleClick}

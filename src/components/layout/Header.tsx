@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
+import { messaging } from "@/lib/firebase"; // Import messaging instance
+import { deleteToken } from "firebase/messaging";
+
 interface HeaderProps {
   onSidebarToggle: () => void;
   sidebarOpen: boolean;
@@ -34,6 +37,14 @@ const Header: React.FC<HeaderProps> = ({
   const { mutate: logoutMutate, isPending: isLoggingOut } = useMutation({
     mutationFn: logout,
     onSuccess: async () => {
+      if (messaging) {
+        try {
+          await deleteToken(messaging);
+          console.log("🧹 FCM Token deleted locally on logout");
+        } catch (err) {
+          console.log("⚠️ Failed to delete FCM token locally:", err);
+        }
+      }
       deleteCookie("accessToken");
       deleteCookie("refreshToken");
       queryClient.clear();
