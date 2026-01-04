@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -11,7 +11,6 @@ import {
   Plus,
   ArrowLeft,
   ArrowRight,
-  UploadCloud,
   CheckCircle2,
   X,
   Linkedin,
@@ -20,9 +19,9 @@ import {
   Trash2,
   Pencil,
   Calendar,
-  FileText,
-  RefreshCcw,
   Loader2,
+  Mic,
+  UploadCloudIcon,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { createMyProfile } from "@/api/endpoints/candidates.api";
@@ -32,18 +31,10 @@ import {
   Education,
 } from "@/api/types/candidates.types";
 import { ExtractedCvData } from "@/api/types/cv.types";
-import { parseCvFromPdf } from "@/api/endpoints/cvs.api";
-import {
-  getSignUrl,
-  createFileEntity,
-  uploadFile,
-} from "@/api/endpoints/files.api";
-import type {
-  SignedUploadResponse,
-  CreateFileEntityDto,
-} from "@/api/types/files.types";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import UploadFilButton from "@/components/ai/UploadFileButton";
+import VoiceProfileWizard from "./VoiceProfileWizard";
 
 // --- Utility Functions ---
 
@@ -287,79 +278,11 @@ const StartStep: React.FC<StartStepProps> = ({
   onSkip,
   onSetInitialData,
 }) => {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [cvFile, setCvFile] = useState<{ name: string } | null>(null);
   const [cvData, setCvData] = useState<ExtractedCvData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [url, setUrl] = useState<string | null>(null);
-
-  const handleUploadClick = () => {
-    if (isProcessing) return;
-    inputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsProcessing(true);
-
-    try {
-      const signed: SignedUploadResponse = await getSignUrl();
-
-      const dto: CreateFileEntityDto = {
-        signature: signed.signature,
-        timestamp: signed.timestamp,
-        cloud_name: signed.cloudName,
-        api_key: signed.apiKey,
-        public_id: signed.publicId,
-        folder: signed.folder || "",
-        resourceType: signed.resourceType || "",
-        fileId: signed.fileId || "",
-        file,
-      };
-
-      const result = await createFileEntity(dto);
-      const uploadFileResonse = await uploadFile({
-        fileId: signed.fileId,
-        data: result,
-      });
-
-      const uploadedUrl = uploadFileResonse?.url;
-
-      if (!uploadedUrl) throw new Error("File upload failed.");
-      const parseResult = await parseCvFromPdf(uploadedUrl);
-
-      const extractedData = parseResult.data.extractedText;
-
-      setUrl(uploadedUrl);
-      setCvFile(file);
-      setCvData(extractedData);
-      onSetInitialData(extractedData);
-
-      toast({
-        title: "Analysis Complete",
-        description: "Your profile data has been extracted.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Analysis Failed",
-        description: "Could not auto-parse CV. Please enter details manually.",
-        variant: "destructive",
-      });
-      console.error(error);
-      handleResetUpload();
-    } finally {
-      setIsProcessing(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  };
-
-  const handleResetUpload = () => {
-    setCvFile(null);
-    setCvData(null);
-    setUrl(null);
-    setIsProcessing(false);
-  };
+  const [selectedMode, setSelectedMode] = useState<
+    "choose" | "upload" | "voice" | "manual"
+  >("choose");
 
   const handleContinue = () => {
     if (cvData) {
@@ -369,109 +292,188 @@ const StartStep: React.FC<StartStepProps> = ({
     }
   };
 
-  return (
-    <div className="animate-fadeIn max-w-lg mx-auto">
-      <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold text-foreground mb-3">
-          Begin Your Journey
-        </h2>
-        <p className="text-muted-foreground">
-          Join the unified ecosystem. Import your resume to get matched
-          instantly.
-        </p>
-      </div>
-
-      {/* Card for Auto-fill */}
-      <div
-        className={`bg-card border rounded-3xl p-8 transition-all flex flex-col items-center text-center group ${
-          cvData ? "border-primary" : "border-border"
-        }`}
-      >
-        <h3 className="font-bold text-xl text-foreground mb-3">
-          Smart Resume Import
-        </h3>
-        <p className="text-muted-foreground text-sm mb-8 px-4">
-          Leverage our AI to extract your details and skill compatibility
-          instantly.
-        </p>
-
-        {/* UI Mockup - Reverted to old beautiful style */}
-        <div className="w-full h-40 bg-gray-50 rounded-xl mb-6 border border-gray-100 flex items-center justify-center relative overflow-hidden">
-          {/* Internal Mockup */}
-          <div className="w-3/4 bg-white border border-gray-200 p-4 rounded space-y-2">
-            <div className="h-2 bg-gray-200 w-1/3 rounded"></div>
-            <div className="h-2 bg-blue-200 w-2/3 rounded"></div>
-          </div>
-
-          {/* States Overlay */}
-          {cvData && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center flex-col p-4 animate-fadeIn">
-              <CheckCircle2 size={32} className="text-green-600 mb-2" />
-              <p className="text-sm font-bold text-green-800">
-                Ready to proceed!
-              </p>
-              <p className="text-xs text-gray-600">{cvFile?.name}</p>
-            </div>
-          )}
-          {isProcessing && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center flex-col p-4 animate-fadeIn">
-              <div className="w-6 h-6 border-4 border-t-transparent border-blue-600 rounded-full animate-spin"></div>
-              <p className="text-sm font-bold text-blue-800 mt-2">
-                Analyzing CV...
-              </p>
-            </div>
-          )}
-          {!cvData && !isProcessing && (
-            <div className="w-full h-full flex items-center justify-center">
-              <FileText size={40} className="text-gray-400" />
-            </div>
-          )}
+  // Show mode selection first
+  if (selectedMode === "choose") {
+    return (
+      <div className="animate-fadeIn max-w-lg mx-auto">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-foreground mb-3">
+            Begin Your Journey
+          </h2>
+          <p className="text-muted-foreground">
+            Choose how you'd like to create your profile
+          </p>
         </div>
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.doc,.docx"
-          className="hidden"
-          onChange={handleFileChange}
-          disabled={isProcessing}
-        />
+        <div className="space-y-4">
+          {/* Voice Option */}
+          <button
+            onClick={() => setSelectedMode("voice")}
+            className="w-full bg-card border border-border hover:border-primary rounded-3xl p-6 transition-all text-left group "
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:scale-110 transition-transform">
+                <Mic size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg text-foreground mb-2">
+                  Voice Interview
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Have a natural conversation with our AI assistant. Just speak
+                  and we'll build your profile automatically.
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-xs text-primary font-semibold">
+                  <CheckCircle2 size={14} />
+                  <span>Fast & Natural</span>
+                </div>
+              </div>
+            </div>
+          </button>
 
-        <Button
-          onClick={handleUploadClick}
-          variant="outline"
-          className="w-full py-6 rounded-xl border-dashed"
-          disabled={isProcessing}
-        >
-          {cvData ? (
-            <>
-              <RefreshCcw size={16} className="mr-2" /> Change File
-            </>
-          ) : (
-            <>
-              <UploadCloud size={16} className="mr-2" /> Upload Resume
-            </>
-          )}
-        </Button>
+          {/* Upload Option */}
+          <button
+            onClick={() => setSelectedMode("upload")}
+            className="w-full bg-card border border-border hover:border-primary rounded-3xl p-6 transition-all text-left group "
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:scale-110 transition-transform">
+                <UploadCloudIcon size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg text-foreground mb-2">
+                  Upload Resume
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Upload your existing resume and let our AI extract the
+                  information automatically.
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-xs text-primary font-semibold">
+                  <CheckCircle2 size={14} />
+                  <span>Quick & Easy</span>
+                </div>
+              </div>
+            </div>
+          </button>
+
+          {/* Manual Option */}
+          <button
+            onClick={() => setSelectedMode("manual")}
+            className="w-full bg-card border border-border hover:border-primary rounded-3xl p-6 transition-all text-left group "
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:scale-110 transition-transform">
+                <User size={24} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg text-foreground mb-2">
+                  Manual Entry
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Fill in your information step by step using our guided form.
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground font-semibold">
+                  <User size={14} />
+                  <span>Full Control</span>
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
+    );
+  }
 
-      <div className="relative my-8 flex items-center">
-        <div className="flex-grow border-t border-border"></div>
-        <span className="flex-shrink mx-4 text-muted-foreground text-xs font-bold uppercase">
-          OR
-        </span>
-        <div className="flex-grow border-t border-border"></div>
+  // Voice mode
+  if (selectedMode === "voice") {
+    return (
+      <div className="animate-fadeIn max-w-5xl mx-auto">
+        <VoiceProfileWizard
+          onComplete={(data) => {
+            setCvData(data);
+            onSetInitialData(data);
+          }}
+          onCancel={() => setSelectedMode("choose")}
+        />
+      </div>
+    );
+  }
+
+  // Upload mode
+  if (selectedMode === "upload") {
+    return (
+      <div className="animate-fadeIn max-w-lg mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-3">
+            Upload Your Resume
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Upload your CV and we'll extract the information automatically
+          </p>
+        </div>
+
+        <div
+          className={`bg-card border rounded-3xl p-8 transition-all ${
+            cvData ? "border-primary" : "border-border"
+          }`}
+        >
+          <UploadFilButton
+            onUploadSuccess={(data) => {
+              setCvData(data);
+              onSetInitialData(data);
+            }}
+            onUploadProcess={(processing) => setIsProcessing(processing)}
+          />
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setSelectedMode("choose")}
+            className="flex-1 rounded-xl"
+          >
+            <ArrowLeft size={18} className="mr-2" /> Back
+          </Button>
+          <Button
+            onClick={handleContinue}
+            disabled={isProcessing || !cvData}
+            className="flex-1 bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] text-primary-foreground font-bold rounded-xl"
+          >
+            Continue <ArrowRight size={18} className="ml-2" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Manual mode (original behavior)
+  return (
+    <div className="animate-fadeIn max-w-lg mx-auto">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-3">
+          Manual Entry
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          Fill in your information step by step
+        </p>
       </div>
 
       <Button
-        onClick={handleContinue}
-        disabled={isProcessing}
-        // Hero/Special CTA Gradient for the primary start action
-        className="w-full bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] text-primary-foreground font-bold py-6 text-base rounded-xl shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5 transition-all duration-300"
+        onClick={onSkip}
+        className="w-full bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] text-primary-foreground font-bold py-6 text-base rounded-xl"
       >
-        {cvData ? "Auto-fill & Continue" : "Start Manually"}
-        <ArrowRight size={18} className="ml-2" />
+        Start Filling Profile <ArrowRight size={18} className="ml-2" />
       </Button>
+
+      <div className="mt-6">
+        <Button
+          variant="outline"
+          onClick={() => setSelectedMode("choose")}
+          className="w-full rounded-xl"
+        >
+          <ArrowLeft size={18} className="mr-2" /> Back to Options
+        </Button>
+      </div>
     </div>
   );
 };
@@ -635,7 +637,9 @@ const SkillsStep: React.FC<WizardStepProps<{ skills: string[] }>> = ({
   const addSkill = () => {
     if (
       newSkill.trim() &&
-      !skills.map((s) => s.toLowerCase()).includes(newSkill.trim().toLowerCase())
+      !skills
+        .map((s) => s.toLowerCase())
+        .includes(newSkill.trim().toLowerCase())
     ) {
       setSkills([...skills, newSkill.trim()]);
       setNewSkill("");
@@ -718,7 +722,11 @@ const SkillsStep: React.FC<WizardStepProps<{ skills: string[] }>> = ({
         <Button variant="outline" onClick={onBack} className="px-6 rounded-xl">
           <ArrowLeft size={18} className="mr-2" /> Back
         </Button>
-        <Button variant="default" onClick={handleNext} className="px-8 rounded-xl">
+        <Button
+          variant="default"
+          onClick={handleNext}
+          className="px-8 rounded-xl"
+        >
           Next Step <ArrowRight size={18} className="ml-2" />
         </Button>
       </div>
@@ -1170,9 +1178,11 @@ const EducationModal: React.FC<{
   );
 };
 
-const EducationStep: React.FC<
-  WizardStepProps<{ educations: Education[] }>
-> = ({ initialData, onNext, onBack }) => {
+const EducationStep: React.FC<WizardStepProps<{ educations: Education[] }>> = ({
+  initialData,
+  onNext,
+  onBack,
+}) => {
   const [educations, setEducations] = useState<Education[]>(
     initialData.educations || []
   );
@@ -1348,8 +1358,8 @@ const CandidateProfileCreationWizard: React.FC = () => {
   const [profileData, setProfileData] = useState<Partial<CandidateProfile>>({});
   const [cvFile, setCvFile] = useState<any>(null);
   const { user } = useAuth();
-const location = useLocation();
-const voiceData = location.state?.initialData;
+  const location = useLocation();
+  const voiceData = location.state?.initialData;
 
   const { mutate: createProfileMutate, isPending } = useMutation({
     mutationFn: createMyProfile,
@@ -1469,25 +1479,25 @@ const voiceData = location.state?.initialData;
       updatedAt: "",
     }));
 
-    const educations: Education[] = (
-      (cvData.education as any[]) || []
-    ).map((edu: any) => ({
-      id: Date.now().toString() + Math.random(), // Temporary ID for local state
-      institutionName: edu.institution || "",
-      degreeType:
-        (normalizeDegreeType(edu.degree) as Education["degreeType"]) || "",
-      fieldOfStudy: edu.fieldOfStudy || "N/A",
-      startDate: formatMonthYearToDate(edu.startDate) || null,
-      graduationDate: formatMonthYearToDate(edu.endDate) || "",
-      candidateProfileId: "",
-      isCurrent: false,
-      description: null,
-      coursework: [],
-      honors: [],
-      location: null,
-      createdAt: "",
-      updatedAt: "",
-    }));
+    const educations: Education[] = ((cvData.education as any[]) || []).map(
+      (edu: any) => ({
+        id: Date.now().toString() + Math.random(), // Temporary ID for local state
+        institutionName: edu.institution || "",
+        degreeType:
+          (normalizeDegreeType(edu.degree) as Education["degreeType"]) || "",
+        fieldOfStudy: edu.fieldOfStudy || "N/A",
+        startDate: formatMonthYearToDate(edu.startDate) || null,
+        graduationDate: formatMonthYearToDate(edu.endDate) || "",
+        candidateProfileId: "",
+        isCurrent: false,
+        description: null,
+        coursework: [],
+        honors: [],
+        location: null,
+        createdAt: "",
+        updatedAt: "",
+      })
+    );
 
     const initialData: Partial<CandidateProfile> = {
       phone: personalInfo.phone || "",
@@ -1606,15 +1616,15 @@ const voiceData = location.state?.initialData;
   const CurrentStepComponent = steps.find((s) => s.id === step)?.component;
 
   useEffect(() => {
-  if (voiceData) {
-    setProfileData(voiceData);
-    setStep(1); // Skip to step 1
-  }
-}, [voiceData]);
+    if (voiceData) {
+      setProfileData(voiceData);
+      setStep(1); // Skip to step 1
+    }
+  }, [voiceData]);
 
   return (
     // Reverted to standard background as requested (removed brand-blue-light)
-    <div className="min-h-screen flex flex-col items-center justify-center p-8">
+    <div className="flex flex-col items-center justify-center p-8">
       {isPending && (
         <div className="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center backdrop-blur-sm animate-fadeIn">
           <div className="bg-card p-8 rounded-3xl border border-border flex items-center gap-4 shadow-xl">

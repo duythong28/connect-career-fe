@@ -89,7 +89,7 @@ const CVSelectionStep = ({
                 Upload New Resume
               </h3>
               <p className="text-muted-foreground text-sm mb-4">
-                Upload a PDF, DOC, or DOCX file
+                Upload PDF, DOCX, PPTX, Images file
               </p>
 
               <div className="mt-4">
