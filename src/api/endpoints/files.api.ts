@@ -29,7 +29,7 @@ const createFileEntity = async (
   if (data.fileId) form.append("fileId", data.fileId);
   form.append("file", data.file);
 
-  const url = `${CLOUDDINARY_BASE_URL}/${data.cloud_name}/auto/upload`;
+  const url = `${CLOUDDINARY_BASE_URL}/${data.cloud_name}/raw/upload`;
 
   // Use fetch to avoid axios CORS issues. Do NOT set Content-Type manually.
   const res = await fetch(url, {
