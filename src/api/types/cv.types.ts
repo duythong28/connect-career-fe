@@ -1,7 +1,7 @@
 export interface PersonalInfo {
-  name: string;
-  title: string;
-  email: string;
+  name?: string;
+  title?: string;
+  email?: string;
   phone: string;
   address: string;
   github: string | null;
@@ -9,7 +9,7 @@ export interface PersonalInfo {
 }
 
 export interface WorkExperience {
-  id: string;
+  id?: string;
   company: string;
   position: string;
   startDate: string;
@@ -19,7 +19,7 @@ export interface WorkExperience {
 }
 
 export interface Education {
-  id: string;
+  id?: string;
   institution: string;
   degree: string;
   fieldOfStudy: string;

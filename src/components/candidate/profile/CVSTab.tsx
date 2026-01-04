@@ -18,11 +18,6 @@ export default function CVSTab({ isMyProfile }: { isMyProfile: boolean }) {
                 <h2 className="text-xl font-bold text-foreground mb-1">My Documents</h2>
                 <p className="text-sm text-muted-foreground">Manage your resumes and professional credentials.</p>
             </div>
-            {/* UploadCVButton is likely a custom component wrapping a button logic.
-               Assuming it renders a button or can be styled. If it accepts className, 
-               ensure it matches the design system. If it's a wrapper, the internal button should be updated.
-               Here we place it in context. 
-            */}
             <UploadCVButton />
         </div>
 
@@ -75,10 +70,6 @@ export default function CVSTab({ isMyProfile }: { isMyProfile: boolean }) {
                      <p className="text-muted-foreground max-w-sm mx-auto mb-6">
                         Upload your first resume to start applying for opportunities in the ecosystem.
                      </p>
-                     {/* Re-using UploadCVButton here or providing a visual cue. 
-                        Since UploadCVButton is a separate component likely containing the logic, 
-                        we keep the layout clean.
-                     */}
                  </div>
             )}
        </div>

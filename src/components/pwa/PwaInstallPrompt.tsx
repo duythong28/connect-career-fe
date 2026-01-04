@@ -1,6 +1,7 @@
 // src/components/pwa/PwaInstallPrompt.tsx
 import { useEffect, useState } from "react";
 import { X, Download, Smartphone } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -16,6 +17,8 @@ const PwaInstallPrompt = () => {
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   useEffect(() => {
     // Check if already installed as PWA
@@ -91,7 +94,7 @@ const PwaInstallPrompt = () => {
 
   if (isStandalone || !showPrompt) return null;
 
-  return (
+  return currentPath == "/" ? (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg animate-slide-up duration-500">
       <div className="max-w-4xl mx-auto flex items-start gap-4">
         <div className="flex-shrink-0">
@@ -141,7 +144,7 @@ const PwaInstallPrompt = () => {
         </button>
       </div>
     </div>
-  );
+  ) : null;
 };
 
 export default PwaInstallPrompt;
