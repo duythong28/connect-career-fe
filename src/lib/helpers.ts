@@ -9,6 +9,12 @@ export const maskPhone = (phone: string, showFull: boolean = true): string => {
   return phone.replace(/(\d{3})\d{4}(\d{3})/, "$1****$2");
 };
 
+export const normalizePhone = (phone: string): string => {
+  if (!phone) return "";
+  // Remove all non-digit characters (dashes, spaces, parentheses, etc.)
+  return phone.replace(/\D/g, "");
+};
+
 export const calculateMatchingScore = (
   candidateSkills: string[],
   jobKeywords: string[],
