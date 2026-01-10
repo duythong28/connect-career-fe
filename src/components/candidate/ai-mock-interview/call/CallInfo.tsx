@@ -565,7 +565,7 @@ export default function CallInfo({
                     </ul>
                     {analytics.evidence && analytics.evidence[dimension] && (
                       <div className="mt-3 pt-3 border-t border-border">
-                        <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">
+                        <p className="text-[10px] font-bold uppercase text-black mb-2">
                           Evidence:
                         </p>
                         <ul className="space-y-1">
@@ -574,7 +574,7 @@ export default function CallInfo({
                               (evidence: string, idx: number) => (
                                 <li
                                   key={idx}
-                                  className="flex items-start gap-2 text-xs text-muted-foreground/80"
+                                  className="flex items-start gap-2 text-xs text-muted-foreground"
                                 >
                                   <div className="w-1 h-1 rounded-full bg-muted-foreground/40 mt-1.5 flex-shrink-0" />
                                   <span>{evidence}</span>
