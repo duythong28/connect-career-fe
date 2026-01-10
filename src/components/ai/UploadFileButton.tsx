@@ -264,7 +264,7 @@ export function UploadFilButton({
   };
 
   return (
-    <div className="w-full font-sans space-y-4">
+    <div className="w-full space-y-4">
       <input
         ref={inputRef}
         type="file"
