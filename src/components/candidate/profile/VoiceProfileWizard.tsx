@@ -278,18 +278,9 @@ Extract info and return JSON.`,
       if (!response.ok) throw new Error("API failed");
 
       const data = await response.json();
-      
-      // Add debugging
-      console.log("🔵 Raw API Response:", data);
-      console.log("🔵 Message Content:", data.choices?.[0]?.message?.content);
-      
+              
       const geminiResponse: GeminiResponse = JSON.parse(data.choices[0].message.content);
       
-      // Add debugging
-      console.log("🟢 Parsed Gemini Response:", geminiResponse);
-      console.log("🟢 Extracted Data:", geminiResponse.extracted_data);
-
-      // Merge data
       const currentData = profileDataRef.current;
       const newData = geminiResponse.extracted_data;
 
@@ -351,11 +342,6 @@ Extract info and return JSON.`,
         completedSections:
           newData.completedSections || currentData.completedSections || [],
       };
-
-      console.log("✅ Updated:", updatedData);
-      console.log("📍 Section:", geminiResponse.current_section);
-      console.log("✔️ Completed:", updatedData.completedSections);
-      console.log("📊 Current Profile Data State:", profileData); // Add this
 
       setProfileData(updatedData);
       setCurrentSection(geminiResponse.current_section);
