@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, Sparkles, Loader, AlertCircle, Volume2, Users } from 'lucide-react';
 import { MockInterviewConfig } from '../types';
 import { AIInterviewer } from '@/api/types/ai-mock-interview.types';
@@ -24,6 +24,7 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
   const [interviewers, setInterviewers] = useState<AIInterviewer[]>([]);
   const [loadingInterviewers, setLoadingInterviewers] = useState(false);
   const [interviewerError, setInterviewerError] = useState<string | null>(null);
+  const currentAudioRef = useRef(null);
 
   const toggleArrayItem = (array: string[], item: string) => {
     return array.includes(item) ? array.filter((i) => i !== item) : [...array, item];
@@ -244,7 +245,7 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3 flex-1">
-                    <img
+                    {/* <img
                       src={`${VITE_BACKEND_PUBLIC_URL}${interviewer.image}`}
                       alt={interviewer.name}
                       className="w-14 h-14 rounded-full object-cover border-2 border-border bg-muted"
@@ -252,18 +253,33 @@ const Step2FinetuneSettings: React.FC<Step2FinetuneSettingsProps> = ({
                         e.currentTarget.src =
                           'https://via.placeholder.com/56?text=' + interviewer.name[0];
                       }}
-                    />
+                    /> */}
                     <div>
                       <h3 className="text-sm font-bold text-foreground">{interviewer.name}</h3>
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI Interviewer</p>
                     </div>
-                  </div>
-                  <div
+                    </div>
+                    <div
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Playing audio:', `${VITE_BACKEND_PUBLIC_URL}/${interviewer.audio}`);
+                      if (currentAudioRef.current) {
+                        currentAudioRef.current.pause();
+                        currentAudioRef.current.currentTime = 0;
+                      }
+
+                      const fileName = interviewer.audio ? interviewer.audio.split('/').pop() : '';
+                      if (!fileName) return;
+
+                      const audioPath = `/audio/${fileName}`;
+                      const newAudio = new Audio(audioPath);
+
+                      currentAudioRef.current = newAudio;
+                      
+                      newAudio.play().catch((error) => {
+                        console.error("Lỗi phát âm thanh:", error);
+                      });
                     }}
-                    className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all flex-shrink-0"
+                    className="p-2 hover:bg-primary/10 text-primary rounded-xl transition-all flex-shrink-0 cursor-pointer"
                     title="Listen to interviewer"
                   >
                     <Volume2 className="w-4 h-4" />
