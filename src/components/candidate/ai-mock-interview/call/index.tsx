@@ -1,10 +1,8 @@
 import {
-  ArrowUpRightSquareIcon,
   AlarmClockIcon,
   XCircleIcon,
   CheckCircleIcon,
   Mic,
-  Volume2,
   User,
   Bot,
   ArrowLeft,
@@ -13,12 +11,10 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AIMockInterviewConfiguration } from "@/api/types/ai-mock-interview.types";
 import { RetellWebClient } from "retell-client-js-sdk";
-import { TabSwitchWarning, useTabSwitchPrevention } from "./useTabSwitchPrevention";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,12 +26,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { aiMockInterviewAPI } from "@/api/endpoints/ai-mock-interview.api";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
+import { AvatarSpeaker } from "../AISpeakerAvatar";
+import { Avatar,  AvatarImage } from "@/components/ui/avatar";
 
 type CallProps = {
   interview: AIMockInterviewConfiguration;
@@ -51,7 +48,8 @@ const webClient = new RetellWebClient();
 export default function Call({ interview }: CallProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [lastInterviewerResponse, setLastInterviewerResponse] = useState<string>("");
+  const [lastInterviewerResponse, setLastInterviewerResponse] =
+    useState<string>("");
   const [lastUserResponse, setLastUserResponse] = useState<string>("");
   const [activeTurn, setActiveTurn] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -59,20 +57,21 @@ export default function Call({ interview }: CallProps) {
   const [isEnded, setIsEnded] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
   const [callId, setCallId] = useState<string>("");
-  const { tabSwitchCount } = useTabSwitchPrevention();
-  const [interviewerImg, setInterviewerImg] = useState("");
-  const [interviewTimeDuration, setInterviewTimeDuration] = useState<string>("1");
+  const [interviewTimeDuration, setInterviewTimeDuration] =
+    useState<string>("1");
   const [time, setTime] = useState(0);
   const [currentTimeDuration, setCurrentTimeDuration] = useState<string>("0");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-
   const lastUserResponseRef = useRef<HTMLDivElement | null>(null);
+  const [audioData, setAudioData] = useState(null);
 
   const { data: interviewers } = useQuery({
     queryKey: ["interviewers"],
     queryFn: async () => {
-      const response = await fetch("/candidates/mock-ai-interview/interviewers");
+      const response = await fetch(
+        "/candidates/mock-ai-interview/interviewers"
+      );
       const data = await response.json();
       return data.data || [];
     },
@@ -93,9 +92,6 @@ export default function Call({ interview }: CallProps) {
       const interviewer = interviewers.find(
         (i: any) => i.id === interview.interviewerAgentId
       );
-      if (interviewer?.image) {
-        setInterviewerImg(interviewer.image);
-      }
     }
   }, [interviewers, interview.interviewerAgentId]);
 
@@ -128,7 +124,7 @@ export default function Call({ interview }: CallProps) {
             isEnded: true,
           });
 
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
 
           setIsAnalyzing(true);
           try {
@@ -158,6 +154,10 @@ export default function Call({ interview }: CallProps) {
 
     webClient.on("agent_stop_talking", () => {
       setActiveTurn("user");
+    });
+
+    webClient.on("audio", (audio) => {
+      setAudioData(audio);
     });
 
     webClient.on("error", (error: any) => {
@@ -249,6 +249,7 @@ export default function Call({ interview }: CallProps) {
       await webClient.startCall({
         accessToken: accessToken,
         callId: callId,
+        emitRawAudioSamples: true,
       });
 
       setIsCalling(true);
@@ -274,29 +275,29 @@ export default function Call({ interview }: CallProps) {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
-    <div className="min-h-screen bg-background font-sans animate-fade-in">
-      {isStarted && <TabSwitchWarning />}
-
+<div className="min-h-screen bg-[#F8F9FB] animate-fade-in">
       {/* Header */}
-      <header className="bg-card border-b border-border sticky top-0 z-10 shadow-sm">
+      <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate('/candidate/ai-mock-interview')}
-                className="text-muted-foreground hover:text-foreground"
+                onClick={() => navigate("/candidate/ai-mock-interview")}
+                className="text-muted-foreground hover:text-foreground h-9"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               <div>
-                <h1 className="text-xl font-bold text-foreground">AI Mock Interview</h1>
+                <h1 className="text-2xl font-bold text-foreground">
+                  AI Mock Interview
+                </h1>
                 {!isEnded && interview.configuration?.duration && (
                   <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                     <AlarmClockIcon className="w-4 h-4 text-primary" />
@@ -326,12 +327,14 @@ export default function Call({ interview }: CallProps) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2">
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] rounded-full transition-all duration-300"
+                className="h-full bg-primary rounded-full transition-all duration-300"
                 style={{
                   width: isEnded
                     ? "100%"
                     : `${Math.min(
-                        (Number(currentTimeDuration) / (Number(interviewTimeDuration) * 60)) * 100,
+                        (Number(currentTimeDuration) /
+                          (Number(interviewTimeDuration) * 60)) *
+                          100,
                         100
                       )}%`,
                 }}
@@ -344,7 +347,7 @@ export default function Call({ interview }: CallProps) {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {!isStarted && !isEnded && (
-          <Card className="border border-border rounded-2xl shadow-sm">
+          <Card className="border border-border rounded-3xl bg-card">
             <CardHeader className="border-b border-border">
               <CardTitle className="text-2xl font-bold text-foreground">
                 Interview Preparation
@@ -354,48 +357,60 @@ export default function Call({ interview }: CallProps) {
               <div className="space-y-6">
                 {interview.jobDescription && (
                   <div className="p-4 bg-muted/50 border border-border rounded-2xl">
-                    <h3 className="text-xs font-bold uppercase text-muted-foreground mb-3">Job Description</h3>
+                    <h3 className="text-xs font-bold uppercase text-muted-foreground mb-3">
+                      Job Description
+                    </h3>
                     <div className="prose prose-sm max-w-none text-foreground">
                       <Markdown content={interview.jobDescription} />
                     </div>
                   </div>
                 )}
-                
-                {(interview as any).questions && Array.isArray((interview as any).questions) && (interview as any).questions.length > 0 && (
-                  <div className="p-4 bg-accent/30 border border-border rounded-2xl">
-                    <div className="flex items-center gap-2 mb-3">
-                      <HelpCircle className="w-5 h-5 text-primary" />
-                      <h3 className="text-xs font-bold uppercase text-muted-foreground">Interview Questions</h3>
-                    </div>
-                    <div className="space-y-3">
-                      {(interview as any).questions.map((question: any, index: number) => (
-                        <div
-                          key={index}
-                          className="p-3 bg-card border border-border rounded-xl hover:border-primary/50 transition-colors"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                              {index + 1}
+
+                {(interview as any).questions &&
+                  Array.isArray((interview as any).questions) &&
+                  (interview as any).questions.length > 0 && (
+                    <div className="p-4 bg-secondary/50 border border-border rounded-2xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <HelpCircle className="w-5 h-5 text-primary" />
+                        <h3 className="text-xs font-bold uppercase text-muted-foreground">
+                          Interview Questions
+                        </h3>
+                      </div>
+                      <div className="space-y-3">
+                        {(interview as any).questions.map(
+                          (question: any, index: number) => (
+                            <div
+                              key={index}
+                              className="p-3 bg-background border border-border rounded-xl hover:border-primary/50 transition-colors"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                                  {index + 1}
+                                </div>
+                                <p className="text-sm text-foreground leading-relaxed flex-1">
+                                  {question.question || question}
+                                </p>
+                              </div>
                             </div>
-                            <p className="text-sm text-foreground leading-relaxed flex-1">
-                              {question.question || question}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                <div className="p-4 bg-secondary/50 border border-border rounded-2xl">
+                  )}
+
+                <div className="p-4 bg-muted/50 border border-border rounded-2xl">
                   <div className="flex items-start gap-3">
                     <Mic className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <div className="space-y-2">
-                      <p className="text-xs font-bold uppercase text-muted-foreground">Before You Start</p>
+                      <p className="text-xs font-bold uppercase text-muted-foreground">
+                        Before You Start
+                      </p>
                       <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                        <li>Ensure your volume is up and grant microphone access when prompted</li>
+                        <li>
+                          Ensure your volume is up and grant microphone access
+                          when prompted
+                        </li>
                         <li>Make sure you are in a quiet environment</li>
-                        <li>Tab switching will be recorded</li>
                       </ul>
                     </div>
                   </div>
@@ -405,7 +420,8 @@ export default function Call({ interview }: CallProps) {
                   <Button
                     onClick={startConversation}
                     disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-primary to-[hsl(199,89%,48%)] text-white h-11 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                    variant="default"
+                    className="flex-1 h-10 rounded-xl font-semibold"
                   >
                     {loading ? (
                       <>
@@ -419,13 +435,13 @@ export default function Call({ interview }: CallProps) {
                       </>
                     )}
                   </Button>
-                  
+
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
                         variant="outline"
                         disabled={loading}
-                        className="border-border text-muted-foreground hover:bg-muted h-11 rounded-xl"
+                        className="h-10 rounded-xl"
                       >
                         Exit
                       </Button>
@@ -434,11 +450,14 @@ export default function Call({ interview }: CallProps) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Exit Interview?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to exit? Your progress will not be saved.
+                          Are you sure you want to exit? Your progress will not
+                          be saved.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-xl">
+                          Cancel
+                        </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={onEndCallClick}
                           className="bg-destructive hover:bg-destructive/90 rounded-xl"
@@ -457,42 +476,38 @@ export default function Call({ interview }: CallProps) {
         {isStarted && !isEnded && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Interviewer Side */}
-            <Card className="border border-border rounded-2xl shadow-sm bg-card">
+            <Card className="border border-border rounded-3xl bg-card">
               <CardContent className="p-6">
                 <div className="flex flex-col items-center space-y-6">
-                  <div className={cn(
-                    "w-32 h-32 rounded-3xl flex items-center justify-center transition-all duration-300",
-                    activeTurn === "agent"
-                      ? "ring-4 ring-primary ring-offset-2 bg-primary/5"
-                      : "bg-muted"
-                  )}>
-                    {interviewerImg ? (
-                      <img
-                        src={interviewerImg}
-                        alt="Interviewer"
-                        className="w-full h-full rounded-3xl object-cover"
-                      />
-                    ) : (
-                      <Skeleton className="w-full h-full rounded-3xl" />
+                  <div
+                    className={cn(
+                      "w-44 h-44 rounded-3xl overflow-hidden flex items-center justify-center transition-all duration-300",
+                      activeTurn === "agent"
+                        ? "ring-4 ring-primary ring-offset-2 bg-primary/5"
+                        : "bg-muted"
                     )}
+                  >
+                    <AvatarSpeaker
+                      realtimeAudioData={audioData}
+                      isPlaying={true}
+                      isFemale={false}
+                    />
                   </div>
-                  
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <Bot className="w-5 h-5 text-primary" />
-                      <h3 className="text-lg font-bold text-foreground">Interviewer</h3>
+                      <h3 className="text-lg font-bold text-foreground">
+                        Interviewer
+                      </h3>
                     </div>
-                    {activeTurn === "agent" && (
-                      <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-                        Speaking
-                      </Badge>
-                    )}
                   </div>
 
-                  <div className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-muted/50 rounded-2xl border border-border shadow-inner">
+                  <div className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-muted/50 rounded-2xl border border-border">
                     <p className="text-foreground leading-relaxed">
                       {lastInterviewerResponse || (
-                        <span className="text-muted-foreground italic">Waiting for interviewer...</span>
+                        <span className="text-muted-foreground italic">
+                          Waiting for interviewer...
+                        </span>
                       )}
                     </p>
                   </div>
@@ -501,37 +516,45 @@ export default function Call({ interview }: CallProps) {
             </Card>
 
             {/* User Side */}
-            <Card className="border border-border rounded-2xl shadow-sm bg-card">
+            <Card className="hidden lg:block border border-border rounded-3xl bg-card">
               <CardContent className="p-6">
                 <div className="flex flex-col items-center space-y-6">
-                  <div className={cn(
-                    "w-32 h-32 rounded-3xl bg-muted flex items-center justify-center transition-all duration-300",
-                    activeTurn === "user"
-                      ? "ring-4 ring-primary ring-offset-2"
-                      : ""
-                  )}>
-                    <User className="w-16 h-16 text-muted-foreground" />
+                  <div
+                    className={cn(
+                      "w-44 h-44 rounded-3xl overflow-hidden bg-muted flex items-center justify-center transition-all duration-300",
+                      activeTurn === "user"
+                        ? "ring-4 ring-primary ring-offset-2"
+                        : ""
+                    )}
+                  >
+                    {user && user.avatar ? (
+                      <Avatar className="w-full h-full rounded-none">
+                        <AvatarImage
+                          src={user.avatar ?? undefined}
+                          className="object-cover"
+                        />
+                      </Avatar>
+                    ) : (
+                      <User className="w-16 h-16 text-muted-foreground" />
+                    )}
                   </div>
-                  
+
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <Mic className="w-5 h-5 text-primary" />
                       <h3 className="text-lg font-bold text-foreground">You</h3>
                     </div>
-                    {activeTurn === "user" && (
-                      <Badge className="bg-brand-success/10 text-brand-success border-brand-success/20 hover:bg-brand-success/10">
-                        Your Turn
-                      </Badge>
-                    )}
                   </div>
 
                   <div
                     ref={lastUserResponseRef}
-                    className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-primary/5 rounded-2xl border border-primary/10 shadow-inner custom-scrollbar"
+                    className="w-full min-h-[200px] max-h-[300px] overflow-y-auto p-4 bg-primary/5 rounded-2xl border border-primary/10 custom-scrollbar"
                   >
                     <p className="text-foreground leading-relaxed">
                       {lastUserResponse || (
-                        <span className="text-muted-foreground italic">Your responses will appear here...</span>
+                        <span className="text-muted-foreground italic">
+                          Your responses will appear here...
+                        </span>
                       )}
                     </p>
                   </div>
@@ -547,7 +570,7 @@ export default function Call({ interview }: CallProps) {
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 h-11 rounded-xl"
+                  className="w-full border-destructive/20 text-destructive hover:bg-destructive/10 h-10 rounded-xl"
                   disabled={loading}
                 >
                   <XCircleIcon className="w-4 h-4 mr-2" />
@@ -558,11 +581,14 @@ export default function Call({ interview }: CallProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>End Interview?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. The interview will be ended immediately.
+                    This action cannot be undone. The interview will be ended
+                    immediately.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                  <AlertDialogCancel className="rounded-xl">
+                    Cancel
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={onEndCallClick}
                     className="bg-destructive hover:bg-destructive/90 rounded-xl"
@@ -576,18 +602,16 @@ export default function Call({ interview }: CallProps) {
         )}
 
         {isEnded && (
-          <Card className="border border-border rounded-2xl shadow-sm max-w-2xl mx-auto bg-card">
+          <Card className="border border-border rounded-3xl bg-card max-w-2xl mx-auto">
             <CardContent className="p-8">
               <div className="text-center space-y-6">
-                <div className="w-20 h-20 bg-brand-success/10 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                <div className="w-20 h-20 bg-brand-success/10 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircleIcon className="w-12 h-12 text-brand-success" />
                 </div>
-                
+
                 <div>
                   <h2 className="text-2xl font-bold text-foreground mb-2 text-center">
-                    {isStarted
-                      ? "Interview Completed!"
-                      : "Thank You"}
+                    {isStarted ? "Interview Completed!" : "Thank You"}
                   </h2>
                   <p className="text-muted-foreground text-center">
                     {isStarted
@@ -609,15 +633,20 @@ export default function Call({ interview }: CallProps) {
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <Button
-                    onClick={() => navigate(`/candidate/ai-mock-interview/${interview.id}/results`)}
-                    className="flex-1 bg-primary text-primary-foreground h-11 rounded-xl font-bold shadow-lg transition-all"
+                    onClick={() =>
+                      navigate(
+                        `/candidate/ai-mock-interview/${interview.id}/results`
+                      )
+                    }
+                    variant="default"
+                    className="flex-1 h-10 rounded-xl font-semibold"
                   >
                     View Results
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => navigate('/candidate/ai-mock-interview')}
-                    className="flex-1 border-border text-muted-foreground hover:bg-muted h-11 rounded-xl"
+                    onClick={() => navigate("/candidate/ai-mock-interview")}
+                    className="flex-1 h-10 rounded-xl"
                   >
                     Back to Interviews
                   </Button>
