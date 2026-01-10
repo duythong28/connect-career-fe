@@ -1,8 +1,4 @@
 
-.env
-.env.local
-.env.development
-.env.production
 .env*.local
 
 # Firebase config
@@ -33,3 +29,4 @@ yarn-debug.log*
 yarn-error.log*
 
 cursor
+config.bat
