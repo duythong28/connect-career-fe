@@ -35,7 +35,7 @@ function App() {
               {/* PWA & Notifications */}
               <UnifiedPushHandler />
               <PwaInstallPrompt />
-              <PwaUpdateNotification />
+              {/* <PwaUpdateNotification /> */}
               
               <Toaster />
             </ChatProvider>
