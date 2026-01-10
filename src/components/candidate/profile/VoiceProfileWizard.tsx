@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { ExtractedCvData } from "@/api/types/cv.types";
+import { normalizePhone } from "@/lib/helpers";
 
 interface ExtractedData {
   personalInfo?: {
@@ -128,7 +129,7 @@ const VoiceProfileWizard: React.FC<VoiceProfileWizardProps> = ({ onComplete, onC
 
   const startConversation = async () => {
     const initialQuestion =
-      "Hello! I'm your AI assistant. Let's build your profile. Please tell me your phone number, address, and if you have LinkedIn or GitHub profiles.";
+      "Hello! I'm your AI assistant. Let's build your profile. Please tell me your phone number, address.";
     setCurrentQuestion(initialQuestion);
     speakText(initialQuestion);
 
@@ -146,6 +147,9 @@ const VoiceProfileWizard: React.FC<VoiceProfileWizardProps> = ({ onComplete, onC
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
+    utterance.volume = 1.0;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0; 
 
     utterance.onstart = () => {
       setIsSpeaking(true);
@@ -218,70 +222,38 @@ const VoiceProfileWizard: React.FC<VoiceProfileWizardProps> = ({ onComplete, onC
             Authorization: `Bearer ${import.meta.env.VITE_GEMINI_API_KEY}`,
           },
           body: JSON.stringify({
-            model: "gemini-2.0-flash-exp",
+            model: "gemini-2.5-flash",
             messages: [
               {
                 role: "system",
-                content: `You are a CV assistant. Extract information step by step.
+                content: `### ROLE
+You are a CV Assistant. Your goal is to conduct a detailed interview to extract high-quality professional data for a CV. You work step-by-step, ensuring every section is addressed, but you allow users to bypass sections that are not applicable to them.
 
-STRICT ORDER (NEVER skip sections):
-1. personalInfo → 2. workExperience → 3. education → 4. skills → DONE
+### EXTRACTION PIPELINE (STRICT ORDER)
+1. personalInfo → 2. workExperience → 3. education → 4. skills → 5. reviewPhase
 
-CRITICAL RULES:
-- Check "completedSections" array - NEVER ask about sections already in this array
-- When section complete, add to completedSections and move to NEXT section IN ORDER
-- NEVER skip education section - it's required even if user has no education
-- NO duplicates: Check if work/education already exists before adding
+### OPERATIONAL LOGIC
+1.  **Strict Sequencing:** Only focus on the current_section. Do not move to the next section until the current one is added to completedSections.
+2.  **Skip/Bypass Clause:** If a user indicates they do not have information for a section (e.g., "I don't have any work experience," "None," "Skip this"), add that section to completedSections as an empty state and move to the next section.
+3.  **Detail Extraction (Deep Dive):** - For workExperience, ask: "What were your key achievements or responsibilities there?"
+    - For education, ask for institution, degree, and field of study in one go.
+4.  **The Loop:** For Work and Education, after each entry, ask: "Do you have another [Job/Degree] to add?" Move to the next section ONLY when the user says "no" or "that's all".
+5.  **Date Standard:** Convert all dates to YYYY-MM-DD. ("Present": current = true, endDate = "").
+6.  **Review Phase & Completion (CRITICAL UPDATE):** - Once skills are done, set current_section to "reviewPhase".
+    - Action: Present a summary of all collected data.
+    - **Exit Condition:** If the user says "everything is perfect," "yes," "no changes," or "looks good," set is_finished to true, set next_question to an empty string, and provide a final closing message.
+    - **Modification Condition:** If the user wants to modify a section, set current_section back to that section and remove it from completedSections.
 
-FLOW PER SECTION:
-1. Ask ALL questions in ONE message
-2. Extract user's response
-3. If missing required info → ask ONLY missing fields
-4. When complete → add to completedSections, move to NEXT section
-
-SECTIONS (MUST FOLLOW IN ORDER):
-
-1. personalInfo: phone (required), address, linkedin, github
-   → When done: completedSections = ["personalInfo"], current_section = "workExperience"
-   
-2. workExperience: company + position (required), dates (optional), responsibilities (optional)
-   → After extracting work info: ask "Any other jobs?"
-   → If user says "no" / "no more" / "I don't": completedSections = ["personalInfo", "workExperience"], current_section = "education"
-   → If user says "yes": stay in workExperience, ask for next job
-   
-3. education: institution + degree + field (required), dates (optional)
-   → First ask: "Tell me about your education. What institution did you attend, what degree, and field of study?"
-   → After extracting education: ask "Any other degrees?"
-   → If user says "no" / "no more" / "I don't": completedSections = ["personalInfo", "workExperience", "education"], current_section = "skills"
-   → If user says "yes": stay in education, ask for next degree
-   → If user has NO education: still add "education" to completedSections
-   
-4. skills: List of skills (at least 1)
-   → Ask: "What are your main skills? Please list them."
-   → Extract ALL skills mentioned (e.g., "documentation", "coding", "teamwork")
-   → When done: is_finished = true, next_question = "Thank you! I've collected all your information. Youcan continue to review it now!"
-
-USER SAYS "NO" / "NO MORE" / "I DON'T":
-- This means no more entries for CURRENT section
-- Add current section to completedSections
-- Move to NEXT section in order (work → education → skills)
-
-DATE FORMAT: YYYY-MM-DD
-- "2020" → "2020-01-01"
-- "January 2020" → "2020-01-01"
-- "January to December" → "2020-01-01" to "2020-12-31"
-- "current job" → current = true, endDate = ""
-
-OUTPUT JSON:
+### OUTPUT SCHEMA
 {
   "extracted_data": {
-    "personalInfo": {"phone": null, "address": null, "linkedin": null, "github": null},
-    "workExperience": [{"company": "X", "position": "Y", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD", "current": false, "responsibilities": []}],
-    "education": [{"institution": "X", "degree": "Y", "fieldOfStudy": "Z", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD"}],
-    "skills": ["skill1", "skill2", "skill3"],
-    "completedSections": ["personalInfo", "workExperience"]
+    "personalInfo": { "phone": string|null, "address": string|null },
+    "workExperience": [{ "company": string, "position": string, "startDate": string, "endDate": string, "current": boolean, "responsibilities": string[] }] | [],
+    "education": [{ "institution": string, "degree": string, "fieldOfStudy": string, "startDate": string, "endDate": string }] | [],
+    "skills": string[]
   },
-  "current_section": "personalInfo|workExperience|education|skills",
+  "completedSections": ["personalInfo", "workExperience", "education", "skills", "reviewPhase"],
+  "current_section": "personalInfo" | "workExperience" | "education" | "skills" | "reviewPhase",
   "next_question": "string",
   "is_finished": boolean
 }`,
@@ -297,6 +269,7 @@ Extract info and return JSON.`,
               },
             ],
             temperature: 0.7,
+            max_tokens: 8192,
             response_format: { type: "json_object" },
           }),
         }
@@ -305,9 +278,9 @@ Extract info and return JSON.`,
       if (!response.ok) throw new Error("API failed");
 
       const data = await response.json();
+              
       const geminiResponse: GeminiResponse = JSON.parse(data.choices[0].message.content);
-
-      // Merge data
+      
       const currentData = profileDataRef.current;
       const newData = geminiResponse.extracted_data;
 
@@ -338,22 +311,25 @@ Extract info and return JSON.`,
           !eduExists(e)
       );
 
+      // Fix: Better merge logic that preserves existing data when new data is empty/null
       const updatedData: ExtractedData = {
         personalInfo: {
           phone:
-            newData.personalInfo?.phone?.trim() ||
-            currentData.personalInfo?.phone,
+            newData.personalInfo?.phone && newData.personalInfo.phone.trim()
+              ? normalizePhone(newData.personalInfo.phone.trim())
+              : currentData.personalInfo?.phone || null,
           address:
-            newData.personalInfo?.address?.trim() ||
-            currentData.personalInfo?.address,
+            newData.personalInfo?.address && newData.personalInfo.address.trim()
+              ? newData.personalInfo.address.trim()
+              : currentData.personalInfo?.address || null,
           github:
-            newData.personalInfo?.github?.trim() ||
-            currentData.personalInfo?.github ||
-            null,
+            newData.personalInfo?.github && newData.personalInfo.github.trim()
+              ? newData.personalInfo.github.trim()
+              : currentData.personalInfo?.github || null,
           linkedin:
-            newData.personalInfo?.linkedin?.trim() ||
-            currentData.personalInfo?.linkedin ||
-            null,
+            newData.personalInfo?.linkedin && newData.personalInfo.linkedin.trim()
+              ? newData.personalInfo.linkedin.trim()
+              : currentData.personalInfo?.linkedin || null,
         },
         workExperience: [...(currentData.workExperience || []), ...validWork],
         education: [...(currentData.education || []), ...validEdu],
@@ -366,10 +342,6 @@ Extract info and return JSON.`,
         completedSections:
           newData.completedSections || currentData.completedSections || [],
       };
-
-      console.log("✅ Updated:", updatedData);
-      console.log("📍 Section:", geminiResponse.current_section);
-      console.log("✔️ Completed:", updatedData.completedSections);
 
       setProfileData(updatedData);
       setCurrentSection(geminiResponse.current_section);
