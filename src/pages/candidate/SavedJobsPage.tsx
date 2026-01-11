@@ -25,9 +25,8 @@ const SavedJobsPage = () => {
     isLoading,
     error,
   } = useQuery<SavedJobsResponse, Error>({
-    queryKey: ["savedJobs", page],
+    queryKey: ["savedJobs"],
     queryFn: () => getCandidateSavedJobs({ limit: PAGE_SIZE, page }),
-    staleTime: 1000 * 30,
     refetchOnWindowFocus: false,
   });
 

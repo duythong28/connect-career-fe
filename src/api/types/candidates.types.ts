@@ -54,6 +54,7 @@ export interface WorkExperience {
   createdAt: string;
   updatedAt: string;
   organization?: Organization;
+  organizationName?: string;
 }
 
 export interface Education {

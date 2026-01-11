@@ -35,6 +35,7 @@ type Props = {
   jobId: string;
   status: string;
   appliedByUserIds: string[] | null;
+  onApplySuccess?: () => void;
 };
 
 const schema = z.object({
@@ -48,6 +49,7 @@ export default function ApplyJobDialog({
   jobId,
   status,
   appliedByUserIds,
+  onApplySuccess,
 }: Props) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -75,6 +77,7 @@ export default function ApplyJobDialog({
         description: "Your application has been sent to the employer.",
       });
       increaseApplyCountMutate(jobId);
+      onApplySuccess?.();
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       setOpen(false);
       reset();
