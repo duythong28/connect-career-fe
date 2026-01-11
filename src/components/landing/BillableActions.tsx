@@ -9,7 +9,10 @@ import {
 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { getBillableActions } from "@/api/endpoints/wallet.api";
+import {
+  getBillableActions,
+  getPublicBillableActions,
+} from "@/api/endpoints/wallet.api";
 import { BillableAction } from "@/api/types/wallet.types";
 
 const getIconForAction = (code: string) => {
@@ -25,7 +28,7 @@ const BillableActions = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getBillableActions({ pageNumber: 1, pageSize: 100 })
+    getPublicBillableActions()
       .then((res) => {
         setActions(res.items || []);
       })

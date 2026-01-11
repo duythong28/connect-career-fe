@@ -97,6 +97,11 @@ export const getBillableActions = async (
   return response.data;
 };
 
+export const getPublicBillableActions = async (): Promise<BillableActionResponse> => {
+  const response = await axios.get("public/billable-actions");
+  return response.data;
+}
+
 export const createBillableAction = async (
   data: CreateBillableActionRequest
 ): Promise<CreateBillableActionResponse> => {
