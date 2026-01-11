@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
-import { RefreshCw } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import { RefreshCw } from "lucide-react";
 
 const PwaUpdateNotification = () => {
   const {
@@ -9,10 +9,10 @@ const PwaUpdateNotification = () => {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log('SW Registered:', r);
+      console.log("SW Registered:", r);
     },
     onRegisterError(error) {
-      console.log('SW registration error', error);
+      console.log("SW registration error", error);
     },
   });
 
@@ -37,13 +37,17 @@ const PwaUpdateNotification = () => {
 
   if (!showUpdate && !offlineReady) return null;
 
+  return <></>;
+
   return (
-        <div className="fixed top-4 right-4 z-50 max-w-sm animate-slide-down">
+    <div className="fixed top-4 right-4 z-50 max-w-sm animate-slide-down">
       {offlineReady && !needRefresh && (
         <div className="bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
           <div className="flex-1">
             <p className="font-medium">App is ready for offline use</p>
-            <p className="text-sm text-green-100">You can use the app without internet</p>
+            <p className="text-sm text-green-100">
+              You can use the app without internet
+            </p>
           </div>
           <button
             onClick={handleDismiss}

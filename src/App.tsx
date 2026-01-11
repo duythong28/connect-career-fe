@@ -31,12 +31,12 @@ function App() {
               <ChatSearchModal />
               <ChatBoxManager />
               <CallManager />
-              
+
               {/* PWA & Notifications */}
               <UnifiedPushHandler />
               <PwaInstallPrompt />
-              {/* <PwaUpdateNotification /> */}
-              
+              <PwaUpdateNotification />
+
               <Toaster />
             </ChatProvider>
           </OrganizationProvider>
