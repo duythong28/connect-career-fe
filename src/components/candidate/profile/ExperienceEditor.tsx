@@ -117,7 +117,7 @@ export function ExperienceEditor({
     const payload: ExperienceFormValues = {
       id: values.id,
       jobTitle: values.jobTitle,
-      organizationId: values.organizationId,
+      organizationName: values.organizationName,
       employmentType: values.employmentType ?? undefined,
       location: values.location ?? undefined,
       startDate: values.startDate ?? undefined,
