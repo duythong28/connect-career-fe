@@ -674,8 +674,8 @@ export default function AIAgentChatPageV2() {
         {/* Left Column: Sessions List */}
         <div
           className={cn(
-            "w-full lg:w-[400px] flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm flex-shrink-0 transition-all duration-300",
-            !isSidebarOpen && "hidden"
+            "w-full lg:w-[400px] flex-col bg-white rounded-xl border border-gray-200 shadow-sm flex-shrink-0 transition-all duration-300",
+            !isSidebarOpen ? "hidden" : "hidden lg:flex"
           )}
         >
           <div className="p-4 border-b border-gray-100 flex justify-between items-center">
@@ -759,7 +759,7 @@ export default function AIAgentChatPageV2() {
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+            className="fixed inset-0 bg-black/60 z-20 lg:hidden h-screen"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -822,9 +822,9 @@ export default function AIAgentChatPageV2() {
         )}
 
         {/* Right Column: Chat Area */}
-        <div className="hidden lg:flex flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex-col min-w-0 overflow-hidden">
+        <div className="flex flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex-col min-w-0 overflow-hidden">
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-2 lg:px-6 py-2 custom-scrollbar">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-[#0EA5E9] to-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
@@ -1072,7 +1072,7 @@ export default function AIAgentChatPageV2() {
           </div>
 
           {/* Input Area */}
-          <div className="pt-2 px-6 bg-white border-t border-gray-100">
+          <div className="pt-2 px-2 lg:px-6 bg-white border-t border-gray-100">
             <div className="max-w-5xl mx-auto">
               <div className="flex items-end gap-2 p-3 bg-gray-50 border border-gray-200 rounded-2xl focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-[#0EA5E9] transition-all shadow-sm">
                 <input
