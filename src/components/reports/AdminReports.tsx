@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getReports, updateReportStatus } from "@/api/endpoints/reports.api";
 import {
   entityTypeDisplay,
+  reasonDisplay,
   Report,
   ReportStatus,
 } from "@/api/types/reports.types";
@@ -164,7 +165,7 @@ const AdminReports = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate text-muted-foreground">
-                          {report.reason}
+                          {reasonDisplay[report.reason]}
                         </TableCell>
                         <TableCell>{getStatusBadge(report.status)}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">
@@ -284,7 +285,7 @@ const AdminReports = () => {
                   Reason
                 </h4>
                 <p className="text-sm font-medium text-foreground">
-                  {selectedReport.reason}
+                  {reasonDisplay[selectedReport.reason]}
                 </p>
               </div>
 

@@ -92,7 +92,7 @@ const RecruiterFeedbackDialog = ({
           trigger
         ) : (
           <Button variant="outline" size="sm" className="rounded-xl border-border font-bold text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all shadow-sm">
-            Give Recruiter Feedback
+            Give Feedback
           </Button>
         )}
       </DialogTrigger>

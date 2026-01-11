@@ -185,12 +185,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
 
   const renderMenuLinks = (isMobileView: boolean) => {
     return menuItems.map((item) => {
-      const isActive = currentPath === item.url;
+      const isActive = currentPath.includes(item.url);
       const LinkContent = (
         <Link
           key={item.url}
           to={item.url}
-          // Updated styling using CSS variables and primary colors
           className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ease-in-out
             ${
               isActive
@@ -319,7 +318,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
 
   // Sidebar content for desktop
   const desktopSidebarContent = (
-    <nav className="flex flex-col h-full animate-fade-in">
+    <nav className="flex flex-col h-full">
       <div className="mb-8 px-2">
         <h2 className="text-xl font-bold text-foreground tracking-tight">
           {menuTitle}
@@ -334,7 +333,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
 
   // Sidebar content for mobile
   const mobileSidebarContent = (
-    <nav className="flex flex-col h-full animate-fade-in">
+    <nav className="flex flex-col h-full">
       <div className="mb-8 px-2">
         <h2 className="text-2xl font-bold text-foreground tracking-tight">
           {menuTitle}
@@ -352,7 +351,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
       {/* Desktop sidebar */}
       {!isMobile && open && (
         <aside
-          // Replaced hardcoded hex colors with CSS variables (bg-background, border-border)
           className="flex flex-col bg-background border-r border-border fixed left-0 top-[4.5rem] w-64 z-40 h-[calc(100vh-4.5rem)] transition-all duration-300 ease-in-out"
           aria-label="Sidebar"
         >
@@ -367,7 +365,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ open, onOpenChange }) => {
         <Sheet open={open} onOpenChange={onOpenChange}>
           <SheetContent
             side="left"
-            // Replaced hardcoded bg-white with bg-background
             className="p-0 w-64 h-screen overflow-y-auto bg-background border-r border-border"
           >
             <div className="p-4">{mobileSidebarContent}</div>

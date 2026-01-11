@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FileText, Download, Eye } from "lucide-react";
 import { Application } from "@/api/types/applications.types";
 import { useNavigate } from "react-router-dom";
+import ShareButton from "@/components/shared/ShareButton";
 
 export default function ApplicationInfoSection({
   application,
@@ -14,7 +15,7 @@ export default function ApplicationInfoSection({
   const candidateProfile = application?.candidateProfile;
   const cv = application.cv;
   const cvUrl = cv
-    ? `https://res.cloudinary.com/det5zeoa0/image/upload/v1763196412/uploads/${cv.fileName}`
+    ? `https://res.cloudinary.com/det5zeoa0/raw/upload/v1763196412/uploads/${cv.fileName}`
     : null;
 
   const navigate = useNavigate();
@@ -59,14 +60,14 @@ export default function ApplicationInfoSection({
             </div>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleViewCandidateProfile}
-          className="h-9 text-xs font-bold text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl px-4"
-        >
-          View Profile
-        </Button>
+
+        {candidate?.id && (
+          <ShareButton
+            text="View Profile"
+            minimal
+            url={`/candidate/profile/${candidateProfile.id}`}
+          />
+        )}
       </div>
 
       {/* 2. CV Section (Full Width) */}

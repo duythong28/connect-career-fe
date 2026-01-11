@@ -61,12 +61,11 @@ import { toast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   getCandidateJobs,
-  getCandidateSemanticJobs,
   saveCandidateJobById,
 } from "@/api/endpoints/jobs.api";
 import {
+  getAIRecommendations,
   getJobsByIds,
-  getJobsRecommendationIds,
 } from "@/api/endpoints/recommendations.api";
 import { JobRecommendationPreferences } from "@/api/types/recommendations.types";
 import {
@@ -102,100 +101,6 @@ function useDebounce<T>(value: T, delay: number): T {
   }, [value, delay]);
   return debouncedValue;
 }
-
-// --- Helper Component: Tag Input (For Multi-select) ---
-const TagInput = ({
-  placeholder,
-  tags = [],
-  onAdd,
-  onRemove,
-  icon: Icon,
-  variant = "default", // default (blue/gray) or 'destructive' (red)
-}: {
-  placeholder: string;
-  tags?: string[];
-  onAdd: (tag: string) => void;
-  onRemove: (tag: string) => void;
-  icon?: any;
-  variant?: "default" | "destructive" | "success";
-}) => {
-  const [input, setInput] = useState("");
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && input.trim()) {
-      e.preventDefault();
-      onAdd(input.trim());
-      setInput("");
-    }
-  };
-
-  const getBadgeVariant = () => {
-    if (variant === "destructive") return "destructive";
-    if (variant === "success") return "default"; // mapped to primary
-    return "secondary";
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="relative">
-        {Icon && (
-          <Icon
-            className={cn(
-              "absolute left-3 top-1/2 -translate-y-1/2",
-              variant === "destructive"
-                ? "text-red-400"
-                : "text-muted-foreground"
-            )}
-            size={16}
-          />
-        )}
-        <Input
-          placeholder={placeholder}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className={cn("h-10 rounded-xl", Icon && "pl-10")}
-        />
-        <Button
-          size="sm"
-          variant="ghost"
-          className="absolute right-1 top-1 h-8 w-8 p-0"
-          onClick={() => {
-            if (input.trim()) {
-              onAdd(input.trim());
-              setInput("");
-            }
-          }}
-        >
-          <Plus size={16} />
-        </Button>
-      </div>
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag, i) => (
-            <Badge
-              key={i}
-              variant={getBadgeVariant()}
-              className={cn(
-                "px-2 py-1 rounded-md text-xs font-medium flex items-center gap-1 border",
-                variant === "destructive" ? "border-red-200" : "border-border"
-              )}
-            >
-              {tag}
-              <XIcon
-                size={12}
-                className="cursor-pointer opacity-70 hover:opacity-100"
-                onClick={() => onRemove(tag)}
-              />
-            </Badge>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// --- Helpers & Sub-components ---
 
 const isHtmlContent = (content: string): boolean => {
   if (!content) return false;
@@ -290,26 +195,11 @@ const DEFAULT_FILTERS: JobFilters = {
   sortOrder: "DESC",
 };
 
-const DEFAULT_PREFERENCES: JobRecommendationPreferences = {
-  values: [],
-  industriesLike: [],
-  industriesDislike: [],
-  skillsLike: [],
-  skillsDislike: [],
-  preferredRoleTypes: [],
-  preferredLocations: [],
-  preferredCompanySize: "",
-  wantsClearanceRoles: false,
-  minSalary: 0,
-};
-
 export default function JobSearchPage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // --- Search Mode State ---
   const [isPreferenceMode, setIsPreferenceMode] = useState(false);
-  const [isPreferencesExpanded, setIsPreferencesExpanded] = useState(true);
 
   // --- Basic Search State ---
   const [searchFilters, setSearchFilters] = useState<JobFilters>({
@@ -323,9 +213,6 @@ export default function JobSearchPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
 
-  // --- Preference Search State ---
-  const [preferences, setPreferences] =
-    useState<JobRecommendationPreferences>(DEFAULT_PREFERENCES);
   const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
 
   // Debounce for Basic Search
@@ -341,6 +228,14 @@ export default function JobSearchPage() {
     }
   }, [debouncedSearchTerm, isPreferenceMode]);
 
+  useEffect(() => {
+    if (user?.id)
+      getAIRecommendations({
+        userId: user?.id || "",
+        limit: 20,
+      });
+  }, [user]);
+
   const basicJobsQuery = useQuery({
     queryKey: ["jobs", searchFilters],
     queryFn: () => getCandidateJobs(searchFilters),
@@ -349,77 +244,16 @@ export default function JobSearchPage() {
     refetchOnWindowFocus: false,
   });
 
-  // const handleGetCandidateSemanticJobs = async () => {
-  //   try {
-  //     const response = await getCandidateSemanticJobs(
-  //       searchFilters.searchTerm || "",
-  //       searchFilters.pageSize || 20,
-  //       searchFilters.pageNumber || 1
-  //     );
-  //     const jobs = response?.items?.map((job: { job: Job }) => {
-  //       return job?.job;
-  //     });
-  //     return {
-  //       data: jobs,
-  //       total: response?.total || 0,
-  //       page: response?.page || 1,
-  //       limit: response?.limit || 20,
-  //       totalPages: response?.totalPages || 1,
-  //     };
-  //   } catch (error) {
-  //     console.error("Error fetching semantic jobs:", error);
-  //     return {
-  //       data: [],
-  //       total: 0,
-  //       page: 1,
-  //       limit: 20,
-  //       totalPages: 0,
-  //     };
-  //   }
-  // };
-
-  // const basicJobsQuery = useQuery({
-  //   queryKey: ["jobs", searchFilters],
-  //   queryFn: () => handleGetCandidateSemanticJobs(),
-  //   enabled: !isPreferenceMode,
-  //   staleTime: 1000 * 30,
-  //   refetchOnWindowFocus: false,
-  // });
-
-  const handleRecommendJobs = async (prefs: JobRecommendationPreferences) => {
+  const handleRecommendJobs = async () => {
     try {
       let jobs: Job[] = [];
+      const jobIdsResponse = await getAIRecommendations({
+        userId: user?.id || "",
+        limit: 20,
+      });
 
-      try {
-        const jobIdsResponse = await getJobsRecommendationIds({
-          limit: 20,
-          userId: user?.id,
-          preferences: prefs,
-        });
-        if (jobIdsResponse.jobIds.length === 0) {
-          jobs = await getJobsByIds(jobIdsResponse.jobIds);
-        }
-      } catch (error) {
-        console.error("Error getting recommended job IDs:", error);
-      }
+      jobs = await getJobsByIds(jobIdsResponse.jobIds);
 
-      if (jobs.length === 0) {
-        const searchJobsResponse = await getCandidateJobs({
-          pageNumber: 1,
-          pageSize: 20,
-          searchTerm: "",
-          location: prefs.preferredLocations?.[0] || "",
-          type: prefs.preferredRoleTypes?.[0] || undefined,
-          seniorityLevel: undefined,
-          status: undefined,
-          keywords: prefs.skillsLike,
-          postedAfter: undefined,
-          postedBefore: undefined,
-          sortBy: JobSortBy.POSTED_DATE,
-          sortOrder: "DESC",
-        });
-        jobs = searchJobsResponse.data;
-      }
       return jobs;
     } catch (error) {
       console.error("Error fetching similar jobs:", error);
@@ -428,8 +262,7 @@ export default function JobSearchPage() {
 
   // --- Mutation: Get Recommended IDs ---
   const recommendationIdsMutation = useMutation({
-    mutationFn: (prefs: JobRecommendationPreferences) =>
-      handleRecommendJobs(prefs),
+    mutationFn: () => handleRecommendJobs(),
     onSuccess: (data) => {
       setRecommendedJobs(data || []);
     },
@@ -529,36 +362,6 @@ export default function JobSearchPage() {
     setLocationOpen(false);
   };
 
-  // --- Handlers for Preference Mode ---
-  const handlePreferenceSearch = () => {
-    recommendationIdsMutation.mutate(preferences);
-    setIsPreferencesExpanded(false); // Auto collapse to show results
-  };
-
-  const handleClearPreferences = () => {
-    setPreferences(DEFAULT_PREFERENCES);
-  };
-
-  const addPreferenceArrayItem = (
-    key: keyof JobRecommendationPreferences,
-    value: string
-  ) => {
-    setPreferences((prev) => ({
-      ...prev,
-      [key]: [...((prev[key] as string[]) || []), value],
-    }));
-  };
-
-  const removePreferenceArrayItem = (
-    key: keyof JobRecommendationPreferences,
-    value: string
-  ) => {
-    setPreferences((prev) => ({
-      ...prev,
-      [key]: ((prev[key] as string[]) || []).filter((item) => item !== value),
-    }));
-  };
-
   const JobListItem = ({
     job,
     isSelected,
@@ -618,6 +421,12 @@ export default function JobSearchPage() {
     </div>
   );
 
+  useEffect(() => {
+    if (isPreferenceMode) {
+      recommendationIdsMutation.mutate();
+    }
+  }, [isPreferenceMode]);
+
   return (
     <div className="h-full overflow-hidden bg-[#F8F9FB] flex flex-col animate-fade-in">
       {/* --- Filter / Header Bar --- */}
@@ -667,7 +476,7 @@ export default function JobSearchPage() {
           </div>
 
           {/* Conditional Controls */}
-          {!isPreferenceMode ? (
+          {!isPreferenceMode && (
             /* --- BASIC MODE: Original Filters --- */
             <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
               {/* Search Input */}
@@ -891,311 +700,6 @@ export default function JobSearchPage() {
                 >
                   <XIcon size={14} /> Clear
                 </Button>
-              )}
-            </div>
-          ) : (
-            /* --- PREFERENCE MODE: FULL CUSTOMIZATION --- */
-            <div className="bg-muted/30 border border-border rounded-2xl overflow-hidden transition-all duration-300">
-              {/* Collapsible Header */}
-              <div
-                className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50"
-                onClick={() => setIsPreferencesExpanded(!isPreferencesExpanded)}
-              >
-                <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                  <SlidersHorizontal size={16} className="text-primary" />
-                  <span>Customize Your Ideal Job (AI Match)</span>
-                  {!isPreferencesExpanded && (
-                    <span className="text-xs font-normal text-muted-foreground ml-2">
-                      (Click to expand preferences)
-                    </span>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 rounded-lg"
-                >
-                  {isPreferencesExpanded ? (
-                    <ChevronUp size={16} />
-                  ) : (
-                    <ChevronDown size={16} />
-                  )}
-                </Button>
-              </div>
-
-              {/* Expanded Content */}
-              {isPreferencesExpanded && (
-                <div className="p-4 border-t border-border space-y-6 animate-in slide-in-from-top-2">
-                  {/* Section 1: Role, Location & Company */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">
-                        Preferred Locations
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. Ho Chi Minh, Remote"
-                        tags={preferences.preferredLocations}
-                        onAdd={(val) =>
-                          addPreferenceArrayItem("preferredLocations", val)
-                        }
-                        onRemove={(val) =>
-                          removePreferenceArrayItem("preferredLocations", val)
-                        }
-                        icon={MapPin}
-                        variant="default"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">
-                        Job Types
-                      </Label>
-                      <Select
-                        value=""
-                        onValueChange={(val) => {
-                          if (
-                            val &&
-                            !preferences.preferredRoleTypes?.includes(val)
-                          ) {
-                            addPreferenceArrayItem("preferredRoleTypes", val);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-10 rounded-xl">
-                          <SelectValue placeholder="Select (Multiple)" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          {Object.values(JobType).map((t) => (
-                            <SelectItem key={t} value={t}>
-                              {JobTypeLabel[t]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {preferences.preferredRoleTypes?.map((type) => (
-                          <Badge
-                            key={type}
-                            variant="secondary"
-                            className="px-2 py-1 rounded-md text-xs font-medium gap-1"
-                          >
-                            {JobTypeLabel[type as JobType]}
-                            <XIcon
-                              size={12}
-                              className="cursor-pointer hover:text-destructive"
-                              onClick={() =>
-                                removePreferenceArrayItem(
-                                  "preferredRoleTypes",
-                                  type
-                                )
-                              }
-                            />
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">
-                        Company Size
-                      </Label>
-                      <Select
-                        value={preferences.preferredCompanySize || ""}
-                        onValueChange={(val) =>
-                          setPreferences((prev) => ({
-                            ...prev,
-                            preferredCompanySize: val,
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="h-10 rounded-xl">
-                          <SelectValue placeholder="Any Size" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="startup">
-                            Startup (1-50)
-                          </SelectItem>
-                          <SelectItem value="small">Small (51-200)</SelectItem>
-                          <SelectItem value="medium">
-                            Medium (201-1000)
-                          </SelectItem>
-                          <SelectItem value="large">
-                            Large (1001-5000)
-                          </SelectItem>
-                          <SelectItem value="enterprise">
-                            Enterprise (5000+)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border/50" />
-
-                  {/* Section 2: Skills (Like vs Dislike) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1">
-                        <ThumbsUp size={12} /> Skills you Like
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. React, Python, Node.js"
-                        tags={preferences.skillsLike}
-                        onAdd={(val) =>
-                          addPreferenceArrayItem("skillsLike", val)
-                        }
-                        onRemove={(val) =>
-                          removePreferenceArrayItem("skillsLike", val)
-                        }
-                        icon={Zap}
-                        variant="success"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-red-500 flex items-center gap-1">
-                        <ThumbsDown size={12} /> Skills to Avoid
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. PHP, Cobol"
-                        tags={preferences.skillsDislike}
-                        onAdd={(val) =>
-                          addPreferenceArrayItem("skillsDislike", val)
-                        }
-                        onRemove={(val) =>
-                          removePreferenceArrayItem("skillsDislike", val)
-                        }
-                        icon={XIcon}
-                        variant="destructive"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border/50" />
-
-                  {/* Section 3: Industry (Like vs Dislike) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1">
-                        <Building2 size={12} /> Industries you Like
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. Technology, AI"
-                        tags={preferences.industriesLike}
-                        onAdd={(val) =>
-                          addPreferenceArrayItem("industriesLike", val)
-                        }
-                        onRemove={(val) =>
-                          removePreferenceArrayItem("industriesLike", val)
-                        }
-                        icon={Building2}
-                        variant="success"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-red-500 flex items-center gap-1">
-                        <Building2 size={12} /> Industries to Avoid
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. Finance, Banking"
-                        tags={preferences.industriesDislike}
-                        onAdd={(val) =>
-                          addPreferenceArrayItem("industriesDislike", val)
-                        }
-                        onRemove={(val) =>
-                          removePreferenceArrayItem("industriesDislike", val)
-                        }
-                        icon={XIcon}
-                        variant="destructive"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border/50" />
-
-                  {/* Section 4: Other (Salary, Values, Clearance) */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">
-                        Min Monthly Salary (USD)
-                      </Label>
-                      <div className="relative">
-                        <DollarSign
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                          size={16}
-                        />
-                        <Input
-                          type="number"
-                          className="pl-10 h-10 rounded-xl"
-                          placeholder="e.g. 1500"
-                          value={preferences.minSalary || ""}
-                          onChange={(e) =>
-                            setPreferences((prev) => ({
-                              ...prev,
-                              minSalary: Number(e.target.value),
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs font-bold uppercase text-muted-foreground">
-                        Work Values
-                      </Label>
-                      <TagInput
-                        placeholder="e.g. work_life_balance"
-                        tags={preferences.values}
-                        onAdd={(val) => addPreferenceArrayItem("values", val)}
-                        onRemove={(val) =>
-                          removePreferenceArrayItem("values", val)
-                        }
-                        icon={Heart}
-                      />
-                    </div>
-                    <div className="flex items-center gap-3 p-2 border border-border rounded-xl h-10">
-                      <Switch
-                        checked={preferences.wantsClearanceRoles}
-                        onCheckedChange={(checked) =>
-                          setPreferences((prev) => ({
-                            ...prev,
-                            wantsClearanceRoles: checked,
-                          }))
-                        }
-                      />
-                      <Label
-                        className="text-sm font-bold flex items-center gap-2 cursor-pointer"
-                        onClick={() =>
-                          setPreferences((prev) => ({
-                            ...prev,
-                            wantsClearanceRoles: !prev.wantsClearanceRoles,
-                          }))
-                        }
-                      >
-                        <ShieldCheck size={16} className="text-primary" />
-                        Security Clearance Only
-                      </Label>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-2 gap-3">
-                    <Button
-                      variant="outline"
-                      className="rounded-xl px-4 font-bold h-11 border-border text-muted-foreground hover:text-foreground"
-                      onClick={handleClearPreferences}
-                    >
-                      <RotateCcw size={16} className="mr-2" /> Clear All
-                    </Button>
-                    <Button
-                      className="rounded-xl px-8 font-bold h-11"
-                      onClick={handlePreferenceSearch}
-                      disabled={recommendationIdsMutation.isPending}
-                    >
-                      {recommendationIdsMutation.isPending
-                        ? "Analyzing..."
-                        : "Find AI Matches"}
-                      {!recommendationIdsMutation.isPending && (
-                        <Sparkles size={16} className="ml-2" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
               )}
             </div>
           )}
@@ -1551,20 +1055,6 @@ export default function JobSearchPage() {
                               "N/A"}
                           </div>
                         </div>
-                        {selectedJob.organization?.foundedDate && (
-                          <div>
-                            <div className="text-xs font-bold uppercase text-muted-foreground mb-1">
-                              Founded
-                            </div>
-                            <div className="text-sm font-medium text-foreground">
-                              {selectedJob.organization?.foundedDate
-                                ? new Date(
-                                    selectedJob.organization.foundedDate
-                                  ).getFullYear()
-                                : "N/A"}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

@@ -105,7 +105,7 @@ const getMyApplications = async (
 const bulkUpdateApplicationStatusForRecruiter = async (
   data: BulkUpdateApplicationDto
 ): Promise<any> => {
-  const response = await axios.put(`${BASE}/bulk-update`, data);
+  const response = await axios.post(`${BASE}/bulk-update`, data);
   return response.data;
 };
 

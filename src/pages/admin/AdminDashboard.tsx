@@ -40,7 +40,6 @@ const periodLabels: Record<StatsPeriod, string> = {
   [StatsPeriod.MONTH]: "This Month",
   [StatsPeriod.QUARTER]: "This Quarter",
   [StatsPeriod.YEAR]: "This Year",
-  [StatsPeriod.ALL_TIME]: "All Time",
 };
 
 const AdminDashboard = () => {
@@ -268,7 +267,7 @@ const AdminDashboard = () => {
             <Card key={i} className="border-border bg-card rounded-2xl overflow-hidden">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase">
                     {item.label}
                   </p>
                   <p className="text-lg font-bold">{item.val?.toLocaleString() || "..."}</p>

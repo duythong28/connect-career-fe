@@ -225,6 +225,8 @@ export const NotificationsPage: React.FC = () => {
   const totalPages = Math.ceil(totalNotifications / limit);
   const unreadCount = unreadCountData?.count || 0;
 
+  // console.log("notifications", notifications?.[0]?.emailHtml);
+
   const { mutate: markAsReadMutate } = useMutation({
     mutationFn: markAsRead,
     onSuccess: () => {

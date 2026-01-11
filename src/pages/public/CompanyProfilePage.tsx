@@ -832,16 +832,6 @@ const CompanyProfilePage = () => {
                         : "N/A"}
                     </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-muted-foreground uppercase text-[10px] mb-1">
-                      Founded
-                    </div>
-                    <div className="font-bold text-foreground">
-                      {displayData.foundedDate
-                        ? new Date(displayData.foundedDate).getFullYear()
-                        : "N/A"}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="border-t border-border pt-6">
@@ -891,13 +881,13 @@ const CompanyProfilePage = () => {
                       </div>
                     </div>
                   ))}
-                  <Button
+                  {/* <Button
                     variant="outline"
                     className="w-full mt-4 text-xs font-bold h-10 rounded-xl border-border hover:bg-secondary"
                     onClick={() => navigate("/jobs")}
                   >
                     View All Jobs
-                  </Button>
+                  </Button> */}
                 </div>
               ) : (
                 <div className="text-center py-8 bg-muted/10 rounded-2xl border border-border border-dashed">

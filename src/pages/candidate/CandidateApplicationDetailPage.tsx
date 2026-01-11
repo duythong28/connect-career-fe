@@ -56,6 +56,7 @@ import InterviewsSection from "@/components/candidate/applications/InterviewsSec
 import StatusLogSection from "@/components/candidate/applications/StatusLogSection";
 import MessageButton from "@/components/chat/MessageButton";
 import RecruiterFeedbackDialog from "@/components/reviews/RecruiterFeedbackDialog";
+import ShareButton from "@/components/shared/ShareButton";
 
 // --- Helper: Status Badge (Fixed Colors & Size) ---
 const StatusBadge = ({ status }: { status: string }) => {
@@ -64,13 +65,16 @@ const StatusBadge = ({ status }: { status: string }) => {
     [ApplicationStatus.OFFER]: "bg-purple-50 text-purple-700 border-purple-200",
     OFFER_ACCEPTED: "bg-green-50 text-green-700 border-green-200",
     OFFER_REJECTED: "bg-red-50 text-red-700 border-red-200",
-    [ApplicationStatus.REJECTED]: "bg-destructive/10 text-destructive border-destructive/20",
+    [ApplicationStatus.REJECTED]:
+      "bg-destructive/10 text-destructive border-destructive/20",
     [ApplicationStatus.INTERVIEW]: "bg-blue-50 text-blue-700 border-blue-200",
-    [ApplicationStatus.SCREENING]: "bg-orange-50 text-orange-700 border-orange-100",
+    [ApplicationStatus.SCREENING]:
+      "bg-orange-50 text-orange-700 border-orange-100",
   };
 
   let label = ApplicationStatusLabel[status as ApplicationStatus] || status;
-  let styleClass = styles[status] || "bg-secondary text-muted-foreground border-border";
+  let styleClass =
+    styles[status] || "bg-secondary text-muted-foreground border-border";
 
   return (
     <span
@@ -273,7 +277,6 @@ export default function CandidateApplicationDetailPage() {
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-foreground pb-12">
       <div className="max-w-[1400px] mx-auto py-8 px-4 md:px-8 animate-fade-in">
-        
         {/* --- HEADER (Compact) --- */}
         <div className="bg-card rounded-3xl border border-border shadow-sm mb-6 overflow-hidden">
           <div className="p-6 pb-0">
@@ -282,59 +285,68 @@ export default function CandidateApplicationDetailPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   {/* Back Button Inline with Title */}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => navigate(-1)} 
-                    className="rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate(-1)}
+                    className="rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground"
                     title="Back"
                   >
                     <ArrowLeft size={20} />
                   </Button>
-                  
-                  <h1 className="text-2xl font-bold text-foreground leading-tight">{applicationData.job?.title}</h1>
+
+                  <h1 className="text-2xl font-bold text-foreground leading-tight">
+                    {applicationData.job?.title}
+                  </h1>
                   <StatusBadge status={applicationData.status} />
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground font-medium ml-12">
-                  <span className="flex items-center gap-1.5"><Building2 size={14} className="text-muted-foreground"/> {company?.name || "Company"}</span>
-                  <span className="flex items-center gap-1.5"><MapPin size={14} className="text-muted-foreground"/> {applicationData.job?.location || "Remote"}</span>
-                  <span className="flex items-center gap-1.5"><Clock size={14} className="text-muted-foreground"/> Applied {new Date(applicationData.appliedDate).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1.5">
+                    <Building2 size={14} className="text-muted-foreground" />{" "}
+                    {company?.name || "Company"}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <MapPin size={14} className="text-muted-foreground" />{" "}
+                    {applicationData.job?.location || "Remote"}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock size={14} className="text-muted-foreground" />{" "}
+                    Applied{" "}
+                    {new Date(applicationData.appliedDate).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
 
               {/* Right: Actions */}
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(`/jobs/${applicationData.job?.id}`)} 
-                className="bg-background border-border text-foreground font-bold text-xs h-10 rounded-xl hover:bg-secondary shrink-0"
-              >
-                View Job <ExternalLink size={14} className="ml-2"/>
-              </Button>
+              <ShareButton
+                text="View Job"
+                url={`/jobs/${applicationData?.job?.id}`}
+              />
             </div>
           </div>
 
           {/* --- TABS NAVIGATION (Bottom of Header) --- */}
           <div className="flex items-center gap-8 px-8 mt-6 border-t border-border bg-card">
             <button
-              onClick={() => setActiveTab('application')}
+              onClick={() => setActiveTab("application")}
               className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-                activeTab === 'application' 
-                  ? 'border-primary text-primary' 
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === "application"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              <FileText size={18}/> Application
+              <FileText size={18} /> Application
             </button>
             <button
-              onClick={() => setActiveTab('hiring')}
+              onClick={() => setActiveTab("hiring")}
               className={`py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
-                activeTab === 'hiring' 
-                  ? 'border-primary text-primary' 
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                activeTab === "hiring"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
-              <CheckSquare size={18}/> Hiring Process
+              <CheckSquare size={18} /> Hiring Process
             </button>
           </div>
         </div>
@@ -342,37 +354,35 @@ export default function CandidateApplicationDetailPage() {
         <div className="grid grid-cols-12 gap-6 lg:gap-8">
           {/* --- LEFT COLUMN (Main Content) --- */}
           <div className="col-span-12 lg:col-span-8 space-y-6">
-            
-            {activeTab === 'application' && (
+            {activeTab === "application" && (
               <div className="space-y-6 animate-fade-in">
                 {/* Application Data Card */}
                 <ApplicationInfoSection application={applicationData} />
-                
+
                 {/* Job Info Card */}
-                <JobInfoSection 
-                  job={applicationData.job} 
-                  company={company} 
-                  onViewJob={() => navigate(`/jobs/${applicationData.job?.id}`)} 
-                  onViewCompany={() => company?.id && navigate(`/company/${company.id}/profile`)}
-                />
+                <JobInfoSection job={applicationData.job} company={company} />
               </div>
             )}
 
-            {activeTab === 'hiring' && (
+            {activeTab === "hiring" && (
               <div className="space-y-6 animate-fade-in">
                 {/* Offers */}
                 {offers.length > 0 ? (
-                  <OffersSection 
-                    offers={offers} 
-                    onAccept={handleAcceptOffer} 
-                    onReject={handleRejectOffer} 
-                    onCounter={handleCounterOffer} 
+                  <OffersSection
+                    offers={offers}
+                    onAccept={handleAcceptOffer}
+                    onReject={handleRejectOffer}
+                    onCounter={handleCounterOffer}
                     canRespond={canRespondToOffer}
                   />
                 ) : (
                   <div className="bg-card border border-border rounded-3xl p-12 text-center">
-                    <div className="text-muted-foreground/30 mb-3"><CheckSquare size={40} className="mx-auto"/></div>
-                    <p className="text-sm text-muted-foreground italic">No offers received yet.</p>
+                    <div className="text-muted-foreground/30 mb-3">
+                      <CheckSquare size={40} className="mx-auto" />
+                    </div>
+                    <p className="text-sm text-muted-foreground italic">
+                      No offers received yet.
+                    </p>
                   </div>
                 )}
 
@@ -381,45 +391,62 @@ export default function CandidateApplicationDetailPage() {
                   <InterviewsSection interviews={interviews} />
                 ) : (
                   <div className="bg-card border border-border rounded-3xl p-12 text-center">
-                    <div className="text-muted-foreground/30 mb-3"><MessageSquare size={40} className="mx-auto"/></div>
-                    <p className="text-sm text-muted-foreground italic">No interviews scheduled.</p>
+                    <div className="text-muted-foreground/30 mb-3">
+                      <MessageSquare size={40} className="mx-auto" />
+                    </div>
+                    <p className="text-sm text-muted-foreground italic">
+                      No interviews scheduled.
+                    </p>
                   </div>
                 )}
               </div>
             )}
-
           </div>
 
           {/* --- RIGHT SIDEBAR --- */}
           <div className="col-span-12 lg:col-span-4 space-y-6">
-            
             {/* Recruiter Card (Clickable) */}
             {poster && (
               <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-                <h3 className="font-bold text-muted-foreground mb-4 text-xs uppercase tracking-wide">Recruiter</h3>
-                <div className="flex items-center gap-4 mb-5 cursor-pointer group" onClick={handleViewRecruiterProfile}>
+                <h3 className="font-bold text-muted-foreground mb-4 text-xs uppercase tracking-wide">
+                  Recruiter
+                </h3>
+                <div
+                  className="flex items-center gap-4 mb-5 cursor-pointer group"
+                  onClick={handleViewRecruiterProfile}
+                >
                   <Avatar className="h-12 w-12 border border-border">
                     <AvatarImage src={poster.avatarUrl} />
-                    <AvatarFallback className="bg-primary text-primary-foreground font-bold">{poster.fullName?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+                      {poster.fullName?.charAt(0)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="overflow-hidden">
-                    <div className="font-bold text-foreground text-sm truncate group-hover:text-primary transition-colors">{poster.fullName || "Recruiter"}</div>
-                    <div className="text-xs text-muted-foreground truncate">{poster.email}</div>
+                    <div className="font-bold text-foreground text-sm truncate group-hover:text-primary transition-colors">
+                      {poster.fullName || "Recruiter"}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {poster.email}
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-row gap-3">
                   <MessageButton senderId={user.id} recieverId={poster.id} />
-                  <RecruiterFeedbackDialog applicationId={applicationId!} recruiterUserId={poster.id} />
+                  <RecruiterFeedbackDialog
+                    applicationId={applicationId!}
+                    recruiterUserId={poster.id}
+                  />
                 </div>
               </div>
             )}
 
             {/* Timeline */}
             <div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
-               <h3 className="font-bold text-muted-foreground mb-4 text-xs uppercase tracking-wide">Timeline</h3>
-               <StatusLogSection statusHistory={statusHistory} />
+              <h3 className="font-bold text-muted-foreground mb-4 text-xs uppercase tracking-wide">
+                Timeline
+              </h3>
+              <StatusLogSection statusHistory={statusHistory} />
             </div>
-
           </div>
         </div>
 
@@ -427,62 +454,138 @@ export default function CandidateApplicationDetailPage() {
         <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
           <DialogContent className="max-w-md rounded-3xl p-8 bg-card border-border">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-3 text-green-600 text-xl"><CheckCircle2 className="h-6 w-6"/> Accept Offer</DialogTitle>
-              <DialogDescription className="text-muted-foreground mt-2">Confirm acceptance of this offer?</DialogDescription>
+              <DialogTitle className="flex items-center gap-3 text-green-600 text-xl">
+                <CheckCircle2 className="h-6 w-6" /> Accept Offer
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground mt-2">
+                Confirm acceptance of this offer?
+              </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowAcceptDialog(false)} className="rounded-xl h-11 border-border">Cancel</Button>
-              <Button onClick={confirmAcceptOffer} className="bg-green-600 hover:bg-green-700 text-white rounded-xl h-11 font-bold">Confirm</Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowAcceptDialog(false)}
+                className="rounded-xl h-11 border-border"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmAcceptOffer}
+                className="bg-green-600 hover:bg-green-700 text-white rounded-xl h-11 font-bold"
+              >
+                Confirm
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-           <DialogContent className="max-w-md rounded-3xl p-8 bg-card border-border">
+          <DialogContent className="max-w-md rounded-3xl p-8 bg-card border-border">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-3 text-destructive text-xl"><XCircle className="h-6 w-6"/> Reject Offer</DialogTitle>
-              <DialogDescription className="text-muted-foreground mt-2">Decline this offer? This cannot be undone.</DialogDescription>
+              <DialogTitle className="flex items-center gap-3 text-destructive text-xl">
+                <XCircle className="h-6 w-6" /> Reject Offer
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground mt-2">
+                Decline this offer? This cannot be undone.
+              </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowRejectDialog(false)} className="rounded-xl h-11 border-border">Cancel</Button>
-              <Button onClick={confirmRejectOffer} variant="destructive" className="rounded-xl h-11 font-bold">Reject</Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowRejectDialog(false)}
+                className="rounded-xl h-11 border-border"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmRejectOffer}
+                variant="destructive"
+                className="rounded-xl h-11 font-bold"
+              >
+                Reject
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showCounterOfferDialog} onOpenChange={setShowCounterOfferDialog}>
+        <Dialog
+          open={showCounterOfferDialog}
+          onOpenChange={setShowCounterOfferDialog}
+        >
           <DialogContent className="max-w-lg rounded-3xl p-0 overflow-hidden bg-card border-border">
             <DialogHeader className="p-6 border-b border-border bg-secondary/30">
-              <DialogTitle className="text-foreground text-xl">Submit Counter Offer</DialogTitle>
-              <DialogDescription className="text-muted-foreground mt-1">Propose new terms for this position.</DialogDescription>
+              <DialogTitle className="text-foreground text-xl">
+                Submit Counter Offer
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground mt-1">
+                Propose new terms for this position.
+              </DialogDescription>
             </DialogHeader>
             <div className="p-8 space-y-6 bg-card">
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">Base Salary</Label>
-                  <Input type="number" value={counterOfferBaseSalary} onChange={(e) => setCounterOfferBaseSalary(e.target.value)} className="border-border rounded-xl focus:ring-2 focus:ring-primary"/>
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">
+                    Base Salary
+                  </Label>
+                  <Input
+                    type="number"
+                    value={counterOfferBaseSalary}
+                    onChange={(e) => setCounterOfferBaseSalary(e.target.value)}
+                    className="border-border rounded-xl focus:ring-2 focus:ring-primary"
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs font-bold text-muted-foreground uppercase">Currency</Label>
-                  <Input value={counterOfferCurrency} onChange={(e) => setCounterOfferCurrency(e.target.value)} className="border-border rounded-xl focus:ring-2 focus:ring-primary"/>
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">
+                    Currency
+                  </Label>
+                  <Input
+                    value={counterOfferCurrency}
+                    onChange={(e) => setCounterOfferCurrency(e.target.value)}
+                    className="border-border rounded-xl focus:ring-2 focus:ring-primary"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Signing Bonus</Label>
-                <Input type="number" value={counterOfferSigningBonus} onChange={(e) => setCounterOfferSigningBonus(e.target.value)} className="border-border rounded-xl focus:ring-2 focus:ring-primary"/>
+                <Label className="text-xs font-bold text-muted-foreground uppercase">
+                  Signing Bonus
+                </Label>
+                <Input
+                  type="number"
+                  value={counterOfferSigningBonus}
+                  onChange={(e) => setCounterOfferSigningBonus(e.target.value)}
+                  className="border-border rounded-xl focus:ring-2 focus:ring-primary"
+                />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Notes / Reasoning</Label>
-                <Textarea value={counterOfferNotes} onChange={(e) => setCounterOfferNotes(e.target.value)} rows={3} className="border-border rounded-xl resize-none focus:ring-2 focus:ring-primary" placeholder="Explain your desired compensation..."/>
+                <Label className="text-xs font-bold text-muted-foreground uppercase">
+                  Notes / Reasoning
+                </Label>
+                <Textarea
+                  value={counterOfferNotes}
+                  onChange={(e) => setCounterOfferNotes(e.target.value)}
+                  rows={3}
+                  className="border-border rounded-xl resize-none focus:ring-2 focus:ring-primary"
+                  placeholder="Explain your desired compensation..."
+                />
               </div>
             </div>
             <DialogFooter className="p-6 bg-secondary/10 border-t border-border flex gap-3">
-              <Button variant="outline" onClick={() => setShowCounterOfferDialog(false)} className="rounded-xl font-bold border-border text-muted-foreground h-11">Cancel</Button>
-              <Button onClick={submitCounterOffer} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-sm h-11">Send Counter Offer</Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowCounterOfferDialog(false)}
+                className="rounded-xl font-bold border-border text-muted-foreground h-11"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={submitCounterOffer}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold shadow-sm h-11"
+              >
+                Send Counter Offer
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
       </div>
     </div>
   );

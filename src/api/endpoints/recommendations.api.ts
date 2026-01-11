@@ -73,10 +73,27 @@ const getUsersByIds = async (userIds: string[]): Promise<any[]> => {
   return response.data;
 };
 
+
+const getAIRecommendations = async ({
+  userId,
+  limit,
+}: {
+  userId: string;
+  limit?: number;
+}): Promise<any> => {
+  const response = await axios.post(`${import.meta.env.VITE_API_AI_BASE_URL}/recommendations`, {
+    userId,
+    limit: limit || 10,
+  });
+  return response.data;
+};
+
+
 export {
   getJobsRecommendationIds,
   getJobsByIds,
   getSimilarJobsRecommendations,
   getCandidateRecommendationsForJob,
   getUsersByIds,
+  getAIRecommendations,
 };

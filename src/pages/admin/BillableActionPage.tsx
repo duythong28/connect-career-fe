@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { Coins, Plus, Pencil, Tag, FileText } from "lucide-react";
+import { Pencil, Tag, FileText } from "lucide-react";
 
 const BillableActionPage = () => {
   const queryClient = useQueryClient();
@@ -47,10 +47,14 @@ const BillableActionPage = () => {
   // Dialog States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<BillableAction | null>(null);
+  const [selectedAction, setSelectedAction] = useState<BillableAction | null>(
+    null
+  );
 
   // Form States
-  const [newActionData, setNewActionData] = useState<Partial<CreateBillableActionRequest>>({
+  const [newActionData, setNewActionData] = useState<
+    Partial<CreateBillableActionRequest>
+  >({
     currency: "USD",
     category: "recruiter",
   });
@@ -64,7 +68,8 @@ const BillableActionPage = () => {
 
   // 2. Create Mutation
   const createMutation = useMutation({
-    mutationFn: (data: CreateBillableActionRequest) => createBillableAction(data),
+    mutationFn: (data: CreateBillableActionRequest) =>
+      createBillableAction(data),
     onSuccess: () => {
       toast({ title: "Action created successfully" });
       setIsCreateOpen(false);
@@ -107,7 +112,10 @@ const BillableActionPage = () => {
       newActionData.cost === undefined || // Allow 0, but check undefined
       !newActionData.category
     ) {
-      toast({ title: "Please fill in all required fields", variant: "destructive" });
+      toast({
+        title: "Please fill in all required fields",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -127,7 +135,7 @@ const BillableActionPage = () => {
 
   const handleUpdatePrice = () => {
     if (!selectedAction || !editPrice) return;
-    
+
     const costValue = parseFloat(editPrice);
     if (costValue < 0) {
       toast({ title: "Cost cannot be negative", variant: "destructive" });
@@ -155,10 +163,6 @@ const BillableActionPage = () => {
               </p>
             </div>
           </div>
-          {/* <Button onClick={() => setIsCreateOpen(true)} className="h-10">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Action
-          </Button> */}
         </div>
 
         {/* Main Content Card */}
@@ -218,7 +222,10 @@ const BillableActionPage = () => {
                         </TableCell>
                         <TableCell className="align-top">
                           <span className="font-bold text-foreground">
-                            {parseFloat(action.cost.toString()).toLocaleString()} {action.currency}
+                            {parseFloat(
+                              action.cost.toString()
+                            ).toLocaleString()}{" "}
+                            {action.currency}
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm align-top whitespace-normal break-words">
@@ -267,7 +274,9 @@ const BillableActionPage = () => {
                     variant="outline"
                     className="h-9"
                     disabled={!data || page === data.totalPages}
-                    onClick={() => setPage((p) => Math.min(data?.totalPages || 1, p + 1))}
+                    onClick={() =>
+                      setPage((p) => Math.min(data?.totalPages || 1, p + 1))
+                    }
                   >
                     Next
                   </Button>
@@ -288,18 +297,25 @@ const BillableActionPage = () => {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Action Code</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">
+                    Action Code
+                  </Label>
                   <Input
                     placeholder="e.g. VIEW_CV"
                     value={newActionData.actionCode || ""}
                     onChange={(e) =>
-                      setNewActionData({ ...newActionData, actionCode: e.target.value.toUpperCase() })
+                      setNewActionData({
+                        ...newActionData,
+                        actionCode: e.target.value.toUpperCase(),
+                      })
                     }
                     className="rounded-xl border-border"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Category</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">
+                    Category
+                  </Label>
                   <Select
                     value={newActionData.category}
                     onValueChange={(val) =>
@@ -319,12 +335,17 @@ const BillableActionPage = () => {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-muted-foreground">Action Name</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  Action Name
+                </Label>
                 <Input
                   placeholder="e.g. View Candidate CV"
                   value={newActionData.actionName || ""}
                   onChange={(e) =>
-                    setNewActionData({ ...newActionData, actionName: e.target.value })
+                    setNewActionData({
+                      ...newActionData,
+                      actionName: e.target.value,
+                    })
                   }
                   className="rounded-xl border-border"
                 />
@@ -332,7 +353,9 @@ const BillableActionPage = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Cost</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">
+                    Cost
+                  </Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -351,7 +374,9 @@ const BillableActionPage = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">Currency</Label>
+                  <Label className="text-xs font-bold uppercase text-muted-foreground">
+                    Currency
+                  </Label>
                   <Input
                     value={newActionData.currency}
                     disabled
@@ -361,12 +386,17 @@ const BillableActionPage = () => {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-muted-foreground">Description</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  Description
+                </Label>
                 <Textarea
                   placeholder="Describe what this action does..."
                   value={newActionData.description || ""}
                   onChange={(e) =>
-                    setNewActionData({ ...newActionData, description: e.target.value })
+                    setNewActionData({
+                      ...newActionData,
+                      description: e.target.value,
+                    })
                   }
                   className="rounded-xl border-border resize-none"
                   rows={3}
@@ -374,12 +404,19 @@ const BillableActionPage = () => {
               </div>
             </div>
             <DialogFooter className="p-4 bg-[#F8F9FB] border-t border-border">
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)} className="h-9">
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateOpen(false)}
+                className="h-9"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreate}
-                disabled={createMutation.isPending || (newActionData.cost !== undefined && newActionData.cost < 0)}
+                disabled={
+                  createMutation.isPending ||
+                  (newActionData.cost !== undefined && newActionData.cost < 0)
+                }
                 className="h-9"
               >
                 {createMutation.isPending ? "Creating..." : "Create Action"}
@@ -400,16 +437,22 @@ const BillableActionPage = () => {
               <div className="bg-muted/30 p-4 rounded-xl border border-border">
                 <div className="flex items-center gap-3 mb-2">
                   <Tag className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-sm">{selectedAction?.actionName}</span>
+                  <span className="font-semibold text-sm">
+                    {selectedAction?.actionName}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <FileText className="h-4 w-4" />
-                  <span className="font-mono text-xs">{selectedAction?.actionCode}</span>
+                  <span className="font-mono text-xs">
+                    {selectedAction?.actionCode}
+                  </span>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-muted-foreground">New Cost ({selectedAction?.currency})</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
+                  New Cost ({selectedAction?.currency})
+                </Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -428,13 +471,21 @@ const BillableActionPage = () => {
                 />
               </div>
             </div>
-            <DialogFooter className="p-4 bg-[#F8F9FB] border-t border-border">
-              <Button variant="outline" onClick={() => setIsEditOpen(false)} className="h-9">
+            <DialogFooter className="p-4 bg-[#F8F9FB] gap-2 border-t border-border">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditOpen(false)}
+                className="h-9"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleUpdatePrice}
-                disabled={updateMutation.isPending || parseFloat(editPrice) < 0 || editPrice === ""}
+                disabled={
+                  updateMutation.isPending ||
+                  parseFloat(editPrice) < 0 ||
+                  editPrice === ""
+                }
                 className="h-9"
               >
                 {updateMutation.isPending ? "Updating..." : "Confirm Update"}
