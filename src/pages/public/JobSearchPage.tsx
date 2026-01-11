@@ -228,14 +228,6 @@ export default function JobSearchPage() {
     }
   }, [debouncedSearchTerm, isPreferenceMode]);
 
-  useEffect(() => {
-    if (user?.id)
-      getAIRecommendations({
-        userId: user?.id || "",
-        limit: 20,
-      });
-  }, [user]);
-
   const basicJobsQuery = useQuery({
     queryKey: ["jobs", searchFilters],
     queryFn: () => getCandidateJobs(searchFilters),
@@ -249,7 +241,7 @@ export default function JobSearchPage() {
       let jobs: Job[] = [];
       const jobIdsResponse = await getAIRecommendations({
         userId: user?.id || "",
-        limit: 20,
+        limit: 40,
       });
 
       jobs = await getJobsByIds(jobIdsResponse.jobIds);
@@ -261,26 +253,22 @@ export default function JobSearchPage() {
   };
 
   // --- Mutation: Get Recommended IDs ---
-  const recommendationIdsMutation = useMutation({
-    mutationFn: () => handleRecommendJobs(),
-    onSuccess: (data) => {
-      setRecommendedJobs(data || []);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to get AI recommendations.",
-        variant: "destructive",
-      });
-    },
+  const recommendationIdsQuery = useQuery({
+    queryKey: ["ai-recommended-jobs", user?.id],
+    queryFn: () => handleRecommendJobs(),
+    enabled: !!user?.id,
+    refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    setRecommendedJobs(recommendationIdsQuery.data || []);
+  }, [recommendationIdsQuery?.isSuccess]);
 
   // Derived Data based on Mode
   const displayedJobsData = isPreferenceMode
     ? {
-        data: (recommendationIdsMutation.isSuccess && recommendedJobs) || [],
-        total:
-          (recommendationIdsMutation.isSuccess && recommendedJobs.length) || 0,
+        data: recommendedJobs || [],
+        total: recommendedJobs.length || 0,
         totalPages: 1,
       }
     : {
@@ -290,7 +278,7 @@ export default function JobSearchPage() {
       };
 
   const isFetching = isPreferenceMode
-    ? recommendationIdsMutation.isPending
+    ? recommendationIdsQuery.isFetching
     : basicJobsQuery.isFetching;
 
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -420,12 +408,6 @@ export default function JobSearchPage() {
       </div>
     </div>
   );
-
-  useEffect(() => {
-    if (isPreferenceMode) {
-      recommendationIdsMutation.mutate();
-    }
-  }, [isPreferenceMode]);
 
   return (
     <div className="h-full overflow-hidden bg-[#F8F9FB] flex flex-col animate-fade-in">

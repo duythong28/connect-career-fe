@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { CandidateProfile } from "@/api/types/candidates.types";
 import RenderMarkDown from "@/components/shared/RenderMarkDown";
 import { SkillsEditor } from "@/components/candidate/profile/SkillsEditor";
+import { Markdown } from "@/components/ui/markdown";
 
 export enum CompletionStatus {
   INCOMPLETE = "incomplete",
@@ -198,8 +199,10 @@ const InputGroup = ({ label, error, children, required }: any) => (
 
 // 1. Profile Editor
 const profileSchema = z.object({
-  user: z.object({ firstName: z.string().min(1, "Name required") , lastName: z.string().min(1, "Name required")}),
-  email: z.string().email().optional().nullable(),
+  user: z.object({
+    firstName: z.string().min(1, "Name required"),
+    lastName: z.string().min(1, "Name required"),
+  }),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   socialLinks: z.object({
@@ -218,6 +221,7 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
     resolver: zodResolver(profileSchema),
     defaultValues: data,
   });
+    const userErrors = errors.user as any;
   return (
     <ModalOverlay
       title="Edit Personal Info"
@@ -227,7 +231,7 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
       isSubmitting={isSubmitting}
     >
       <div className="grid grid-cols-2 gap-6">
-        <InputGroup label="First Name" required error={errors.user?.firstName}>
+        <InputGroup label="First Name" required error={userErrors?.firstName}>
           <Controller
             control={control}
             name="user.firstName"
@@ -239,7 +243,7 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
             )}
           />
         </InputGroup>
-          <InputGroup label="Last Name" required error={errors.user?.lastName}>
+        <InputGroup label="Last Name" required error={userErrors?.lastName}>
           <Controller
             control={control}
             name="user.lastName"
@@ -253,18 +257,6 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
         </InputGroup>
       </div>
       <div className="grid grid-cols-2 gap-6">
-        <InputGroup label="Email" error={errors.email}>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field }) => (
-              <Input
-                {...field}
-                className="w-full border-border rounded-xl focus:ring-primary h-auto py-3"
-              />
-            )}
-          />
-        </InputGroup>
         <InputGroup label="Phone" error={errors.phone}>
           <Controller
             control={control}
@@ -277,20 +269,21 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
             )}
           />
         </InputGroup>
+        <InputGroup label="Location" error={errors.address}>
+          <Controller
+            control={control}
+            name="address"
+            render={({ field }) => (
+              <Input
+                {...field}
+                className="w-full border-border rounded-xl focus:ring-primary h-auto py-3"
+                placeholder="City, Country"
+              />
+            )}
+          />
+        </InputGroup>
       </div>
-      <InputGroup label="Location" error={errors.address}>
-        <Controller
-          control={control}
-          name="address"
-          render={({ field }) => (
-            <Input
-              {...field}
-              className="w-full border-border rounded-xl focus:ring-primary h-auto py-3"
-              placeholder="City, Country"
-            />
-          )}
-        />
-      </InputGroup>
+
       <div className="pt-6 border-t border-border space-y-5">
         <h4 className="text-sm font-bold text-foreground">Social Links</h4>
         <InputGroup label="LinkedIn URL">
@@ -718,7 +711,7 @@ export default function ProfileDetailTab({
         }
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-          <InfoRow icon={Mail} label="Email" value={profileData.email} />
+          <InfoRow icon={Mail} label="Email" value={profileData.user.email} />
           <InfoRow icon={Phone} label="Phone" value={profileData.phone} />
           <InfoRow icon={MapPin} label="Location" value={profileData.address} />
           <InfoRow
@@ -780,7 +773,7 @@ export default function ProfileDetailTab({
                     {exp.startDate} - {exp.isCurrent ? "Present" : exp.endDate}
                   </div>
                   <div className="text-sm text-muted-foreground/80 leading-relaxed max-w-2xl">
-                    <RenderMarkDown content={exp.description || ""} />
+                    <Markdown content={exp.description || ""} />
                   </div>
                 </div>
                 {isMyProfile && editMode && (
