@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCandidateJobById,
   getCandidateJobs,
@@ -31,10 +31,13 @@ import {
   getCandidateRecommendationsForJob,
   getUsersByIds,
 } from "@/api/endpoints/recommendations.api";
+import { useAuth } from "@/hooks/useAuth";
 
 const JobDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const handleGetSimilarJobs = async (jobId: string): Promise<Job[]> => {
     try {
@@ -366,6 +369,25 @@ const JobDetailPage = () => {
                     jobId={jobData?.id ?? ""}
                     appliedByUserIds={jobData?.appliedByUserIds}
                     status={jobData?.status ?? ""}
+                    onApplySuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: ["job", id] });
+                      queryClient.invalidateQueries({
+                        queryKey: [
+                          "applications",
+                          user?.id,
+                          {
+                            status: undefined,
+                            hasInterviews: undefined,
+                            hasOffers: undefined,
+                            awaitingResponse: undefined,
+                            page: 1,
+                            limit: 20,
+                            sortBy: "appliedDate",
+                            sortOrder: "DESC",
+                          },
+                        ],
+                      });
+                    }}
                   />
                 </div>
                 <div className="space-y-4 text-sm pt-5 border-t border-border">

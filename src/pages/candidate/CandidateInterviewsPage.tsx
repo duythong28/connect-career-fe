@@ -647,12 +647,12 @@ const CandidateInterviewsPage = () => {
     <div className="min-h-screen p-6 animate-fade-in">
       <div className="max-w-6xl mx-auto">
         <div className="mb-10 border-b border-border pb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground tracking-tight">
                 My Interviews
               </h1>
-              <p className="text-muted-foreground mt-2 text-lg">
+              <p className="hidden lg:block text-muted-foreground mt-2 text-lg">
                 View and manage your upcoming and past interviews
               </p>
             </div>

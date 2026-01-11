@@ -61,7 +61,7 @@ export default function JobCard({
       <CardContent className="p-5 w-full min-w-0">
         {/* Top Section: Logo, Title, Save */}
         <div className="flex items-start justify-between gap-4">
-          <div className="flex gap-4 flex-1 min-w-0">
+          <div className="flex gap-4 flex-1 min-w-0 overflow-hidden">
             <Avatar className="w-12 h-12 rounded-xl border border-border flex-shrink-0 bg-white">
               <AvatarImage
                 src={job?.organization?.logoFile?.url || job.companyLogo}

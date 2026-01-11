@@ -26,6 +26,7 @@ import {
   ThumbsUp,
   ShieldCheck,
   RotateCcw,
+  ArrowLeft,
 } from "lucide-react";
 
 // UI Components
@@ -58,7 +59,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 
 // API & Logic
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getCandidateJobs,
   saveCandidateJobById,
@@ -284,7 +285,8 @@ export default function JobSearchPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [rightTab, setRightTab] = useState<"Overview" | "Company">("Overview");
   const [showFullPosting, setShowFullPosting] = useState(false);
-
+  const [showMobileDetail, setShowMobileDetail] = useState(false);
+  const queryClient = useQueryClient();
   // Auto-select first job
   useEffect(() => {
     const jobs = displayedJobsData.data;
@@ -299,10 +301,24 @@ export default function JobSearchPage() {
 
   const saveJobMutation = useMutation({
     mutationFn: (id: string) => saveCandidateJobById(id),
-    onSuccess: () =>
-      toast({ title: "Saved", description: "Job saved successfully." }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs", searchFilters] });
+      queryClient.invalidateQueries({ queryKey: ["savedJobs"] });
+      setSelectedJob({
+        ...selectedJob,
+        savedByUserIds: selectedJob?.savedByUserIds?.includes(user?.id || "")
+          ? selectedJob?.savedByUserIds?.filter((uid) => uid !== user?.id)
+          : [...(selectedJob?.savedByUserIds || []), user?.id || ""],
+      });
+      toast({ title: "Saved", description: "Job saved successfully." });
+    },
     onError: () => toast({ title: "Save failed", variant: "destructive" }),
   });
+
+  const handleJobSelect = (job: Job) => {
+    setSelectedJob(job);
+    setShowMobileDetail(true);
+  };
 
   const handleSaveJob = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -358,7 +374,7 @@ export default function JobSearchPage() {
     isSelected: boolean;
   }) => (
     <div
-      onClick={() => setSelectedJob(job)}
+      onClick={() => handleJobSelect(job)}
       className={cn(
         "p-4 rounded-xl border cursor-pointer transition-all mb-3 relative group",
         isSelected
@@ -416,20 +432,24 @@ export default function JobSearchPage() {
         <div className="max-w-[1600px] mx-auto">
           {/* Header Row */}
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
               {isPreferenceMode ? (
                 <>
-                  <Sparkles className="text-primary" fill="currentColor" /> AI
-                  Recommendation
+                  <Sparkles className="text-primary" fill="currentColor" />
+                  <span className="hidden sm:inline">AI Recommendation</span>
+                  <span className="sm:hidden">AI Rec</span>
                 </>
               ) : (
-                "Search All Jobs"
+                <>
+                  <span className="hidden sm:inline">Search All Jobs</span>
+                  <span className="sm:hidden">Search Jobs</span>
+                </>
               )}
             </h1>
-            <div className="flex items-center gap-3 bg-secondary/50 p-1 rounded-xl border border-border">
+            <div className="flex items-center gap-2 sm:gap-3 bg-secondary/50 p-1 rounded-xl border border-border">
               <span
                 className={cn(
-                  "text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all",
+                  "text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all",
                   !isPreferenceMode
                     ? "bg-card shadow-sm text-foreground"
                     : "text-muted-foreground"
@@ -441,11 +461,11 @@ export default function JobSearchPage() {
               <Switch
                 checked={isPreferenceMode}
                 onCheckedChange={setIsPreferenceMode}
-                className="data-[state=checked]:bg-primary"
+                className="data-[state=checked]:bg-primary scale-90 sm:scale-100"
               />
               <span
                 className={cn(
-                  "text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all",
+                  "text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all",
                   isPreferenceMode
                     ? "bg-card shadow-sm text-primary"
                     : "text-muted-foreground"
@@ -691,7 +711,12 @@ export default function JobSearchPage() {
       {/* --- Main Content Split View --- */}
       <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 sm:p-6 flex gap-6 overflow-hidden min-h-0">
         {/* Left Column: Job List */}
-        <div className="w-full lg:w-[400px] flex flex-col bg-card rounded-3xl border border-border shadow-sm flex-shrink-0 overflow-hidden">
+        <div
+          className={cn(
+            "w-full lg:w-[400px] flex flex-col bg-card rounded-3xl border border-border shadow-sm flex-shrink-0 overflow-hidden",
+            showMobileDetail && "hidden lg:flex" // [NEW: hide on mobile when detail shown]
+          )}
+        >
           <div className="p-4 border-b border-border flex justify-between items-center bg-muted/20">
             <span className="text-xs font-bold text-muted-foreground uppercase">
               {isFetching
@@ -739,12 +764,28 @@ export default function JobSearchPage() {
         </div>
 
         {/* Right Column: Job Detail Panel */}
-        <div className="hidden lg:flex flex-1 bg-card rounded-3xl border border-border shadow-sm flex-col min-w-0 overflow-hidden">
+        <div
+          className={cn(
+            "flex-1 bg-card rounded-3xl border border-border shadow-sm flex-col min-w-0 overflow-hidden",
+            showMobileDetail ? "flex" : "hidden lg:flex" // [CHANGED: was "hidden lg:flex"]
+          )}
+        >
           {selectedJob ? (
             <>
+              <div className="lg:hidden flex items-center gap-3 px-4 py-[6px] border-b border-border bg-muted/20">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMobileDetail(false)}
+                  className="h-9 px-3 rounded-xl"
+                >
+                  <ArrowLeft size={16} className="mr-2" />
+                  Back to Jobs
+                </Button>
+              </div>
               {/* Detail Header / Tabs */}
-              <div className="flex items-center justify-between px-8 border-b border-border bg-card">
-                <div className="flex gap-8">
+              <div className="flex items-center justify-between px-4 sm:px-8 border-b border-border bg-card">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     onClick={() => setRightTab("Overview")}
                     className={cn(
@@ -784,20 +825,48 @@ export default function JobSearchPage() {
                     ) : (
                       <Heart size={14} />
                     )}
-                    Save
+                    <span className="hidden sm:inline">Save</span>
                   </Button>
                   <ApplyJobDialog
                     jobId={selectedJob?.id ?? ""}
                     appliedByUserIds={selectedJob?.appliedByUserIds}
                     status={selectedJob?.status ?? ""}
+                    onApplySuccess={() => {
+                      setSelectedJob({
+                        ...selectedJob,
+                        appliedByUserIds: [
+                          ...(selectedJob?.appliedByUserIds || []),
+                          user?.id || "",
+                        ],
+                      });
+                      queryClient.invalidateQueries({
+                        queryKey: ["jobs", searchFilters],
+                      });
+                      queryClient.invalidateQueries({
+                        queryKey: [
+                          "applications",
+                          user?.id,
+                          {
+                            status: undefined,
+                            hasInterviews: undefined,
+                            hasOffers: undefined,
+                            awaitingResponse: undefined,
+                            page: 1,
+                            limit: 20,
+                            sortBy: "appliedDate",
+                            sortOrder: "DESC",
+                          },
+                        ],
+                      });
+                    }}
                   />
                 </div>
               </div>
 
               {/* Detail Content */}
-              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
                 {rightTab === "Overview" ? (
-                  <div className="max-w-5xl mx-auto flex gap-12 animate-fade-in">
+                  <div className="max-w-5xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-12 animate-fade-in">
                     {/* Left Inner Column: Meta Info */}
                     <div className="w-[340px] shrink-0 space-y-6">
                       <div>
