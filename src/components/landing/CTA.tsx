@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 const CTA = () => {
   return (
-    <section className="py-20 md:py-32 bg-background">
+    <section className="py-20 md:py-28 bg-background">
       <div className="container-custom">
         <div className="relative rounded-3xl gradient-blue p-12 md:p-20 overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full bg-primary-foreground/10" />

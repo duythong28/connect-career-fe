@@ -9,16 +9,9 @@ import Features from "@/components/landing/Features";
 import Stats from "@/components/landing/Stats";
 import HowItWorks from "@/components/landing/HowItWorks";
 import CTA from "@/components/landing/CTA";
+import BillableActions from "@/components/landing/BillableActions";
 
 const HomePage = () => {
-  const [searchFilters, setSearchFilters] = useState({
-    keyword: "",
-    location: "",
-    type: "",
-    salaryRange: [0, 200000],
-    industry: "",
-  });
-
   const [companies, setCompanies] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
 
@@ -36,34 +29,14 @@ const HomePage = () => {
   // Fetch jobs
   useEffect(() => {
     getCandidateJobs({
-      searchTerm: searchFilters.keyword,
-      location: searchFilters.location,
-      type:
-        searchFilters.type && searchFilters.type !== "all"
-          ? searchFilters.type
-          : undefined,
       pageNumber: 1,
       pageSize: 6,
     })
       .then((res) => setJobs(res.data || []))
       .catch(() => setJobs([]));
-  }, [searchFilters.keyword, searchFilters.location, searchFilters.type]);
+  }, []);
 
-  const getFilteredJobs = () => {
-    return jobs.filter((job) => {
-      if (job.status !== "active") return false;
-
-      const matchesIndustry =
-        !searchFilters.industry ||
-        searchFilters.industry === "all" ||
-        companies.find((c) => c.id === job.companyId)?.industry?.id ===
-          searchFilters.industry;
-
-      return matchesIndustry;
-    });
-  };
-
-  const featuredJobs = getFilteredJobs().slice(0, 6);
+  const featuredJobs = jobs.slice(0, 6);
   const topCompanies = companies.slice(0, 8);
 
   return (
@@ -76,6 +49,7 @@ const HomePage = () => {
         <Industries />
         <HowItWorks />
         <Features />
+        <BillableActions />
         <CTA />
       </div>
     </div>

@@ -12,6 +12,7 @@ import WalletManagementPage from "@/pages/admin/WalletManagementPage";
 import RefundManagementPage from "@/pages/admin/RefundManagementPage";
 import BillableActionPage from "@/pages/admin/BillableActionPage";
 import AdminWalletTransactionDetailPage from "@/pages/admin/AdminWalletTransactionDetailPage";
+import { NotificationsPage } from "@/pages/shared/NotificationsPage";
 
 export const AdminRoutes = () => {
   return (
@@ -32,6 +33,7 @@ export const AdminRoutes = () => {
       />
       <Route path="refunds" element={<RefundManagementPage />} />
       <Route path="billable-actions" element={<BillableActionPage />} />
+      <Route path="notifications" element={<NotificationsPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

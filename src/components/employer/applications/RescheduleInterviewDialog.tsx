@@ -106,10 +106,12 @@ export default function RescheduleInterviewDialog({
       toast.error("Please select new date and time");
       return;
     }
+    const localDate = new Date(rescheduleDate);
+    const utcDate = localDate.toISOString();
     rescheduleMutate({
       id: interview.id,
       data: {
-        newScheduledDate: rescheduleDate,
+        newScheduledDate: utcDate,
         rescheduledBy: userId,
       },
     });

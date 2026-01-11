@@ -35,7 +35,7 @@ export default function ApplicationInfoSection({
   const matching = application.matchingDetails;
 
   const cvUrl = cv
-    ? `https://res.cloudinary.com/det5zeoa0/image/upload/v1763196412/uploads/${cv.fileName}`
+    ? `https://res.cloudinary.com/det5zeoa0/raw/upload/v1763196412/uploads/${cv.fileName}`
     : null;
 
   const navigate = useNavigate();
