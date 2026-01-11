@@ -63,9 +63,10 @@ export function CandidateProfilePage() {
   const { mutate: updateProfile } = useMutation({
     mutationFn: updateMyProfile,
     onSuccess: () => {
-      toast({ 
-        title: "Profile Sync Complete", 
-        description: "Your professional profile has been updated across the ecosystem." 
+      toast({
+        title: "Profile Sync Complete",
+        description:
+          "Your professional profile has been updated across the ecosystem.",
       });
       queryClient.invalidateQueries({
         queryKey: ["candidateProfile", candidateId || "me"],
@@ -86,7 +87,9 @@ export function CandidateProfilePage() {
       <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-muted-foreground font-medium">Loading Profile...</p>
+          <p className="text-muted-foreground font-medium">
+            Loading Profile...
+          </p>
         </div>
       </div>
     );
@@ -104,6 +107,8 @@ export function CandidateProfilePage() {
                 fullName:
                   profileData.user.fullName ||
                   `${profileData.user.firstName} ${profileData.user.lastName}`,
+                firstName: profileData.user.firstName,
+                lastName: profileData.user.lastName,  
               },
               email: profileData.email,
               phone: profileData.phone,
@@ -161,7 +166,9 @@ export function CandidateProfilePage() {
               {/* Name & Location */}
               <h2 className="text-xl font-bold text-foreground">
                 {profileData.user.fullName ||
-                  `${profileData.user.firstName} ${profileData.user.lastName}`}
+                  [profileData.user.firstName, profileData.user.lastName].join(
+                    " "
+                  )}
               </h2>
               {/* Status Badge */}
               <div
@@ -234,7 +241,9 @@ export function CandidateProfilePage() {
                   >
                     <FileText
                       size={18}
-                      className={activeTab !== "cvs" ? "text-orange-500/80" : ""}
+                      className={
+                        activeTab !== "cvs" ? "text-orange-500/80" : ""
+                      }
                     />{" "}
                     Documents
                   </button>
