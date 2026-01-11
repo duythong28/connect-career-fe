@@ -75,7 +75,8 @@ const formatMonthYearToDate = (
   }
   // Month name + Year (e.g., "January 2020")
   else if (match[2] && match[3]) {
-    const monthIndex = new Date(Date.parse(match[2] + " 1, 2000")).getMonth() + 1;
+    const monthIndex =
+      new Date(Date.parse(match[2] + " 1, 2000")).getMonth() + 1;
     month = monthIndex.toString().padStart(2, "0");
     year = match[3];
   }
@@ -754,7 +755,7 @@ const SkillsStep: React.FC<WizardStepProps<{ skills: string[] }>> = ({
 const ExperienceModal: React.FC<{
   item: ExperienceItemForm | null;
   onClose: () => void;
-  onSubmit: (data: ExperienceItemForm) => void;
+  onSubmit: (data: any) => void;
 }> = ({ item, onClose, onSubmit }) => {
   const {
     control,
@@ -902,8 +903,7 @@ const ExperienceStep: React.FC<
     null
   );
 
-  const handleSaveItem = (data: ExperienceItemForm) => {
-        console.log("Saving experience item:", data);
+  const handleSaveItem = (data: any) => {
     const isNew = !experiences.some((e) => e.id === data.id);
     const id = data.id || Date.now().toString();
 
@@ -912,6 +912,9 @@ const ExperienceStep: React.FC<
 
     const newItem: WorkExperience = {
       organizationName: data.organizationName,
+      organization: {
+        name: data.organizationName || "",
+      },
       id: id,
       jobTitle: data.jobTitle,
       startDate: formattedStartDate || "",
@@ -926,7 +929,6 @@ const ExperienceStep: React.FC<
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    console.log("Saving experience item:", newItem);
     if (!isNew) {
       setExperiences(experiences.map((e) => (e.id === data.id ? newItem : e)));
     } else {
@@ -1435,6 +1437,7 @@ const CandidateProfileCreationWizard: React.FC = () => {
         } = exp;
         return {
           ...rest,
+          organizationName: exp.organization?.name || "",
           // Use correct enum values and ensure date formatting
           employmentType: "full_time",
           startDate: formatMonthYearToDate(exp.startDate) || "",
