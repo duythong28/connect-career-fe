@@ -103,13 +103,8 @@ export function CandidateProfilePage() {
         {showPersonalModal && (
           <ProfileEditorModal
             data={{
-              user: {
-                fullName:
-                  profileData.user.fullName ||
-                  `${profileData.user.firstName} ${profileData.user.lastName}`,
-                firstName: profileData.user.firstName,
-                lastName: profileData.user.lastName,  
-              },
+              firstName: profileData.user.firstName,
+              lastName: profileData.user.lastName,
               email: profileData.email,
               phone: profileData.phone,
               address: profileData.address,
@@ -173,14 +168,12 @@ export function CandidateProfilePage() {
               {/* Status Badge */}
               <div
                 className={`text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit mb-6 uppercase tracking-wide border ${
-                  profileData.completionStatus === "complete"
+                  profileData?.user?.status === "complete"
                     ? "bg-green-50 text-green-700 border-green-200"
                     : "bg-yellow-50 text-yellow-700 border-yellow-200"
                 }`}
               >
-                {CompletionStatusLabel[
-                  profileData.completionStatus as CompletionStatus
-                ] || "Active"}
+                {profileData?.user?.status || "Active"}
               </div>
 
               {/* PRIMARY ACTION */}
