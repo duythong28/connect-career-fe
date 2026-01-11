@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { CandidateProfile } from "@/api/types/candidates.types";
-import RenderMarkDown from "@/components/shared/RenderMarkDown";
 import { SkillsEditor } from "@/components/candidate/profile/SkillsEditor";
 import { Markdown } from "@/components/ui/markdown";
 
@@ -199,10 +198,8 @@ const InputGroup = ({ label, error, children, required }: any) => (
 
 // 1. Profile Editor
 const profileSchema = z.object({
-  user: z.object({
-    firstName: z.string().min(1, "Name required"),
-    lastName: z.string().min(1, "Name required"),
-  }),
+  firstName: z.string().min(1, "Name required"),
+  lastName: z.string().min(1, "Name required"),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   socialLinks: z.object({
@@ -221,7 +218,8 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
     resolver: zodResolver(profileSchema),
     defaultValues: data,
   });
-    const userErrors = errors.user as any;
+
+  const userErrors = errors as any;
   return (
     <ModalOverlay
       title="Edit Personal Info"
@@ -234,7 +232,7 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
         <InputGroup label="First Name" required error={userErrors?.firstName}>
           <Controller
             control={control}
-            name="user.firstName"
+            name="firstName"
             render={({ field }) => (
               <Input
                 {...field}
@@ -246,7 +244,7 @@ export function ProfileEditorModal({ data, onSave, onClose }: any) {
         <InputGroup label="Last Name" required error={userErrors?.lastName}>
           <Controller
             control={control}
-            name="user.lastName"
+            name="lastName"
             render={({ field }) => (
               <Input
                 {...field}
@@ -629,13 +627,19 @@ export default function ProfileDetailTab({
   };
   const handleExperienceSave = (data: any) => {
     const current = profileData.workExperiences ?? [];
-    const { organizationName, ...rest } = data;
-    const newItem = { ...rest, organization: { name: organizationName } };
+    const newItem = data;
 
     if (data.id) {
       // Editing existing item
       updateProfile({
-        workExperiences: current.map((e) => (e.id === data.id ? newItem : e)),
+        workExperiences: current.map((e) =>
+          e.id === data.id
+            ? newItem
+            : {
+                ...e,
+                organizationName: e.organization?.name,
+              }
+        ),
       });
     } else {
       // Creating new item - don't set id, let backend handle it
@@ -671,11 +675,8 @@ export default function ProfileDetailTab({
       {dialog.type === "profile" && (
         <ProfileEditorModal
           data={{
-            user: {
-              fullName:
-                profileData.user.fullName ||
-                `${profileData.user.firstName} ${profileData.user.lastName}`,
-            },
+            firstName: profileData.user.firstName,
+            lastName: profileData.user.lastName,
             email: profileData.email,
             phone: profileData.phone,
             address: profileData.address,

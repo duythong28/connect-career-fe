@@ -92,9 +92,15 @@ const AdminUsersPage = () => {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground">User Management</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              User Management
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Total users: <span className="font-semibold text-foreground">{pagination.total}</span>. Manage access control.
+              Total users:{" "}
+              <span className="font-semibold text-foreground">
+                {pagination.total}
+              </span>
+              . Manage access control.
             </p>
           </div>
           <div className="relative w-full sm:w-80">
@@ -114,18 +120,36 @@ const AdminUsersPage = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border">
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6">User</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6">Status</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6">Joined</TableHead>
-                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6 text-right">Actions</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6">
+                    User
+                  </TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6">
+                    Joined
+                  </TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-muted-foreground py-4 px-6 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground">Loading users...</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-center py-12 text-muted-foreground"
+                    >
+                      Loading users...
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   users.map((user) => (
-                    <TableRow key={user.id} className="hover:bg-muted/10 transition-colors border-b border-border last:border-0">
+                    <TableRow
+                      key={user.id}
+                      className="hover:bg-muted/10 transition-colors border-b border-border last:border-0"
+                    >
                       <TableCell className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10 border border-border">
@@ -135,13 +159,24 @@ const AdminUsersPage = () => {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex flex-col">
-                            <span className="font-semibold text-sm text-foreground">{user.fullName || user.username}</span>
-                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                            <span className="font-semibold text-sm text-foreground">
+                              {[user.firstName, user.lastName].join(" ") ||
+                                user.fullName ||
+                                user.username}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {user.email}
+                            </span>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="py-4 px-6">
-                        <Badge className={cn("uppercase font-bold text-[10px] tracking-wider rounded-md px-2 py-0.5 shadow-none", getStatusBadgeClass(user.status))}>
+                        <Badge
+                          className={cn(
+                            "uppercase font-bold text-[10px] tracking-wider rounded-md px-2 py-0.5 shadow-none",
+                            getStatusBadgeClass(user.status)
+                          )}
+                        >
                           {user.status}
                         </Badge>
                       </TableCell>
@@ -152,14 +187,28 @@ const AdminUsersPage = () => {
                         <div className="flex justify-end gap-2">
                           {/* RED DEACTIVATE BUTTON / BLUE ACTIVATE BUTTON */}
                           <Button
-                            variant={user.status === "active" ? "destructive" : "default"}
+                            variant={
+                              user.status === "active"
+                                ? "destructive"
+                                : "default"
+                            }
                             size="sm"
-                            onClick={() => statusMutation.mutate({ userId: user.id, status: user.status === "active" ? "inactive" : "active" })}
+                            onClick={() =>
+                              statusMutation.mutate({
+                                userId: user.id,
+                                status:
+                                  user.status === "active"
+                                    ? "inactive"
+                                    : "active",
+                              })
+                            }
                             className="text-[11px] font-bold h-9 px-4 rounded-xl transition-all shadow-none min-w-[100px]"
                           >
-                            {user.status === "active" ? "Deactivate" : "Activate"}
+                            {user.status === "active"
+                              ? "Deactivate"
+                              : "Activate"}
                           </Button>
-                          
+
                           <Button
                             variant="outline"
                             size="icon"
@@ -186,17 +235,23 @@ const AdminUsersPage = () => {
                   variant="outline"
                   size="sm"
                   disabled={pagination.page === 1}
-                  onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
+                  onClick={() =>
+                    setPagination((p) => ({ ...p, page: p.page - 1 }))
+                  }
                   className="h-9 rounded-xl border-border font-bold text-xs"
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                 </Button>
-                <div className="px-3 text-xs font-bold text-foreground">{pagination.page} / {pagination.totalPages}</div>
+                <div className="px-3 text-xs font-bold text-foreground">
+                  {pagination.page} / {pagination.totalPages}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   disabled={pagination.page === pagination.totalPages}
-                  onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
+                  onClick={() =>
+                    setPagination((p) => ({ ...p, page: p.page + 1 }))
+                  }
                   className="h-9 rounded-xl border-border font-bold text-xs"
                 >
                   Next <ChevronRight className="h-4 w-4 ml-1" />

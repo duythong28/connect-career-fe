@@ -43,36 +43,51 @@ const formatMonthYearToDate = (
 ): string | null => {
   if (!monthYear) return null;
 
-  const match = monthYear.match(
-    /(\d{4})|([A-Za-z]+)\s*(\d{4})|(\d{1,2})[/-](\d{4})/
-  );
-
-  if (!match) {
-    if (!isNaN(Date.parse(monthYear))) return monthYear.substring(0, 10);
-    return null;
+  // Try parsing as full date first (YYYY-MM-DD or ISO format)
+  const fullDateMatch = monthYear.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (fullDateMatch) {
+    return `${fullDateMatch[1]}-${fullDateMatch[2]}-${fullDateMatch[3]}`;
   }
 
-  let year: string | undefined;
-  let month: string | undefined;
+  // Check if it's a valid full date string
+  if (!isNaN(Date.parse(monthYear))) {
+    const date = new Date(monthYear);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 
+  // Match different formats
+  const match = monthYear.match(
+    /^(\d{4})$|^([A-Za-z]+)\s+(\d{4})$|^(\d{1,2})[/-](\d{4})$/
+  );
+
+  if (!match) return null;
+
+  let year: string;
+  let month: string;
+
+  // Year only (e.g., "2020")
   if (match[1]) {
     year = match[1];
     month = "01";
-  } else if (match[2] && match[3]) {
-    const monthIndex =
-      new Date(Date.parse(match[2] + " 1, 2000")).getMonth() + 1;
+  }
+  // Month name + Year (e.g., "January 2020")
+  else if (match[2] && match[3]) {
+    const monthIndex = new Date(Date.parse(match[2] + " 1, 2000")).getMonth() + 1;
     month = monthIndex.toString().padStart(2, "0");
     year = match[3];
-  } else if (match[4] && match[5]) {
+  }
+  // Numeric Month/Year (e.g., "01/2020" or "1-2020")
+  else if (match[4] && match[5]) {
     month = match[4].padStart(2, "0");
     year = match[5];
+  } else {
+    return null;
   }
 
-  if (year && month) {
-    return `${year}-${month}-01`;
-  }
-
-  return null;
+  return `${year}-${month}-01`;
 };
 
 const normalizeDegreeType = (
@@ -763,7 +778,9 @@ const ExperienceModal: React.FC<{
       title={item ? "Edit Experience" : "Add Experience"}
       icon={Briefcase}
       onClose={onClose}
-      onSave={handleSubmit(onSubmit)}
+      onSave={handleSubmit((data) => {
+        onSubmit(data);
+      })}
       isSubmitting={isSubmitting}
     >
       <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 mb-6 flex gap-3 items-start">
@@ -886,6 +903,7 @@ const ExperienceStep: React.FC<
   );
 
   const handleSaveItem = (data: ExperienceItemForm) => {
+        console.log("Saving experience item:", data);
     const isNew = !experiences.some((e) => e.id === data.id);
     const id = data.id || Date.now().toString();
 
@@ -893,9 +911,8 @@ const ExperienceStep: React.FC<
     const formattedEndDate = formatMonthYearToDate(data.endDate);
 
     const newItem: WorkExperience = {
-      ...(data as unknown as WorkExperience),
+      organizationName: data.organizationName,
       id: id,
-      organization: { name: data.organizationName } as any,
       jobTitle: data.jobTitle,
       startDate: formattedStartDate || "",
       endDate: formattedEndDate,
@@ -909,7 +926,7 @@ const ExperienceStep: React.FC<
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-
+    console.log("Saving experience item:", newItem);
     if (!isNew) {
       setExperiences(experiences.map((e) => (e.id === data.id ? newItem : e)));
     } else {
