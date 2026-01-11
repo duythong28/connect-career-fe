@@ -97,6 +97,7 @@ export interface Organization extends OrganizationBase {
   name: string;
   organizationType: OrganizationType;
   industryId: string;
+  industry?: any;
   subIndustries: string[];
   organizationSize: OrganizationSize;
   country: string;

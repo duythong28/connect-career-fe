@@ -4,8 +4,13 @@ import { Button } from "../ui/button";
 
 const TopCompanies = ({ companies = [] }: { companies: any[] }) => {
   return (
-    <section className="py-20 lg:py-28 bg-card">
-      <div className="container-custom">
+    <section className="py-20 lg:py-28 bg-gradient-to-b from-background via-secondary/30 to-background relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+      <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 left-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+
+      <div className="container-custom relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -17,7 +22,6 @@ const TopCompanies = ({ companies = [] }: { companies: any[] }) => {
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-3">
               Top Hiring <span className="text-gradient">Organizations</span>
             </h2>
-            {/* Đổi thành CTA: Thúc giục user khám phá và ứng tuyển ngay */}
             <p className="text-muted-foreground text-lg">
               Explore thousands of open roles and join the most active teams today
             </p>
@@ -35,7 +39,7 @@ const TopCompanies = ({ companies = [] }: { companies: any[] }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.05 }}
-              className="group p-6 rounded-2xl bg-background border border-border hover:shadow-card-hover hover:border-primary/20 transition-all duration-300"
+              className="group p-6 rounded-2xl bg-card/50 backdrop-blur-sm border border-border hover:border-primary/20 transition-all duration-300"
             >
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-14 h-14 shrink-0 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">

@@ -122,7 +122,6 @@ export default function EditOfferDialog({
                         >
                             <option value="VND">VND</option>
                             <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
                         </select>
                     </div>
                 </div>

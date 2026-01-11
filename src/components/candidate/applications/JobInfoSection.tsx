@@ -2,17 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, ExternalLink, PenSquare, DollarSign } from "lucide-react";
 import { Organization } from "@/api/types/organizations.types";
+import ShareButton from "@/components/shared/ShareButton";
 
 export default function JobInfoSection({
   job,
   company,
-  onViewJob,
-  onViewCompany,
 }: {
   job: any;
   company: Organization | null;
-  onViewJob: () => void;
-  onViewCompany: () => void;
 }) {
   return (
     <div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
@@ -20,14 +17,7 @@ export default function JobInfoSection({
         <h3 className="font-bold text-xs uppercase tracking-wide text-muted-foreground">
           Job Overview
         </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onViewJob}
-          className="h-7 text-[10px] font-bold text-primary hover:bg-primary/10 hover:text-primary px-3 uppercase rounded-lg"
-        >
-          View Posting <ExternalLink size={10} className="ml-1.5" />
-        </Button>
+        <ShareButton text="View Job" minimal url={`/jobs/${job?.id}`} />
       </div>
 
       <div className="flex flex-col gap-8">
@@ -104,10 +94,7 @@ export default function JobInfoSection({
             <div className="text-[10px] font-bold text-muted-foreground uppercase mb-4">
               About Company
             </div>
-            <div
-              className="flex items-center justify-between gap-4 p-4 bg-secondary/20 rounded-2xl border border-border cursor-pointer hover:border-primary/30 hover:shadow-sm transition-all"
-              onClick={onViewCompany}
-            >
+            <div className="flex items-center justify-between gap-4 p-4 bg-secondary/20 rounded-2xl border border-border cursor-pointer hover:border-primary/30 hover:shadow-sm transition-all">
               <div className="flex items-center gap-4">
                 <Avatar className="h-12 w-12 rounded-xl border border-border bg-background">
                   <AvatarImage
@@ -127,13 +114,11 @@ export default function JobInfoSection({
                   </div>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs font-bold text-primary hover:bg-primary/10 hover:text-primary shrink-0 rounded-lg px-3"
-              >
-                Profile
-              </Button>
+              <ShareButton
+                text="View profile"
+                url={`/company/${company.id}/profile`}
+                minimal
+              />
             </div>
           </div>
         )}

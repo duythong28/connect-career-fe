@@ -74,7 +74,11 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const handleGoToNotifications = () => {
-    navigate(ROUTES.CANDIDATE.NOTIFICATIONS);
+    if (user?.roles?.[0]?.name === "admin") {
+      navigate(ROUTES.ADMIN.NOTIFICATIONS);
+    } else {
+      navigate(ROUTES.CANDIDATE.NOTIFICATIONS);
+    }
   };
 
   return (

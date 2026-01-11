@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const companies = [
   "Google",
@@ -11,6 +12,8 @@ const companies = [
 ];
 
 const Hero = () => {
+  const navigate=useNavigate();
+
   return (
     <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden gradient-hero-bg">
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-primary/20 blur-[120px] opacity-60" />
@@ -42,7 +45,9 @@ const Hero = () => {
               placeholder="Enter your email to get started"
               className="w-full sm:flex-1 h-12 px-6 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             />
-            <Button variant="hero" size="lg" className="w-full sm:w-auto">
+            <Button variant="hero" size="lg" className="w-full sm:w-auto"
+             onClick={()=> navigate('/login')}
+            >
               Get Started
               <ArrowRight className="w-4 h-4" />
             </Button>

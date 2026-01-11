@@ -40,7 +40,7 @@ const searchOrganizations = async ({
   totalPages: number;
 }> => {
   const response = await axios.get(`${API_URL}/search`, {
-    params: { pageNumber, limit },
+    params: { page: pageNumber, limit },
   });
   return response.data;
 };

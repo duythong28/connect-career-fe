@@ -8,8 +8,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-// Session-based dismissal tracking (resets when tab closes)
-let dismissedTimestamp: number | null = null;
+const PWA_DISMISSED_KEY = "pwa-install-dismissed";
 
 const PwaInstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] =
@@ -34,15 +33,8 @@ const PwaInstallPrompt = () => {
       /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(checkIOS);
 
-    // Check if dismissed in this session
-    if (dismissedTimestamp) {
-      const minutesSinceDismissed =
-        (Date.now() - dismissedTimestamp) / (1000 * 60);
-
-      // Show again after 30 minutes in same session
-      if (minutesSinceDismissed < 30) {
-        return;
-      }
+    if (localStorage.getItem(PWA_DISMISSED_KEY) === "true") {
+      return;
     }
 
     // Listen for beforeinstallprompt (Android/Desktop)
@@ -88,7 +80,7 @@ const PwaInstallPrompt = () => {
   };
 
   const handleDismiss = () => {
-    dismissedTimestamp = Date.now();
+    localStorage.setItem(PWA_DISMISSED_KEY, "true");
     setShowPrompt(false);
   };
 

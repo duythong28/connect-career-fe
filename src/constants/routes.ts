@@ -52,6 +52,7 @@ export const ROUTES = {
     REVENUE: "/admin/revenue",
     REFUNDS: "/admin/refunds",
     ANALYTICS: "/admin/analytics",
+    NOTIFICATIONS: "/admin/notifications",
   },
 
   NOT_FOUND: "*",
