@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { getCandidateJobs } from "@/api/endpoints/jobs.api";
 import { searchOrganizations } from "@/api/endpoints/organizations.api";
+import {
+  getWorkMarket,
+  getIndustryStatistics,
+  getJobOpportunityGrowth,
+} from "@/api/endpoints/public.api";
 import Hero from "@/components/landing/Hero";
 import FeaturedJobs from "@/components/landing/FeaturedJobs";
 import TopCompanies from "@/components/landing/TopCompanies";
@@ -9,15 +14,29 @@ import Features from "@/components/landing/Features";
 import Stats from "@/components/landing/Stats";
 import HowItWorks from "@/components/landing/HowItWorks";
 import CTA from "@/components/landing/CTA";
-import BillableActions from "@/components/landing/BillableActions";
+import JobGrowthChart from "@/components/landing/JobGrowthChart";
+import {
+  WorkMarketData,
+  IndustryStatisticsResponse,
+  JobOpportunityGrowthResponse,
+} from "@/api/types/public.types";
+import { Organization } from "@/api/types/organizations.types";
+import { Job } from "@/api/types/jobs.types";
 
 const HomePage = () => {
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<Organization[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [workMarketData, setWorkMarketData] = useState<WorkMarketData | null>(
+    null
+  );
+  const [industryStats, setIndustryStats] =
+    useState<IndustryStatisticsResponse | null>(null);
+  const [jobGrowthData, setJobGrowthData] =
+    useState<JobOpportunityGrowthResponse | null>(null);
 
   useEffect(() => {
     searchOrganizations({
-      pageNumber: 1,
+      page: 1,
       limit: 8,
     })
       .then((res) => {
@@ -26,7 +45,6 @@ const HomePage = () => {
       .catch(() => setCompanies([]));
   }, []);
 
-  // Fetch jobs
   useEffect(() => {
     getCandidateJobs({
       pageNumber: 1,
@@ -36,6 +54,37 @@ const HomePage = () => {
       .catch(() => setJobs([]));
   }, []);
 
+  useEffect(() => {
+    getWorkMarket()
+      .then((res) => {
+        setWorkMarketData(res.data);
+      })
+      .catch(() => setWorkMarketData(null));
+  }, []);
+
+  useEffect(() => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 3);
+
+    getIndustryStatistics({
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+    })
+      .then((res) => {
+        setIndustryStats(res);
+      })
+      .catch(() => setIndustryStats(null));
+  }, []);
+
+  useEffect(() => {
+    getJobOpportunityGrowth()
+      .then((res) => {
+        setJobGrowthData(res);
+      })
+      .catch(() => setJobGrowthData(null));
+  }, []);
+
   const featuredJobs = jobs.slice(0, 6);
   const topCompanies = companies.slice(0, 8);
 
@@ -43,13 +92,12 @@ const HomePage = () => {
     <div className="min-h-screen">
       <div>
         <Hero />
-        <Stats />
+        <Stats workMarketData={workMarketData} />
         <FeaturedJobs jobs={featuredJobs} />
         <TopCompanies companies={topCompanies} />
-        <Industries />
-        <HowItWorks />
+        <Industries industryStats={industryStats} />
+        <JobGrowthChart jobGrowthData={jobGrowthData} />
         <Features />
-        <BillableActions />
         <CTA />
       </div>
     </div>
