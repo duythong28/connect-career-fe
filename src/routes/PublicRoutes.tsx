@@ -11,11 +11,12 @@ import ResetPasswordPage from "@/pages/public/ResetPasswordPage";
 import AuthCallBackPage from "@/pages/public/AuthCallBackPage";
 import PricingPage from "@/pages/public/PricingPage";
 import HowItWorkPage from "@/pages/public/HowItWorkPage";
+import LandingPage from "@/pages/public/LandingPage";
 
 export const PublicRoutes = () => {
   return (
     <Routes>
-      <Route index element={<HomePage />} />
+      <Route index element={<LandingPage />} />
       <Route path="login" element={<LoginPage />} />
       <Route path="signup" element={<SignupPage />} />
       <Route path="forgot-password" element={<ForgotPasswordPage />} />
@@ -26,7 +27,7 @@ export const PublicRoutes = () => {
       <Route path="wallet/top-up/return" element={<WalletTopUpReturnPage />} />
       <Route path="auth/callback" element={<AuthCallBackPage />} />
       <Route path="pricing" element={<PricingPage />} />
-      <Route path="how-it-work" element={<HowItWorkPage/>} />
+      <Route path="how-it-work" element={<HowItWorkPage />} />
     </Routes>
   );
 };

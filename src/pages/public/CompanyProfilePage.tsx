@@ -107,7 +107,7 @@ export function Markdown({
     <div
       className={cn(
         "prose prose-sm max-w-none dark:prose-invert text-gray-600 leading-relaxed",
-        className
+        className,
       )}
     >
       <ReactMarkdown
@@ -223,18 +223,18 @@ const schema = z.object({
   workScheduleTypes: z.array(z.nativeEnum(WorkScheduleType)).default([]),
 });
 
-// --- Main Component ---
-
+// --- Main Component
 const CompanyProfilePage = () => {
   const { companyId } = useParams();
   const { myOrganizations } = useOrganization();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [avatar, setAvatar] = useState<{ id: string; url: string } | null>(
-    null
+    null,
   );
   const { pathname } = useLocation();
   const [previewMode, setPreviewMode] = useState(false);
+  const [industrySearch, setIndustrySearch] = useState("");
   const { user } = useAuth();
 
   const { data: companydata } = useQuery({
@@ -244,8 +244,8 @@ const CompanyProfilePage = () => {
   });
 
   const { data: industriesData } = useQuery({
-    queryKey: ["industries"],
-    queryFn: getIndistries,
+    queryKey: ["industries", industrySearch],
+    queryFn: () => getIndistries({ search: industrySearch }),
   });
 
   // Fetch Jobs
@@ -263,7 +263,7 @@ const CompanyProfilePage = () => {
   const reviews = companydata?.reviews || [];
 
   const [editMode, setEditMode] = useState(
-    pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION
+    pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION,
   );
 
   const updateMut = useMutation({
@@ -454,14 +454,14 @@ const CompanyProfilePage = () => {
     } else {
       setValue(
         "workingDays",
-        currentDays.filter((d) => d !== day)
+        currentDays.filter((d) => d !== day),
       );
     }
   };
 
   const handleWorkScheduleTypeChange = (
     type: WorkScheduleType,
-    checked: boolean
+    checked: boolean,
   ) => {
     const currentTypes = workScheduleTypesValue || [];
     if (checked) {
@@ -469,7 +469,7 @@ const CompanyProfilePage = () => {
     } else {
       setValue(
         "workScheduleTypes",
-        currentTypes.filter((t) => t !== type)
+        currentTypes.filter((t) => t !== type),
       );
     }
   };
@@ -492,14 +492,6 @@ const CompanyProfilePage = () => {
   };
 
   const displayData = getDisplayData();
-
-  if (pathname === ROUTES.CANDIDATE.CREATE_ORGANIZATION && !industriesData) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        Loading...
-      </div>
-    );
-  }
 
   if (pathname !== ROUTES.CANDIDATE.CREATE_ORGANIZATION && !companydata) {
     return (
@@ -559,7 +551,7 @@ const CompanyProfilePage = () => {
                     <div className="flex items-center gap-2 shrink-0">
                       {!editMode &&
                         myOrganizations?.some(
-                          (org: any) => org.organizationId === companyId
+                          (org: any) => org.organizationId === companyId,
                         ) && (
                           <Button
                             variant="outline"
@@ -1131,6 +1123,16 @@ const CompanyProfilePage = () => {
                             <SelectValue placeholder="Select Industry" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl">
+                            <div className="p-2">
+                              <Input
+                                placeholder="Search industries..."
+                                value={industrySearch}
+                                onChange={(e) =>
+                                  setIndustrySearch(e.target.value)
+                                }
+                                className="rounded-lg border-border text-xs h-8"
+                              />
+                            </div>
                             {industriesData?.data?.map((i: any) => (
                               <SelectItem key={i.id} value={i.id}>
                                 {i.name}
@@ -1208,7 +1210,7 @@ const CompanyProfilePage = () => {
                           {...field}
                           onChange={(e) =>
                             field.onChange(
-                              e.target.value ? Number(e.target.value) : ""
+                              e.target.value ? Number(e.target.value) : "",
                             )
                           }
                           className="rounded-xl border-border focus:ring-2 focus:ring-primary"

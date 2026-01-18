@@ -4,6 +4,7 @@ import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import Footer from "../landing/Footer";
+import BotPress from "../landing/BotPress";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -12,7 +13,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(
-    () => !!user && window.innerWidth >= 640
+    () => !!user && window.innerWidth >= 640,
   );
 
   React.useEffect(() => {
@@ -31,11 +32,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         <main
           className={cn(
             "flex-1 min-w-0 overflow-y-auto transition-all duration-200 text-base",
-            user && sidebarOpen ? "sm:ml-64" : ""
+            user && sidebarOpen ? "sm:ml-64" : "",
           )}
         >
           {children}
           <Footer />
+          <BotPress />
         </main>
       </div>
     </div>

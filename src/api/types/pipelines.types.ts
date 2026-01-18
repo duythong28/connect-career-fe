@@ -63,7 +63,7 @@ export interface PipelineTransition {
 }
 
 export interface Pipeline {
-  id: string;
+  id?: string;
   organizationId?: string | null;
   jobs?: Job[];
   name: string;

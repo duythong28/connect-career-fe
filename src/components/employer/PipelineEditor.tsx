@@ -32,6 +32,7 @@ interface PipelineEditorProps {
   onSave: (pipeline: Pipeline) => void;
   onCancel: () => void;
   organizationId: string;
+  isViewing?: boolean;
 }
 
 const TYPE_ORDER = {
@@ -67,6 +68,7 @@ export function PipelineEditor({
   onSave,
   onCancel,
   organizationId,
+  isViewing,
 }: PipelineEditorProps) {
   const [name, setName] = useState(pipeline?.name || "");
 
@@ -93,10 +95,10 @@ export function PipelineEditor({
         terminal: true,
         type: "rejected",
       },
-    ]
+    ],
   );
   const [transitions, setTransitions] = useState<PipelineTransition[]>(
-    pipeline?.transitions || []
+    pipeline?.transitions || [],
   );
   const [editingStage, setEditingStage] = useState<PipelineStage | null>(null);
   const [editingTransition, setEditingTransition] =
@@ -126,7 +128,7 @@ export function PipelineEditor({
     const sortedTypes = Object.keys(stagesByType).sort(
       (a, b) =>
         TYPE_ORDER[a as keyof typeof TYPE_ORDER] -
-        TYPE_ORDER[b as keyof typeof TYPE_ORDER]
+        TYPE_ORDER[b as keyof typeof TYPE_ORDER],
     );
 
     let order = 10;
@@ -178,8 +180,8 @@ export function PipelineEditor({
     if (stage) {
       setTransitions(
         transitions.filter(
-          (t) => t.fromStageKey !== stage.key && t.toStageKey !== stage.key
-        )
+          (t) => t.fromStageKey !== stage.key && t.toStageKey !== stage.key,
+        ),
       );
     }
     const updatedStages = stages.filter((s) => s.id !== id);
@@ -193,7 +195,7 @@ export function PipelineEditor({
 
     const oldStage = stages.find((s) => s.id === updatedStage.id);
     const updatedStages = stages.map((s) =>
-      s.id === updatedStage.id ? updatedStage : s
+      s.id === updatedStage.id ? updatedStage : s,
     );
 
     if (oldStage && oldStage.type !== updatedStage.type) {
@@ -210,7 +212,7 @@ export function PipelineEditor({
             t.fromStageKey === oldStage.key ? updatedStage.key : t.fromStageKey,
           toStageKey:
             t.toStageKey === oldStage.key ? updatedStage.key : t.toStageKey,
-        }))
+        })),
       );
     }
 
@@ -278,8 +280,8 @@ export function PipelineEditor({
   const updateTransition = (updatedTransition: PipelineTransition) => {
     setTransitions(
       transitions.map((t) =>
-        t.id === updatedTransition.id ? updatedTransition : t
-      )
+        t.id === updatedTransition.id ? updatedTransition : t,
+      ),
     );
     setEditingTransition(null);
   };
@@ -329,6 +331,7 @@ export function PipelineEditor({
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={isViewing}
                 placeholder="e.g., Developer Pipeline"
                 className="rounded-xl border-border focus:ring-2 focus:ring-primary"
               />
@@ -339,15 +342,17 @@ export function PipelineEditor({
                 <Label className="text-xl font-bold text-foreground">
                   Pipeline Stages
                 </Label>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={addStage}
-                  className="h-9 font-bold"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Stage
-                </Button>
+                {!isViewing && (
+                  <Button
+                    type="button"
+                    variant="default"
+                    onClick={addStage}
+                    className="h-9 font-bold"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Stage
+                  </Button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border border-border p-3 bg-card rounded-2xl">
@@ -378,24 +383,26 @@ export function PipelineEditor({
                                 {stage.name}
                               </CardTitle>
                             </div>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setEditingStage(stage)}
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                              >
-                                <Edit className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeStage(stage.id!)}
-                                className="h-7 w-7 p-0 text-destructive hover:text-destructive/80"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
+                            {!isViewing && (
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditingStage(stage)}
+                                  className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeStage(stage.id!)}
+                                  className="h-7 w-7 p-0 text-destructive hover:text-destructive/80"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </CardHeader>
 
@@ -412,7 +419,9 @@ export function PipelineEditor({
                                       key={t.id}
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => setEditingTransition(t)}
+                                      onClick={() =>
+                                        !isViewing && setEditingTransition(t)
+                                      }
                                       className="w-full justify-start text-left h-auto py-2 border-border hover:bg-muted"
                                     >
                                       <div className="flex flex-col items-start w-full text-xs">
@@ -434,15 +443,19 @@ export function PipelineEditor({
                                   </p>
                                 )}
                               </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addTransitionForStage(stage.key)}
-                                className="w-full h-9 text-xs font-semibold"
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                New Transition
-                              </Button>
+                              {!isViewing && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    addTransitionForStage(stage.key)
+                                  }
+                                  className="w-full h-9 text-xs font-semibold"
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  New Transition
+                                </Button>
+                              )}
                             </>
                           ) : (
                             <div className="flex items-center justify-center py-4">
@@ -466,14 +479,16 @@ export function PipelineEditor({
               >
                 Cancel
               </Button>
-              <Button
-                variant="default"
-                onClick={handleSave}
-                disabled={!name || stages.length === 0}
-                className="h-9 font-bold"
-              >
-                Save Pipeline
-              </Button>
+              {!isViewing && (
+                <Button
+                  variant="default"
+                  onClick={handleSave}
+                  disabled={!name || stages.length === 0}
+                  className="h-9 font-bold"
+                >
+                  Save Pipeline
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>

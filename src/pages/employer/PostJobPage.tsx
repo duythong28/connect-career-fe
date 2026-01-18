@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { MapPin, DollarSign, Sparkles } from "lucide-react";
+import { MapPin, DollarSign, Sparkles, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createRecruiterJob,
   generateJobDescription,
@@ -29,8 +29,14 @@ import {
   JobSeniorityLevel,
   JobStatus,
 } from "@/api/types/jobs.types";
-import { getActivePipelines } from "@/api/endpoints/pipelines.api";
+import {
+  createPipeline,
+  DEFAULT_PIPELINE,
+  getActivePipelines,
+} from "@/api/endpoints/pipelines.api";
 import { getOrganizationById } from "@/api/endpoints/organizations.api";
+import { Pipeline, PipelineCreateDto } from "@/api/types/pipelines.types";
+import { PipelineEditor } from "@/components/employer/PipelineEditor";
 
 const PostJobPage = () => {
   const { companyId, jobId } = useParams();
@@ -72,6 +78,11 @@ const PostJobPage = () => {
 
   const [keywordsInput, setKeywordsInput] = useState("");
   const [conditionsInput, setConditionsInput] = useState("");
+
+  const [editingPipeline, setEditingPipeline] = useState<Pipeline | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (editingJob) {
@@ -116,7 +127,7 @@ const PostJobPage = () => {
         title: "Job created successfully!",
         description: "Your job is now created.",
       });
-      navigate(`/jobs/${response.id}`);
+      navigate(`/company/${companyId}/jobs/${response.id}`);
     },
     onError: (error) => {
       toast({
@@ -135,7 +146,7 @@ const PostJobPage = () => {
         title: "Job updated successfully!",
         description: "Your job has been updated.",
       });
-      navigate(`/jobs/${response.id}`);
+     navigate(`/company/${companyId}/jobs/${response.id}`);
     },
     onError: (error) => {
       toast({
@@ -184,6 +195,12 @@ const PostJobPage = () => {
     }
   };
 
+  const { mutate: createPipelineMutate, isPending: isCreatePipelinePending } = useMutation({
+    mutationFn: (data: PipelineCreateDto) => {
+      return createPipeline(data);
+    },
+  });
+
   const handleKeywordsChange = (value: string) => {
     setKeywordsInput(value);
   };
@@ -208,6 +225,30 @@ const PostJobPage = () => {
     setJobForm({ ...jobForm, conditions: conditionsArray });
   };
 
+  const handleSavePipeline = (pipeline: Pipeline) => {
+    createPipelineMutate(
+      {
+        ...pipeline,
+        organizationId: companyId,
+      },
+      {
+        onSuccess: (data) => {
+          queryClient.invalidateQueries({
+            queryKey: ["active-pipelines", companyId],
+          });
+          setJobForm({
+            ...jobForm,
+            hiringPipelineId: data.id,
+          });
+          setEditingPipeline(null);
+          setIsCreating(false);
+
+        },
+        onError: () => {},
+      },
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FB] p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto">
@@ -222,11 +263,16 @@ const PostJobPage = () => {
           {/* Form */}
           <Card className="rounded-3xl border-border bg-card shadow-none">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-foreground">Job Details</CardTitle>
+              <CardTitle className="text-lg font-bold text-foreground">
+                Job Details
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-xs font-bold uppercase text-muted-foreground">
+                <Label
+                  htmlFor="title"
+                  className="text-xs font-bold uppercase text-muted-foreground"
+                >
                   Job Title *
                 </Label>
                 <Input
@@ -242,7 +288,10 @@ const PostJobPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="text-xs font-bold uppercase text-muted-foreground">
+                  <Label
+                    htmlFor="location"
+                    className="text-xs font-bold uppercase text-muted-foreground"
+                  >
                     Location *
                   </Label>
                   <Input
@@ -256,7 +305,10 @@ const PostJobPage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="type" className="text-xs font-bold uppercase text-muted-foreground">
+                  <Label
+                    htmlFor="type"
+                    className="text-xs font-bold uppercase text-muted-foreground"
+                  >
                     Job Type *
                   </Label>
                   <Select
@@ -284,7 +336,10 @@ const PostJobPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="seniorityLevel" className="text-xs font-bold uppercase text-muted-foreground">
+                  <Label
+                    htmlFor="seniorityLevel"
+                    className="text-xs font-bold uppercase text-muted-foreground"
+                  >
                     Level *
                   </Label>
                   <Select
@@ -322,7 +377,10 @@ const PostJobPage = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="salary" className="text-xs font-bold uppercase text-muted-foreground">
+                  <Label
+                    htmlFor="salary"
+                    className="text-xs font-bold uppercase text-muted-foreground"
+                  >
                     Salary Range
                   </Label>
                   <Input
@@ -339,7 +397,10 @@ const PostJobPage = () => {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-1">
-                  <Label htmlFor="description" className="text-xs font-bold uppercase text-muted-foreground">
+                  <Label
+                    htmlFor="description"
+                    className="text-xs font-bold uppercase text-muted-foreground"
+                  >
                     Job Description * (Markdown supported)
                   </Label>
                   <Button
@@ -390,35 +451,77 @@ const PostJobPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pipeline" className="text-xs font-bold uppercase text-muted-foreground">
+                <Label
+                  htmlFor="pipeline"
+                  className="text-xs font-bold uppercase text-muted-foreground"
+                >
                   Pipeline *
                 </Label>
-                <Select
-                  value={jobForm.hiringPipelineId}
-                  onValueChange={(value) =>
-                    setJobForm({ ...jobForm, hiringPipelineId: value })
-                  }
-                >
-                  <SelectTrigger className="rounded-xl border-border h-10">
-                    <SelectValue placeholder="Select pipeline" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-border">
-                    {pipelines &&
-                      pipelines.length > 0 &&
-                      pipelines.map((pipeline) => (
-                        <SelectItem key={pipeline.id} value={pipeline.id}>
-                          <div className="flex flex-col">
-                            <span className="font-semibold">{pipeline.name}</span>
-                            {pipeline.description && (
-                              <span className="text-xs text-muted-foreground truncate max-w-sm">
-                                {pipeline.description}
+                <div className="flex flex-row gap-3">
+                  <Select
+                    value={jobForm.hiringPipelineId}
+                    onValueChange={(value) =>
+                      setJobForm({ ...jobForm, hiringPipelineId: value })
+                    }
+                  >
+                    <SelectTrigger className="rounded-xl border-border h-10">
+                      <SelectValue placeholder="Select pipeline" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-border">
+                      {pipelines &&
+                        pipelines.length > 0 &&
+                        pipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
+                            <div className="flex flex-col">
+                              <span className="font-semibold">
+                                {pipeline.name}
                               </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                              {pipeline.description && (
+                                <span className="text-xs text-muted-foreground truncate max-w-sm">
+                                  {pipeline.description}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    disabled={!jobForm.hiringPipelineId}
+                    onClick={() => {
+                      setEditingPipeline(
+                        pipelines?.find(
+                          (p) => p.id === jobForm.hiringPipelineId,
+                        ) || null,
+                      );
+                      setIsViewing(true);
+                    }}
+                    className="text-xs font-medium text-foreground border-border px-3 rounded-xl hover:bg-muted/50 transition-all"
+                  >
+                    <Eye className="h-3.5 w-3.5s" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl text-xs font-bold uppercase"
+                    onClick={() => {
+                      setIsCreating(true);
+                      setEditingPipeline({
+                        ...DEFAULT_PIPELINE,
+                        name: jobForm.title + " Pipeline",
+                      });
+                    }}
+                    disabled={!jobForm.title}
+                  >
+                    <Sparkles
+                      className={`h-3.5 w-3.5 mr-2 text-primary ${
+                        isCreatePipelinePending ? "animate-spin" : ""
+                      }`}
+                    />
+                    {isCreatePipelinePending ? "Generating..." : "Generate"}
+                  </Button>
+                </div>
+
                 {pipelines && pipelines.length === 0 && (
                   <p className="text-xs text-destructive mt-1 font-semibold">
                     No active pipelines found. Please create a pipeline first.
@@ -427,7 +530,10 @@ const PostJobPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="keywords" className="text-xs font-bold uppercase text-muted-foreground">
+                <Label
+                  htmlFor="keywords"
+                  className="text-xs font-bold uppercase text-muted-foreground"
+                >
                   Keywords * (comma-separated)
                 </Label>
                 <Input
@@ -444,7 +550,10 @@ const PostJobPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="conditions" className="text-xs font-bold uppercase text-muted-foreground">
+                <Label
+                  htmlFor="conditions"
+                  className="text-xs font-bold uppercase text-muted-foreground"
+                >
                   Critical Conditions * (comma-separated)
                 </Label>
                 <Input
@@ -492,7 +601,9 @@ const PostJobPage = () => {
           {showPreview && (
             <Card className="rounded-3xl border-border bg-card shadow-none lg:sticky lg:top-6 animate-fade-in">
               <CardHeader>
-                <CardTitle className="text-lg font-bold text-foreground">Live Preview</CardTitle>
+                <CardTitle className="text-lg font-bold text-foreground">
+                  Live Preview
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
@@ -523,7 +634,10 @@ const PostJobPage = () => {
                         </span>
                       </div>
 
-                      <Badge variant="secondary" className="mt-4 capitalize rounded-lg text-[10px] font-bold px-2 py-0.5">
+                      <Badge
+                        variant="secondary"
+                        className="mt-4 capitalize rounded-lg text-[10px] font-bold px-2 py-0.5"
+                      >
                         {jobForm.type}
                       </Badge>
                     </div>
@@ -551,7 +665,11 @@ const PostJobPage = () => {
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {jobForm.keywords.map((keyword, index) => (
-                          <Badge key={index} variant="outline" className="rounded-lg border-border bg-secondary/30 text-[10px] font-semibold px-2 py-0.5">
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="rounded-lg border-border bg-secondary/30 text-[10px] font-semibold px-2 py-0.5"
+                          >
                             {keyword}
                           </Badge>
                         ))}
@@ -566,7 +684,11 @@ const PostJobPage = () => {
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {jobForm.conditions.map((condition, index) => (
-                          <Badge key={index} variant="destructive" className="rounded-lg text-[10px] font-bold px-2 py-0.5">
+                          <Badge
+                            key={index}
+                            variant="destructive"
+                            className="rounded-lg text-[10px] font-bold px-2 py-0.5"
+                          >
                             {condition}
                           </Badge>
                         ))}
@@ -576,6 +698,19 @@ const PostJobPage = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+          {(isCreating || editingPipeline) && (
+            <PipelineEditor
+              pipeline={editingPipeline}
+              isViewing={isViewing}
+              onSave={handleSavePipeline}
+              onCancel={() => {
+                setIsCreating(false);
+                setEditingPipeline(null);
+                setIsViewing(false);
+              }}
+              organizationId={companyId}
+            />
           )}
         </div>
       </div>
