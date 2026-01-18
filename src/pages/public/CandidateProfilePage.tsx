@@ -34,6 +34,7 @@ import ProfileDetailTab, {
 } from "@/components/candidate/profile/ProfileDetailTab";
 import CVSTab from "@/components/candidate/profile/CVSTab";
 import ReportDialog from "@/components/reports/ReportDialog";
+import MessageButton from "@/components/chat/MessageButton";
 
 export function CandidateProfilePage() {
   const { candidateId } = useParams<{ candidateId: string }>();
@@ -206,18 +207,26 @@ export function CandidateProfilePage() {
                   )}
                 </Button>
               ) : (
-                <ReportDialog
-                  entityId={profileData.user.id}
-                  entityType="user"
-                  trigger={
-                    <Button
-                      variant="outline"
-                      className="w-full mb-4 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive rounded-xl"
-                    >
-                      <Flag size={16} className="mr-2" /> Report
-                    </Button>
-                  }
-                />
+                <div className="flex flex-row gap-3">
+                  <ReportDialog
+                    entityId={profileData.user.id}
+                    entityType="user"
+                    trigger={
+                      <Button
+                        variant="outline"
+                        className="w-full mb-4 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive rounded-xl"
+                      >
+                        <Flag size={16} className="mr-2" /> Report
+                      </Button>
+                    }
+                  />
+                  <div className="hidden lg:block">
+                    <MessageButton
+                      senderId={user?.id!}
+                      recieverId={profileData.user.id}
+                    />
+                  </div>
+                </div>
               )}
 
               {/* Navigation Menu */}
