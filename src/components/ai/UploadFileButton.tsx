@@ -106,7 +106,7 @@ export function UploadFilButton({
     for (const file of filesToMerge) {
       try {
         let pdfBuffer: ArrayBuffer | null = null;
-        setStatusMessage(`Processing: ${file.name}...`);
+        setStatusMessage(`Processing...`);
 
         if (file.type.startsWith("image/")) {
           const imageBytes = await file.arrayBuffer();
@@ -131,7 +131,7 @@ export function UploadFilButton({
           pdfBuffer = await file.arrayBuffer();
         } else if (file.name.match(/\.(doc|docx|ppt|pptx)$/)) {
           try {
-            setStatusMessage(`Converting ${file.name} (via API)...`);
+            setStatusMessage(`Converting...`);
             pdfBuffer = await convertOfficeToPdf(file);
           } catch (e) {
             console.error("Convert API error", e);
