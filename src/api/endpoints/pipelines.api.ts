@@ -7,7 +7,7 @@ import {
 
 const API_URL = "/recruiters/hiring-pipeline";
 
-export const DEFAULT_PIPELINE : Pipeline = {
+export const DEFAULT_PIPELINE: Pipeline = {
   name: "Default Pipeline",
   stages: [
     {
@@ -228,6 +228,24 @@ const deletePipeline = async (id: string): Promise<any> => {
   return response.data;
 };
 
+const generatePipelineWithAI = async (
+  organizationId: string,
+  data: {
+    userInput: string;
+    jobTitle: string;
+    jobDescription: string;
+  },
+): Promise<Pipeline> => {
+  const response = await axios.post(
+    `${import.meta.env.VITE_API_V2_BASE_URL}${API_URL}/generate-with-ai`,
+    data,
+    {
+      params: { organizationId },
+    },
+  );
+  return response.data;
+};
+
 export {
   createPipeline,
   getActivePipelines,
@@ -236,4 +254,5 @@ export {
   getPipelineJobs,
   getPipelineByJobId,
   deletePipeline,
+  generatePipelineWithAI,
 };

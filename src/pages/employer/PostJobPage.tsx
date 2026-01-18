@@ -32,6 +32,7 @@ import {
 import {
   createPipeline,
   DEFAULT_PIPELINE,
+  generatePipelineWithAI,
   getActivePipelines,
 } from "@/api/endpoints/pipelines.api";
 import { getOrganizationById } from "@/api/endpoints/organizations.api";
@@ -42,6 +43,7 @@ const PostJobPage = () => {
   const { companyId, jobId } = useParams();
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
+  const [userInput, setUserInput] = useState("");
 
   const { data: userOrganization } = useQuery({
     queryKey: ["company", companyId],
@@ -120,6 +122,21 @@ const PostJobPage = () => {
     },
   });
 
+  const { mutate: createPipelineWithAi, isPending: isCreatePipelineWithAi } =
+    useMutation({
+      mutationFn: () => {
+        return generatePipelineWithAI(companyId, {
+          userInput: userInput,
+          jobTitle: jobForm.title,
+          jobDescription: jobForm.description,
+        });
+      },
+      onSuccess: (pipeline) => {
+        setEditingPipeline(pipeline);
+        setIsCreating(true);
+      },
+    });
+
   const postJobMutation = useMutation({
     mutationFn: (data: any) => createRecruiterJob(data),
     onSuccess: (response) => {
@@ -146,7 +163,7 @@ const PostJobPage = () => {
         title: "Job updated successfully!",
         description: "Your job has been updated.",
       });
-     navigate(`/company/${companyId}/jobs/${response.id}`);
+      navigate(`/company/${companyId}/jobs/${response.id}`);
     },
     onError: (error) => {
       toast({
@@ -195,11 +212,12 @@ const PostJobPage = () => {
     }
   };
 
-  const { mutate: createPipelineMutate, isPending: isCreatePipelinePending } = useMutation({
-    mutationFn: (data: PipelineCreateDto) => {
-      return createPipeline(data);
-    },
-  });
+  const { mutate: createPipelineMutate, isPending: isCreatePipelinePending } =
+    useMutation({
+      mutationFn: (data: PipelineCreateDto) => {
+        return createPipeline(data);
+      },
+    });
 
   const handleKeywordsChange = (value: string) => {
     setKeywordsInput(value);
@@ -242,7 +260,6 @@ const PostJobPage = () => {
           });
           setEditingPipeline(null);
           setIsCreating(false);
-
         },
         onError: () => {},
       },
@@ -458,6 +475,37 @@ const PostJobPage = () => {
                   Pipeline *
                 </Label>
                 <div className="flex flex-row gap-3">
+                  <Input
+                    className="rounded-xl border-border focus:ring-2 focus:ring-primary h-10"
+                    value={userInput}
+                    onChange={(e) => setUserInput(e.target.value)}
+                    placeholder="Create 2 pipeline for Software Engineer role"
+                    disabled={isCreatePipelineWithAi}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-xl text-xs font-bold uppercase"
+                    onClick={() => {
+                      createPipelineWithAi();
+                    }}
+                    disabled={
+                      !jobForm.title ||
+                      isCreatePipelineWithAi ||
+                      !companyId ||
+                      !jobForm.description
+                    }
+                  >
+                    <Sparkles
+                      className={`h-3.5 w-3.5 mr-2 text-primary ${
+                        isCreatePipelineWithAi ? "animate-spin" : ""
+                      }`}
+                    />
+                    {isCreatePipelineWithAi ? "Generating..." : "Generate"}
+                  </Button>
+                </div>
+
+                <div className="flex flex-row gap-3">
                   <Select
                     value={jobForm.hiringPipelineId}
                     onValueChange={(value) =>
@@ -500,25 +548,6 @@ const PostJobPage = () => {
                     className="text-xs font-medium text-foreground border-border px-3 rounded-xl hover:bg-muted/50 transition-all"
                   >
                     <Eye className="h-3.5 w-3.5s" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="rounded-xl text-xs font-bold uppercase"
-                    onClick={() => {
-                      setIsCreating(true);
-                      setEditingPipeline({
-                        ...DEFAULT_PIPELINE,
-                        name: jobForm.title + " Pipeline",
-                      });
-                    }}
-                    disabled={!jobForm.title}
-                  >
-                    <Sparkles
-                      className={`h-3.5 w-3.5 mr-2 text-primary ${
-                        isCreatePipelinePending ? "animate-spin" : ""
-                      }`}
-                    />
-                    {isCreatePipelinePending ? "Generating..." : "Generate"}
                   </Button>
                 </div>
 
