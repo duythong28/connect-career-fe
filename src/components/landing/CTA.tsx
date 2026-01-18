@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CTA = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-20 md:py-28 bg-background">
       <div className="container-custom">
@@ -14,16 +16,19 @@ const CTA = () => {
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
               Ready to Join the Future of Recruitment?
             </h2>
-            
+
             <p className="text-lg md:text-xl text-primary-foreground/80 mb-10">
-              One platform, endless possibilities. Whether you're advancing your career or building a dream team, access everything with a single unified account.
+              One platform, endless possibilities. Whether you're advancing your
+              career or building a dream team, access everything with a single
+              unified account.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
                 variant="outline"
                 size="lg"
                 className="w-full sm:w-auto bg-primary-foreground text-primary hover:bg-primary-foreground/90 border-0"
+                onClick={() => navigate("/signup")}
               >
                 Create Your Account
                 <ArrowRight className="w-4 h-4" />
@@ -32,11 +37,12 @@ const CTA = () => {
                 variant="outline"
                 size="lg"
                 className="w-full sm:w-auto border-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
+                onClick={() => navigate("/how-it-works")}
               >
                 How It Works
               </Button>
             </div>
-            
+
             <p className="text-sm text-primary-foreground/60 mt-8">
               Join 90M+ users building the global workforce together
             </p>

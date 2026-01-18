@@ -9,6 +9,8 @@ import WalletTopUpReturnPage from "@/pages/shared/WalletTopUpReturnPage";
 import ForgotPasswordPage from "@/pages/public/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/public/ResetPasswordPage";
 import AuthCallBackPage from "@/pages/public/AuthCallBackPage";
+import PricingPage from "@/pages/public/PricingPage";
+import HowItWorkPage from "@/pages/public/HowItWorkPage";
 
 export const PublicRoutes = () => {
   return (
@@ -23,6 +25,8 @@ export const PublicRoutes = () => {
       <Route path="jobs/:id" element={<JobDetailPage />} />
       <Route path="wallet/top-up/return" element={<WalletTopUpReturnPage />} />
       <Route path="auth/callback" element={<AuthCallBackPage />} />
+      <Route path="pricing" element={<PricingPage />} />
+      <Route path="how-it-work" element={<HowItWorkPage/>} />
     </Routes>
   );
 };
