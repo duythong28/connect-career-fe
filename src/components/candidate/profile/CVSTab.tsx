@@ -12,9 +12,9 @@ export default function CVSTab({
   userId?: string;
 }) {
   const { data: cvsData } = useQuery({
-    queryKey: ["candidateCvs"],
+    queryKey: ["candidateCvs", userId],
     queryFn: () => getMyCvs(isMyProfile ? "" : userId),
-    enabled: isMyProfile,
+    enabled: userId !== undefined,
   });
 
   return (
