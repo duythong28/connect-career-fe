@@ -7,11 +7,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye } from "lucide-react";
 import { PipelineEditor } from "@/components/employer/PipelineEditor";
 import { toast } from "sonner";
 import {
   createPipeline,
+  DEFAULT_PIPELINE,
   deletePipeline,
   getActivePipelines,
   updatePipeline,
@@ -29,11 +30,13 @@ const PipelineTemplateCard = ({
   setEditingPipeline,
   handleDuplicate,
   handleDelete,
+  handleView,
 }: {
   pipeline: Pipeline;
   setEditingPipeline: (p: Pipeline) => void;
   handleDuplicate: (p: Pipeline) => void;
   handleDelete: (id: string) => void;
+  handleView: () => void;
 }) => {
   const getStageColor = (type: string) => {
     switch (type) {
@@ -87,11 +90,13 @@ const PipelineTemplateCard = ({
             >
               <div
                 className={`w-2 h-2 rounded-full flex-shrink-0 ${getStageColor(
-                  stage.type
+                  stage.type,
                 )}`}
               />
               <span className="text-xs font-medium text-muted-foreground truncate">
-                <span className="font-bold text-muted-foreground/60">{idx + 1}.</span>{" "}
+                <span className="font-bold text-muted-foreground/60">
+                  {idx + 1}.
+                </span>{" "}
                 {stage.name}
               </span>
             </div>
@@ -100,6 +105,17 @@ const PipelineTemplateCard = ({
 
         {/* Action Buttons: Outline for secondary, Destructive for delete */}
         <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+          {
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleView}
+            className="text-xs font-medium text-foreground border-border h-8 px-3 rounded-xl hover:bg-muted/50 transition-all"
+            >
+              <Eye className="h-3.5 w-3.5 mr-1.5" />
+              View
+            </Button>
+          }
           {isDeletable && (
             <Button
               variant="outline"
@@ -140,7 +156,7 @@ const PipelineTemplateCard = ({
 export default function PipelineTemplates() {
   const { companyId } = useParams();
   const queryClient = useQueryClient();
-  
+
   const { data: pipelines } = useQuery({
     queryKey: ["active-pipelines", companyId],
     queryFn: async () => {
@@ -173,6 +189,7 @@ export default function PipelineTemplates() {
 
   const [editingPipeline, setEditingPipeline] = useState<Pipeline | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
 
   const handleSavePipeline = (pipeline: Pipeline) => {
     if (isCreating) {
@@ -193,7 +210,7 @@ export default function PipelineTemplates() {
           onError: () => {
             toast.error("Failed to create pipeline");
           },
-        }
+        },
       );
     } else {
       updatePipelineMutate(
@@ -215,7 +232,7 @@ export default function PipelineTemplates() {
           onError: () => {
             toast.error("Failed to update pipeline");
           },
-        }
+        },
       );
     }
   };
@@ -247,7 +264,7 @@ export default function PipelineTemplates() {
     } else if (originalName.endsWith(" (Copy)")) {
       baseName = originalName.substring(
         0,
-        originalName.length - " (Copy)".length
+        originalName.length - " (Copy)".length,
       );
     }
 
@@ -274,8 +291,8 @@ export default function PipelineTemplates() {
     <div className="min-h-screen bg-[#F8F9FB] p-6 space-y-6 animate-fade-in">
       <div className="max-w-[1400px] mx-auto space-y-6">
         {/* Page Header */}
-        <div className="flex items-start justify-between border-b border-border pb-6">
-          <div>
+        <div className="flex items-start border-b border-border pb-6 gap-3">
+          <div className="mr-auto">
             <h1 className="text-2xl font-bold text-foreground">
               Pipeline Templates
             </h1>
@@ -283,6 +300,16 @@ export default function PipelineTemplates() {
               Create and manage recruitment pipeline templates
             </p>
           </div>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setIsCreating(true);
+              setEditingPipeline(DEFAULT_PIPELINE);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Default Pipeline
+          </Button>
           <Button
             variant="default"
             onClick={() => setIsCreating(true)}
@@ -303,6 +330,10 @@ export default function PipelineTemplates() {
                 setEditingPipeline={setEditingPipeline}
                 handleDuplicate={handleDuplicate}
                 handleDelete={handleDelete}
+                handleView={() => {
+                  setEditingPipeline(pipeline);
+                  setIsViewing(true);
+                }}
               />
             ))}
         </div>
@@ -311,10 +342,12 @@ export default function PipelineTemplates() {
         {(isCreating || editingPipeline) && (
           <PipelineEditor
             pipeline={editingPipeline}
+            isViewing={isViewing}
             onSave={handleSavePipeline}
             onCancel={() => {
               setIsCreating(false);
               setEditingPipeline(null);
+              setIsViewing(false);
             }}
             organizationId={companyId}
           />

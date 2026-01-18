@@ -25,6 +25,7 @@ const CandidateCard = ({
   currentUserId,
   onViewProfile,
 }: CandidateCardProps) => {
+  // Helper to generate initials
   const getInitials = (name: string | null, fallback: string) => {
     if (name) {
       const parts = name.split(" ");
@@ -35,55 +36,43 @@ const CandidateCard = ({
     return fallback.charAt(0).toUpperCase();
   };
 
+  // Determine display name
   const displayName =
-    candidate.fullName ||
     `${candidate.firstName || ""} ${candidate.lastName || ""}`.trim() ||
+    candidate.fullName ||
     candidate.username ||
     "Unknown User";
 
   return (
-    <Card className="border border-border bg-card transition-all duration-200 hover:border-primary rounded-2xl">
-      <CardContent className="p-5">
+    <Card className="rounded-2xl border border-border bg-card transition-all duration-200 hover:border-primary">
+      {/* Reduced padding (p-4) for compactness */}
+      <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           {/* Left: Avatar & Info */}
-          <div className="flex items-start gap-4 flex-1 min-w-0">
-            <Avatar className="h-14 w-14 border border-border shrink-0">
+          <div className="flex flex-1 min-w-0 items-start gap-3">
+            <Avatar className="h-12 w-12 shrink-0 border border-border">
               <AvatarImage
                 src={candidate.avatarUrl || candidate.avatar || undefined}
+                alt={displayName}
               />
-              <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+              <AvatarFallback className="bg-primary font-bold text-primary-foreground">
                 {getInitials(candidate.fullName, candidate.username || "U")}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="text-lg font-bold text-foreground truncate cursor-pointer transition-colors">
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                {/* Subheader style: text-lg, font-bold, text-foreground */}
+                <h3 
+                  className="cursor-pointer truncate text-lg font-bold text-foreground transition-colors hover:text-primary"
+                  onClick={() => candidate.candidateProfileId && onViewProfile(candidate.candidateProfileId)}
+                >
                   {displayName}
                 </h3>
-                {candidate.emailVerified && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] bg-[hsl(var(--brand-success)/0.1)] text-[hsl(var(--brand-success))] border-[hsl(var(--brand-success)/0.2)] font-bold uppercase"
-                  >
-                    Verified
-                  </Badge>
-                )}
               </div>
 
-              {candidate.email && (
-                <p className="text-sm text-muted-foreground truncate mb-1">
-                  {candidate.email}
-                </p>
-              )}
-
-              {candidate.phoneNumber && (
-                <p className="text-xs text-muted-foreground/80 mb-2">
-                  {candidate.phoneNumber}
-                </p>
-              )}
-
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {/* Metadata: text-xs, text-muted-foreground */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span>
                   Joined{" "}
                   {new Date(candidate.createdAt).toLocaleDateString("en-US", {
@@ -105,15 +94,15 @@ const CandidateCard = ({
           </div>
 
           {/* Right: Actions */}
-          <div className="flex flex-col gap-2 shrink-0">
+          <div className="flex shrink-0 flex-col gap-2">
             {candidate?.candidateProfileId && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => onViewProfile(candidate.candidateProfileId)}
-                className="h-9 text-xs font-bold border-border"
+                className="h-9 border-border text-xs font-bold"
               >
-                <UserIcon className="h-3 w-3 mr-1 text-primary" />
+                <UserIcon className="mr-1 h-3 w-3 text-primary" />
                 View Profile
               </Button>
             )}
@@ -132,7 +121,6 @@ const CandidateCard = ({
     </Card>
   );
 };
-
 const EmptyState = ({ hasSearch }: { hasSearch: boolean }) => (
   <Card className="border border-border rounded-3xl bg-card">
     <CardContent className="p-12 text-center">
@@ -188,7 +176,7 @@ const CandidateSearchPage = () => {
       searchUsers({
         q: search,
         page,
-        limit: 20,
+        limit: 60,
       }),
     enabled: true,
   });

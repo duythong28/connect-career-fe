@@ -103,13 +103,13 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-const isHtmlContent = (content: string): boolean => {
+export const isHtmlContent = (content: string): boolean => {
   if (!content) return false;
   const htmlPattern = /<\/?[a-z][\s\S]*>/i;
   return htmlPattern.test(content);
 };
 
-const RenderHtml = ({ content }: { content: string }) => (
+export const RenderHtml = ({ content }: { content: string }) => (
   <div
     className="prose prose-sm max-w-none text-muted-foreground leading-relaxed"
     dangerouslySetInnerHTML={{ __html: content }}
@@ -127,7 +127,7 @@ export function Markdown({
     <div
       className={cn(
         "prose prose-sm max-w-none dark:prose-invert text-muted-foreground leading-relaxed",
-        className
+        className,
       )}
     >
       <ReactMarkdown
@@ -379,7 +379,7 @@ export default function JobSearchPage() {
         "p-4 rounded-xl border cursor-pointer transition-all mb-3 relative group",
         isSelected
           ? "bg-accent border-primary ring-1 ring-primary"
-          : "bg-card border-border hover:border-primary shadow-sm"
+          : "bg-card border-border hover:border-primary shadow-sm",
       )}
     >
       <div className="flex justify-between items-start mb-2">
@@ -429,58 +429,40 @@ export default function JobSearchPage() {
     <div className="h-full overflow-hidden bg-[#F8F9FB] flex flex-col animate-fade-in">
       {/* --- Filter / Header Bar --- */}
       <div className="bg-card border-b border-border px-4 sm:px-6 py-4 flex-shrink-0">
-        <div className="max-w-[1600px] mx-auto">
-          {/* Header Row */}
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-              {isPreferenceMode ? (
-                <>
-                  <Sparkles className="text-primary" fill="currentColor" />
-                  <span className="hidden sm:inline">AI Recommendation</span>
-                  <span className="sm:hidden">AI Rec</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">Search All Jobs</span>
-                  <span className="sm:hidden">Search Jobs</span>
-                </>
+        <div className="max-w-[1600px] mx-auto flex flex-row flex-wrap gap-3 items-center justify-between">
+          <div className="flex items-center p-1 my-2 gap-2 sm:gap-3 bg-secondary/50 rounded-xl border border-border">
+            <span
+              className={cn(
+                "text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all",
+                !isPreferenceMode
+                  ? "bg-card shadow-sm text-foreground"
+                  : "text-muted-foreground",
               )}
-            </h1>
-            <div className="flex items-center gap-2 sm:gap-3 bg-secondary/50 p-1 rounded-xl border border-border">
-              <span
-                className={cn(
-                  "text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all",
-                  !isPreferenceMode
-                    ? "bg-card shadow-sm text-foreground"
-                    : "text-muted-foreground"
-                )}
-                onClick={() => setIsPreferenceMode(false)}
-              >
-                Basic Search
-              </span>
-              <Switch
-                checked={isPreferenceMode}
-                onCheckedChange={setIsPreferenceMode}
-                className="data-[state=checked]:bg-primary scale-90 sm:scale-100"
-              />
-              <span
-                className={cn(
-                  "text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all",
-                  isPreferenceMode
-                    ? "bg-card shadow-sm text-primary"
-                    : "text-muted-foreground"
-                )}
-                onClick={() => setIsPreferenceMode(true)}
-              >
-                Preference Mode
-              </span>
-            </div>
+              onClick={() => setIsPreferenceMode(false)}
+            >
+              Basic Search
+            </span>
+            <Switch
+              checked={isPreferenceMode}
+              onCheckedChange={setIsPreferenceMode}
+              className="data-[state=checked]:bg-primary scale-90 sm:scale-100"
+            />
+            <span
+              className={cn(
+                "text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all",
+                isPreferenceMode
+                  ? "bg-card shadow-sm text-primary"
+                  : "text-muted-foreground",
+              )}
+              onClick={() => setIsPreferenceMode(true)}
+            >
+              Preference Mode
+            </span>
           </div>
-
           {/* Conditional Controls */}
           {!isPreferenceMode && (
             /* --- BASIC MODE: Original Filters --- */
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+            <div className="flex items-center gap-3 overflow-x-auto p-2 no-scrollbar">
               {/* Search Input */}
               <div className="relative flex-1 min-w-[300px] max-w-xl">
                 <Search
@@ -503,7 +485,7 @@ export default function JobSearchPage() {
                     className={cn(
                       "h-10 rounded-xl px-3 border-border font-bold flex items-center gap-2",
                       searchFilters.location &&
-                        "border-primary text-primary bg-accent"
+                        "border-primary text-primary bg-accent",
                     )}
                   >
                     <MapPin size={14} className="text-primary" />
@@ -549,7 +531,7 @@ export default function JobSearchPage() {
                   className={cn(
                     "w-auto h-10 px-3 border-border rounded-xl font-bold gap-2",
                     searchFilters.type &&
-                      "text-primary bg-accent border-primary"
+                      "text-primary bg-accent border-primary",
                   )}
                 >
                   <div className="flex items-center gap-2 truncate">
@@ -586,7 +568,7 @@ export default function JobSearchPage() {
                   className={cn(
                     "w-auto h-10 px-3 border-border rounded-xl font-bold gap-2",
                     searchFilters.seniorityLevel &&
-                      "text-primary bg-accent border-primary"
+                      "text-primary bg-accent border-primary",
                   )}
                 >
                   <div className="flex items-center gap-2 truncate">
@@ -689,7 +671,7 @@ export default function JobSearchPage() {
                 (key) => {
                   if (key === "pageNumber" || key === "pageSize") return false;
                   return searchFilters[key] != DEFAULT_FILTERS[key];
-                }
+                },
               ) && (
                 <Button
                   variant="link"
@@ -714,10 +696,10 @@ export default function JobSearchPage() {
         <div
           className={cn(
             "w-full lg:w-[400px] flex flex-col bg-card rounded-3xl border border-border shadow-sm flex-shrink-0 overflow-hidden",
-            showMobileDetail && "hidden lg:flex" // [NEW: hide on mobile when detail shown]
+            showMobileDetail && "hidden lg:flex", // [NEW: hide on mobile when detail shown]
           )}
         >
-          <div className="p-4 border-b border-border flex justify-between items-center bg-muted/20">
+          {/* <div className="p-4 border-b border-border flex justify-between items-center bg-muted/20">
             <span className="text-xs font-bold text-muted-foreground uppercase">
               {isFetching
                 ? "Loading..."
@@ -725,7 +707,7 @@ export default function JobSearchPage() {
                 ? `Found ${displayedJobsData.total} Matches`
                 : `Showing ${displayedJobsData.data.length} of ${displayedJobsData.total} Jobs`}
             </span>
-          </div>
+          </div> */}
 
           <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             {displayedJobsData.data.map((job) => (
@@ -767,7 +749,7 @@ export default function JobSearchPage() {
         <div
           className={cn(
             "flex-1 bg-card rounded-3xl border border-border shadow-sm flex-col min-w-0 overflow-hidden",
-            showMobileDetail ? "flex" : "hidden lg:flex" // [CHANGED: was "hidden lg:flex"]
+            showMobileDetail ? "flex" : "hidden lg:flex", // [CHANGED: was "hidden lg:flex"]
           )}
         >
           {selectedJob ? (
@@ -792,7 +774,7 @@ export default function JobSearchPage() {
                       "py-4 text-sm font-bold border-b-2 transition-all",
                       rightTab === "Overview"
                         ? "border-primary text-foreground"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground",
                     )}
                   >
                     Overview
@@ -803,7 +785,7 @@ export default function JobSearchPage() {
                       "py-4 text-sm font-bold border-b-2 transition-all",
                       rightTab === "Company"
                         ? "border-primary text-foreground"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground",
                     )}
                   >
                     Company
@@ -957,7 +939,7 @@ export default function JobSearchPage() {
                             "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
                             !showFullPosting
                               ? "bg-card shadow-sm text-foreground"
-                              : "text-muted-foreground hover:text-foreground"
+                              : "text-muted-foreground hover:text-foreground",
                           )}
                           onClick={() => setShowFullPosting(false)}
                         >
@@ -968,7 +950,7 @@ export default function JobSearchPage() {
                             "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
                             showFullPosting
                               ? "bg-card shadow-sm text-foreground"
-                              : "text-muted-foreground hover:text-foreground"
+                              : "text-muted-foreground hover:text-foreground",
                           )}
                           onClick={() => setShowFullPosting(true)}
                         >
@@ -989,7 +971,7 @@ export default function JobSearchPage() {
                           <div>
                             <div className="line-clamp-6">
                               {isHtmlContent(
-                                selectedJob.summary || selectedJob.description
+                                selectedJob.summary || selectedJob.description,
                               ) ? (
                                 <RenderHtml
                                   content={

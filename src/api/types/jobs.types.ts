@@ -107,6 +107,7 @@ export interface JobFilters {
   postedBefore?: string;
   sortBy?: JobSortBy;
   sortOrder?: "ASC" | "DESC";
+  industryId?: string;
 }
 
 export interface JobApplication {

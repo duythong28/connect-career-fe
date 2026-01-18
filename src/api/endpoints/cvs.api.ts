@@ -9,9 +9,14 @@ import {
 } from "../types/cvs.types";
 const API_URL = "/cvs/candidate";
 
-const getMyCvs = async (): Promise<CvsResponse> => {
-  const response = await axios.get(`${API_URL}`);
-  return response.data;
+const getMyCvs = async (id: string): Promise<CvsResponse> => {
+  if (id) {
+    const response = await axios.get(`${API_URL}/${id}`);
+    return response.data;
+  } else {
+    const response = await axios.get(`${API_URL}`);
+    return response.data;
+  }
 };
 
 const getCvById = async (id: string): Promise<CvsResponse> => {
@@ -21,7 +26,7 @@ const getCvById = async (id: string): Promise<CvsResponse> => {
 
 const updateCv = async (
   id: string,
-  content?: ExtractedCvData
+  content?: ExtractedCvData,
 ): Promise<CvsResponse> => {
   const response = await axios.patch(`${API_URL}/${id}`, { content });
   return response.data;

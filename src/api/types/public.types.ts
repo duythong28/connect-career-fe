@@ -1,6 +1,7 @@
 export interface IndustryStatistic {
   key: string;
   value: string;
+  industryId: string;
 }
 
 export interface IndustryStatisticsResponse {

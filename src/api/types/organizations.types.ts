@@ -178,6 +178,7 @@ export interface Organization extends OrganizationBase {
   updatedAt: string;
   deletedAt?: string | null;
   reviews?: OrganizationReview[];
+  logo?: string | null;
 }
 
 export interface OrganizationLocation {

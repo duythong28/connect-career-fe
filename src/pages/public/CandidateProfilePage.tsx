@@ -95,6 +95,8 @@ export function CandidateProfilePage() {
     );
   }
 
+  console.log("this is profileData?.user", profileData?.user);
+
   return (
     // PRESERVED BACKGROUND: Using original #F8F9FB as requested
     <div className="min-h-screen bg-[#F8F9FB] overflow-y-auto custom-scrollbar">
@@ -160,21 +162,31 @@ export function CandidateProfilePage() {
 
               {/* Name & Location */}
               <h2 className="text-xl font-bold text-foreground">
-                {profileData.user.fullName ||
-                  [profileData.user.firstName, profileData.user.lastName].join(
-                    " "
-                  )}
+                {[profileData.user.firstName, profileData.user.lastName].join(
+                  " ",
+                ) || profileData.user.fullName}
               </h2>
               {/* Status Badge */}
-              <div
-                className={`text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit mb-6 uppercase tracking-wide border ${
-                  profileData?.user?.status === "complete"
+              {/* <div
+                className={`text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit my-3 uppercase tracking-wide border ${
+                  profileData?.user?.status === "active"
                     ? "bg-green-50 text-green-700 border-green-200"
                     : "bg-yellow-50 text-yellow-700 border-yellow-200"
                 }`}
               >
                 {profileData?.user?.status || "Active"}
-              </div>
+              </div> */}
+              {profileData?.user?.status === "active" && (
+                <div
+                  className={`text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit my-3 uppercase tracking-wide border ${
+                    profileData?.user?.status === "active"
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                  }`}
+                >
+                  {"Open to work"}
+                </div>
+              )}
 
               {/* PRIMARY ACTION */}
               {isMyProfile ? (
@@ -202,7 +214,7 @@ export function CandidateProfilePage() {
                       variant="outline"
                       className="w-full mb-4 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive rounded-xl"
                     >
-                      <Flag size={16} className="mr-2" /> Report Candidate
+                      <Flag size={16} className="mr-2" /> Report
                     </Button>
                   }
                 />
@@ -223,24 +235,20 @@ export function CandidateProfilePage() {
                 </button>
 
                 {/* 2. Documents (Owner Only) */}
-                {isMyProfile && (
-                  <button
-                    onClick={() => setActiveTab("cvs")}
-                    className={`w-full p-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-all duration-200 ${
-                      activeTab === "cvs"
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
-                  >
-                    <FileText
-                      size={18}
-                      className={
-                        activeTab !== "cvs" ? "text-orange-500/80" : ""
-                      }
-                    />{" "}
-                    Documents
-                  </button>
-                )}
+                <button
+                  onClick={() => setActiveTab("cvs")}
+                  className={`w-full p-3 rounded-xl flex items-center gap-3 text-sm font-medium transition-all duration-200 ${
+                    activeTab === "cvs"
+                      ? "bg-primary/10 text-primary font-bold"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  <FileText
+                    size={18}
+                    className={activeTab !== "cvs" ? "text-orange-500/80" : ""}
+                  />{" "}
+                  Documents
+                </button>
 
                 {/* 3. Recruiter Feedback */}
                 <button
@@ -306,8 +314,8 @@ export function CandidateProfilePage() {
             )}
 
             {/* 2. DOCUMENTS TAB */}
-            {activeTab === "cvs" && isMyProfile && (
-              <CVSTab isMyProfile={isMyProfile} />
+            {activeTab === "cvs" && (
+              <CVSTab isMyProfile={isMyProfile} userId={profileData?.userId} />
             )}
 
             {/* 3. RECRUITER FEEDBACK TAB */}

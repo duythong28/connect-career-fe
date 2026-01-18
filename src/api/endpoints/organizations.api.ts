@@ -15,7 +15,7 @@ import {
 const API_URL = "/organizations";
 
 const getOrganizations = async (
-  filters?: OrganizationFilters
+  filters?: OrganizationFilters,
 ): Promise<Organization[]> => {
   const response = await axios.get(`${API_URL}`, { params: filters });
   return response.data;
@@ -29,18 +29,22 @@ const getOrganizationById = async (id: string): Promise<Organization> => {
 const searchOrganizations = async ({
   pageNumber = 1,
   limit = 20,
+  q = "",
 }: {
   pageNumber?: number;
   limit?: number;
+  q?: string;
 }): Promise<{
-  data: Organization[];
+  organizations: {
+    items: Organization[];
+  };
   limit: number;
   page: number;
   total: number;
   totalPages: number;
 }> => {
-  const response = await axios.get(`${API_URL}/search`, {
-    params: { page: pageNumber, limit },
+  const response = await axios.get(`search/organizations`, {
+    params: { page: pageNumber, limit, q },
   });
   return response.data;
 };
@@ -52,7 +56,7 @@ const createOrganization = async (data: Partial<OrganizationBase>) => {
 
 const updateOrganization = async (
   id: string,
-  data: Partial<OrganizationBase>
+  data: Partial<OrganizationBase>,
 ) => {
   const response = await axios.patch(`${API_URL}/${id}`, data);
   return response.data;
@@ -74,16 +78,16 @@ const getHiringEffectiveness = async ({
     `${API_URL}/${organizationId}/hiring-effectiveness`,
     {
       params: query,
-    }
+    },
   );
   return response.data;
 };
 
 const getHiringEffectivenessSummary = async (
-  organizationId: string
+  organizationId: string,
 ): Promise<HiringSummary> => {
   const response = await axios.get(
-    `${API_URL}/${organizationId}/hiring-effectiveness/summary`
+    `${API_URL}/${organizationId}/hiring-effectiveness/summary`,
   );
   return response.data;
 };
