@@ -536,9 +536,9 @@ const CompanyProfilePage = () => {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <div className="pt-1 w-full">
-                  <div className="flex justify-between items-start w-full gap-4">
-                    <div className="min-w-0 flex-1">
+                <div className="pt-1 w-full overflow-hidden space-y-2">
+                  <div className="flex flex-col lg:flex-row justify-between items-start w-full gap-4">
+                    <div className="min-w-0 flex-1 overflow-hidden">
                       <h1 className="text-2xl font-bold text-foreground mb-1 truncate">
                         {displayData?.name}
                       </h1>
@@ -619,7 +619,7 @@ const CompanyProfilePage = () => {
                 <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                   <Building size={20} className="text-primary" /> Overview
                 </h2>
-                <div className="text-sm text-muted-foreground leading-relaxed text-justify">
+                <div className="text-sm text-muted-foreground leading-relaxed text-justify overflow-hidden">
                   {isHtmlContent(displayData.longDescription || "") ? (
                     <RenderHtml content={displayData.longDescription || ""} />
                   ) : (

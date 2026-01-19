@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -198,15 +198,18 @@ const DEFAULT_FILTERS: JobFilters = {
 
 export default function JobSearchPage() {
   const { user } = useAuth();
-
+const [searchParams] = useSearchParams();
   // --- Search Mode State ---
   const [isPreferenceMode, setIsPreferenceMode] = useState(false);
 
   // --- Basic Search State ---
   const [searchFilters, setSearchFilters] = useState<JobFilters>({
     ...DEFAULT_FILTERS,
+    searchTerm: searchParams.get("search") || "",
   });
-  const [searchTermInput, setSearchTermInput] = useState("");
+  const [searchTermInput, setSearchTermInput] = useState(
+    searchParams.get("search") || ""
+  );
   const [locationInput, setLocationInput] = useState("");
   const [tempFilters, setTempFilters] = useState<JobFilters>({
     ...DEFAULT_FILTERS,
