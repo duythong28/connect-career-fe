@@ -158,7 +158,8 @@ const CompanyTooltip = ({
             </div>
           )}
 
-          {(company.workingDays?.length > 0 || company.workScheduleTypes?.length > 0) && (
+          {(company.workingDays?.length > 0 ||
+            company.workScheduleTypes?.length > 0) && (
             <div className="bg-accent/30 rounded-2xl p-4 border border-border">
               <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-primary" />
@@ -357,10 +358,9 @@ const FeaturedCompaniesSection = ({
                     )}
                   </div>
                   <div className="flex-1">
-                    <a className="font-bold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-1"
+                    <a
+                      className="font-bold text-lg text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-1"
                       href={`${baseURL}/company/${comp.id}/profile`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                     >
                       {comp.name}
                     </a>

@@ -358,8 +358,6 @@ const FeaturedJobsSection = ({
                     <a
                       className="font-bold text-base text-foreground line-clamp-2 group-hover:text-primary transition-colors mb-0.5"
                       href={`${baseURL}/jobs/${job.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                     >
                       {job.title}
                     </a>

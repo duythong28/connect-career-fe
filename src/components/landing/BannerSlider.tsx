@@ -13,9 +13,9 @@ const BannerSlider = () => {
       title: "Optimize Hiring with AI Intelligence",
       subtitle:
         "Streamline screening and evaluate candidate fit with precision-driven AI tools",
-      // Image: Professional team/Recruiters analyzing data
+      // Image: Professional Team/Recruiters
       image:
-        "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&h=600&fit=crop",
       gradient: "from-blue-900/90 to-slate-900/90",
     },
     {
@@ -23,19 +23,19 @@ const BannerSlider = () => {
       title: "Elevate Your Career with AI Guidance",
       subtitle:
         "Enhance your CV and discover opportunities with personalized AI recommendations",
-      // Image: Individual working/Career growth focus
+      // Image: Handshake/Connection
       image:
-        "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?q=80&w=1200&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=600&fit=crop",
       gradient: "from-indigo-900/90 to-blue-900/90",
     },
     {
       // Key 3: Mock Interview Feature
       title: "Master Interviews with AI Simulations",
       subtitle:
-        "Build confidence and refine real-world skills through realistic AI mock interviews",
-      // Image: Virtual meeting/Interview context
+        "Build your confidence and refine real-world skills through realistic AI mock interviews",
+      // Image: Professional Meeting/Interview
       image:
-        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200&h=600&fit=crop",
+        "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1200&h=600&fit=crop",
       gradient: "from-slate-900/90 to-gray-900/90",
     },
   ];
@@ -116,20 +116,20 @@ const BannerSlider = () => {
         </div>
       </div>
 
-      {/* Navigation Controls */}
+      {/* Navigation Controls (Hidden on Mobile) */}
       <button
         onClick={() =>
           setCurrentSlide(
             (p) => (p - 1 + bannerSlides.length) % bannerSlides.length,
           )
         }
-        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full backdrop-blur-md transition-all z-20 text-white border border-white/20 group"
+        className="hidden md:block absolute left-8 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full backdrop-blur-md transition-all z-20 text-white border border-white/20 group"
       >
         <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
       </button>
       <button
         onClick={() => setCurrentSlide((p) => (p + 1) % bannerSlides.length)}
-        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full backdrop-blur-md transition-all z-20 text-white border border-white/20 group"
+        className="hidden md:block absolute right-8 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full backdrop-blur-md transition-all z-20 text-white border border-white/20 group"
       >
         <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" />
       </button>
