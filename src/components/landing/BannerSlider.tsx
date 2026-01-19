@@ -1,103 +1,151 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const BannerSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [searchInput, setSearchInput] = useState("");
+  const navigate = useNavigate();
 
   const bannerSlides = [
     {
-      title: "Where Great Talent Meets Endless Opportunities",
-      subtitle: "The unified platform connecting top candidates with leading employers",
-      image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&h=600&fit=crop",
-      gradient: "from-emerald-600 to-teal-700"
+      // Key 1: AI supporting recruiters (Screening & Evaluation)
+      title: "Optimize Hiring with AI Intelligence",
+      subtitle:
+        "Streamline screening and evaluate candidate fit with precision-driven AI tools",
+      // Image: Professional team/Recruiters analyzing data
+      image:
+        "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200&h=600&fit=crop",
+      gradient: "from-blue-900/90 to-slate-900/90",
     },
     {
-      title: "Build Your Career with Industry Leaders",
-      subtitle: "Access thousands of opportunities from verified companies",
-      image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=600&fit=crop",
-      gradient: "from-blue-600 to-cyan-700"
+      // Key 2: AI supporting candidates (CV, Advice, Recommendations)
+      title: "Elevate Your Career with AI Guidance",
+      subtitle:
+        "Enhance your CV and discover opportunities with personalized AI recommendations",
+      // Image: Individual working/Career growth focus
+      image:
+        "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?q=80&w=1200&h=600&fit=crop",
+      gradient: "from-indigo-900/90 to-blue-900/90",
     },
     {
-      title: "Smart Matching, Better Results",
-      subtitle: "AI-powered recruitment platform for the modern workforce",
-      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=600&fit=crop",
-      gradient: "from-purple-600 to-pink-700"
-    }
+      // Key 3: Mock Interview Feature
+      title: "Master Interviews with AI Simulations",
+      subtitle:
+        "Build confidence and refine real-world skills through realistic AI mock interviews",
+      // Image: Virtual meeting/Interview context
+      image:
+        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1200&h=600&fit=crop",
+      gradient: "from-slate-900/90 to-gray-900/90",
+    },
   ];
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide(p => (p + 1) % bannerSlides.length);
+      setCurrentSlide((p) => (p + 1) % bannerSlides.length);
     }, 5000);
     return () => clearInterval(timer);
   }, []);
 
+  const handleSearch = () => {
+    if (searchInput.trim()) {
+      navigate(`/jobs?search=${encodeURIComponent(searchInput.trim())}`);
+    } else {
+      navigate("/jobs");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
-    <section className="relative h-[600px] overflow-hidden bg-gradient-to-br from-emerald-600 to-teal-700">
+    <section className="relative h-[600px] w-full overflow-hidden bg-background animate-fade-in">
+      {/* Background Slides */}
       {bannerSlides.map((slide, index) => (
         <div
           key={index}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
             index === currentSlide ? "opacity-100" : "opacity-0"
           }`}
         >
-          <div className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} opacity-90`} />
-          <img src={slide.image} alt={slide.title} className="w-full h-full object-cover mix-blend-overlay" />
+          {/* Overlay Gradient */}
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${slide.gradient} z-10`}
+          />
+          {/* Image */}
+          <img
+            src={slide.image}
+            alt={slide.title}
+            className="w-full h-full object-cover"
+          />
         </div>
       ))}
-      
-      <div className="relative container mx-auto px-4 h-full flex items-center">
-        <div className="max-w-3xl text-white z-10">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+
+      {/* Content Layer */}
+      <div className="relative z-20 container-custom h-full flex items-center">
+        <div className="max-w-3xl text-white">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight tracking-tight drop-shadow-sm">
             {bannerSlides[currentSlide].title}
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-white/90">
+          <p className="text-xl md:text-2xl mb-8 text-white/90 font-medium drop-shadow-sm">
             {bannerSlides[currentSlide].subtitle}
           </p>
-          
-          <div className="bg-white rounded-2xl p-4 flex flex-col md:flex-row gap-3 shadow-2xl">
-            <div className="flex-1 flex items-center gap-3 px-4">
-              <Search className="w-5 h-5 text-gray-400" />
+
+          {/* Search Card */}
+          <div className="bg-card rounded-3xl p-3 flex flex-col md:flex-row gap-3 shadow-xl border border-border/50 backdrop-blur-sm bg-opacity-95">
+            <div className="flex-1 flex items-center gap-3 px-3">
+              <Search className="w-5 h-5 text-muted-foreground shrink-0" />
               <input
                 placeholder="Job title, keywords, or company..."
-                className="flex-1 outline-none text-gray-700 text-lg"
+                className="w-full bg-transparent outline-none text-foreground placeholder:text-muted-foreground text-lg h-full py-2"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
             </div>
-            <div className="flex-1 flex items-center gap-3 px-4 border-t md:border-t-0 md:border-l pt-3 md:pt-0">
-              <MapPin className="w-5 h-5 text-gray-400" />
-              <input
-                placeholder="City or remote..."
-                className="flex-1 outline-none text-gray-700 text-lg"
-              />
-            </div>
-            <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-colors">
+            <button
+              onClick={handleSearch}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 rounded-2xl font-bold text-base transition-all hover:-translate-y-0.5 shadow-md whitespace-nowrap"
+            >
               Search Jobs
             </button>
           </div>
         </div>
       </div>
 
+      {/* Navigation Controls */}
       <button
-        onClick={() => setCurrentSlide(p => (p - 1 + bannerSlides.length) % bannerSlides.length)}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-colors z-10"
+        onClick={() =>
+          setCurrentSlide(
+            (p) => (p - 1 + bannerSlides.length) % bannerSlides.length,
+          )
+        }
+        className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full backdrop-blur-md transition-all z-20 text-white border border-white/20 group"
       >
-        <ChevronLeft className="w-6 h-6 text-white" />
+        <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
       </button>
       <button
-        onClick={() => setCurrentSlide(p => (p + 1) % bannerSlides.length)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 p-3 rounded-full backdrop-blur-sm transition-colors z-10"
+        onClick={() => setCurrentSlide((p) => (p + 1) % bannerSlides.length)}
+        className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-3 rounded-full backdrop-blur-md transition-all z-20 text-white border border-white/20 group"
       >
-        <ChevronRight className="w-6 h-6 text-white" />
+        <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" />
       </button>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      {/* Pagination Dots */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
         {bannerSlides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              index === currentSlide ? "bg-white w-8" : "bg-white/50"
+            className={`h-2 rounded-full transition-all duration-300 shadow-sm ${
+              index === currentSlide
+                ? "bg-white w-8"
+                : "bg-white/40 w-2 hover:bg-white/60"
             }`}
+            aria-label={`Go to slide ${index + 1}`}
           />
         ))}
       </div>
